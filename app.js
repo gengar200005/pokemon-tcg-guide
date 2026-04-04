@@ -58,21 +58,26 @@ try{
 }catch(e){console.warn('Firebase init failed:',e);}
 
 /* ═══ Auth ═══ */
-function isMobile(){return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);}
-
 function authAction(){
   if(!auth){alert('Firebase\uAC00 \uB85C\uB4DC\uB418\uC9C0 \uC54A\uC558\uC5B4\uC694.');return;}
   if(currentUser){
     if(confirm('\uB85C\uADF8\uC544\uC6C3 \uD558\uC2DC\uACA0\uC5B4\uC694?'))auth.signOut();
   }else{
     var provider=new firebase.auth.GoogleAuthProvider();
-    if(isMobile()){
-      auth.signInWithRedirect(provider);
-    }else{
-      auth.signInWithPopup(provider).catch(function(e){
-        if(e.code==='auth/popup-blocked')auth.signInWithRedirect(provider);
-      });
-    }
+    // Always use popup - works on all platforms when triggered by user click
+    auth.signInWithPopup(provider).then(function(result){
+      if(result&&result.user){
+        currentUser=result.user;
+        updateAuthUI();
+        loadFromCloud();
+      }
+    }).catch(function(e){
+      console.warn('Login error:',e.code,e.message);
+      // Only fallback to redirect if popup is truly blocked (rare)
+      if(e.code==='auth/popup-blocked'){
+        auth.signInWithRedirect(provider);
+      }
+    });
   }
 }
 
@@ -107,7 +112,7 @@ if(auth){
     if(user&&wasLoggedOut)loadFromCloud();
   });
 
-  // Handle redirect result explicitly for Safari
+  // Fallback: if redirect was used (popup blocked), handle result
   auth.getRedirectResult().then(function(result){
     if(result&&result.user){
       currentUser=result.user;
@@ -116,19 +121,9 @@ if(auth){
     }
   }).catch(function(){});
 
-  // Poll: covers Safari BFCache and slow auth init
-  setTimeout(updateAuthUI,500);
-  setTimeout(updateAuthUI,1500);
+  // Safety polls
+  setTimeout(updateAuthUI,1000);
   setTimeout(updateAuthUI,3000);
-  setTimeout(updateAuthUI,5000);
-
-  // Safari BFCache: when user navigates back, page is restored from cache
-  window.addEventListener('pageshow',function(e){
-    if(e.persisted||auth.currentUser){
-      currentUser=auth.currentUser;
-      updateAuthUI();
-    }
-  });
 }
 
 /* ═══ Data ═══ */
