@@ -2,7 +2,7 @@
   "name": "포켓몬 TCG 가이드",
   "short_name": "TCG가이드",
   "description": "아빠와 함께하는 포켓몬 카드 배틀 모험!",
-  "start_url": "/",
+  "start_url": "/pokemon-tcg-guide/",
   "display": "standalone",
   "background_color": "#eaf6fb",
   "theme_color": "#3dc0ec",
