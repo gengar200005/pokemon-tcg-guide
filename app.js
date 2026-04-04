@@ -77,19 +77,21 @@ function authAction(){
 }
 
 function updateAuthUI(){
+  var user=currentUser||( auth?auth.currentUser:null);
+  if(user)currentUser=user;
   var statusEl=document.getElementById('auth-status');
   var labelEl=document.getElementById('auth-label');
   var btnEl=document.getElementById('auth-btn');
   if(!statusEl||!labelEl||!btnEl)return;
-  if(currentUser){
-    var name=currentUser.displayName||(currentUser.email?currentUser.email.split('@')[0]:'User');
-    statusEl.innerHTML='\u2601\uFE0F <strong>'+esc(name)+'</strong>\uB2D8 \uB85C\uADF8\uC778 \uC911';
+  if(user){
+    var name=user.displayName||(user.email?user.email.split('@')[0]:'User');
+    statusEl.innerHTML='\u2601\uFE0F <strong>'+esc(name)+'</strong>\uB2D8';
     labelEl.textContent='\uB85C\uADF8\uC544\uC6C3';
     btnEl.style.background='#f0f0f0';
     btnEl.style.color='#666';
     btnEl.style.boxShadow='none';
   }else{
-    statusEl.textContent='\u2601\uFE0F \uB85C\uADF8\uC778\uD558\uBA74 \uB370\uC774\uD130\uAC00 \uD074\uB77C\uC6B0\uB4DC\uC5D0 \uC800\uC7A5\uB3FC\uC694';
+    statusEl.textContent='\u2601\uFE0F \uB85C\uADF8\uC778\uD558\uBA74 \uD074\uB77C\uC6B0\uB4DC \uC800\uC7A5!';
     labelEl.textContent='Google \uB85C\uADF8\uC778';
     btnEl.style.background='linear-gradient(135deg,#4285f4,#34a0f4)';
     btnEl.style.color='#fff';
@@ -98,23 +100,35 @@ function updateAuthUI(){
 }
 
 if(auth){
-  // onAuthStateChanged is the ONLY source of truth
   auth.onAuthStateChanged(function(user){
     var wasLoggedOut=!currentUser;
     currentUser=user;
     updateAuthUI();
-    if(user&&wasLoggedOut){
-      loadFromCloud();
-    }
+    if(user&&wasLoggedOut)loadFromCloud();
   });
 
-  // Also handle redirect result (triggers onAuthStateChanged anyway, but needed for compat)
-  auth.getRedirectResult().catch(function(){});
+  // Handle redirect result explicitly for Safari
+  auth.getRedirectResult().then(function(result){
+    if(result&&result.user){
+      currentUser=result.user;
+      updateAuthUI();
+      loadFromCloud();
+    }
+  }).catch(function(){});
 
-  // Safety: poll UI update in case onAuthStateChanged fired before DOM
+  // Poll: covers Safari BFCache and slow auth init
   setTimeout(updateAuthUI,500);
   setTimeout(updateAuthUI,1500);
   setTimeout(updateAuthUI,3000);
+  setTimeout(updateAuthUI,5000);
+
+  // Safari BFCache: when user navigates back, page is restored from cache
+  window.addEventListener('pageshow',function(e){
+    if(e.persisted||auth.currentUser){
+      currentUser=auth.currentUser;
+      updateAuthUI();
+    }
+  });
 }
 
 /* ═══ Data ═══ */
