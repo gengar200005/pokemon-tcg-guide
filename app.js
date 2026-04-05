@@ -379,6 +379,17 @@ function rmFromDeck(di,ci){
    ═══════════════════════════════════════════════ */
 /* 전역: 덱 추가 데이터 */
 var _addDeckIdx=-1, _addItems=[];
+function _adi(idx){
+  console.log('_adi called:',idx,_addItems[idx]);
+  var item=_addItems[idx];if(!item)return;
+  if(item.type==='direct') addToDeck(_addDeckIdx,item.kr,item.img);
+  else addToDeckWithImage(_addDeckIdx,item.kr,item.en);
+}
+function _adCustom(){
+  var inp=document.getElementById('deck-custom-input');
+  var v=inp?inp.value.trim():'';
+  if(v){addToDeck(_addDeckIdx,v,'');inp.value='';}
+}
 function showAddToDeck(di){
   _addDeckIdx=di;_addItems=[];
   var d=D.decks[di];
@@ -387,7 +398,7 @@ function showAddToDeck(di){
   h+='<div style="margin:10px 0"><strong>\uD83D\uDC32 \uB0B4 \uCE74\uB4DC\uD568\uC5D0\uC11C</strong></div>';
   if(D.cards.length){h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">';D.cards.forEach(function(c){
     var ai=_addItems.length;_addItems.push({kr:c.krName||c.name,img:c.image||'',type:'direct'});
-    h+='<button class="btn btn-s btn-g add-item-btn" data-ai="'+ai+'">'+esc(c.krName||c.name)+'</button>';
+    h+='<button class="btn btn-s btn-g" onclick="_adi('+ai+')">'+esc(c.krName||c.name)+'</button>';
   });h+='</div>';}
   else h+='<p style="font-size:.78rem;color:var(--text3);margin-bottom:12px">\uCE74\uB4DC\uD568\uC774 \uBE44\uC5B4\uC788\uC5B4\uC694</p>';
   /* 트레이너스 */
@@ -396,7 +407,7 @@ function showAddToDeck(di){
     h+='<div style="margin:10px 0"><strong>\uD83C\uDCCF '+esc(cat)+'</strong></div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
     TRAINERS[cat].forEach(function(t){
       var ai=_addItems.length;_addItems.push({kr:t.kr,en:t.en,type:'api'});
-      h+='<button class="btn btn-s btn-g add-item-btn" data-ai="'+ai+'">'+esc(t.kr)+'</button>';
+      h+='<button class="btn btn-s btn-g" onclick="_adi('+ai+')">'+esc(t.kr)+'</button>';
     });
     h+='</div>';
   });
@@ -404,36 +415,20 @@ function showAddToDeck(di){
   h+='<div style="margin:10px 0"><strong>\u26A1 \uAE30\uBCF8 \uC5D0\uB108\uC9C0</strong></div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
   ENERGY.forEach(function(e){
     var ai=_addItems.length;_addItems.push({kr:e.n,en:e.en,type:'api'});
-    h+='<button class="btn btn-s btn-g add-item-btn" data-ai="'+ai+'">'+esc(e.n)+'</button>';
+    h+='<button class="btn btn-s btn-g" onclick="_adi('+ai+')">'+esc(e.n)+'</button>';
   });
   h+='</div>';
   /* 특수 에너지 */
   h+='<div style="margin:10px 0"><strong>\uD83C\uDF00 \uD2B9\uC218 \uC5D0\uB108\uC9C0</strong></div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
   SP_ENERGY.forEach(function(e){
     var ai=_addItems.length;_addItems.push({kr:e.kr,en:e.en,type:'api'});
-    h+='<button class="btn btn-s btn-g add-item-btn" data-ai="'+ai+'">'+esc(e.kr)+'</button>';
+    h+='<button class="btn btn-s btn-g" onclick="_adi('+ai+')">'+esc(e.kr)+'</button>';
   });
   h+='</div>';
   /* 직접 입력 */
   h+='<div style="margin:12px 0;border-top:1px solid var(--cb);padding-top:12px"><strong>\u270D\uFE0F \uC9C1\uC811 \uC785\uB825 (\uBAA9\uB85D\uC5D0 \uC5C6\uB294 \uCE74\uB4DC)</strong></div>';
-  h+='<div class="srch" style="margin-bottom:0"><input type="text" id="deck-custom-input" placeholder="\uCE74\uB4DC \uC774\uB984 \uC785\uB825"><button class="btn btn-p" id="deck-custom-add-btn">\uCD94\uAC00</button></div>';
+  h+='<div class="srch" style="margin-bottom:0"><input type="text" id="deck-custom-input" placeholder="\uCE74\uB4DC \uC774\uB984 \uC785\uB825"><button class="btn btn-p" onclick="_adCustom()">\uCD94\uAC00</button></div>';
   document.getElementById('mb').innerHTML=h;document.getElementById('mo').className='mo show';
-  /* 이벤트 위임: data-ai 버튼 클릭 처리 */
-  document.getElementById('mb').addEventListener('click',function(ev){
-    var btn=ev.target.closest('.add-item-btn');
-    if(btn){
-      var ai=parseInt(btn.getAttribute('data-ai'));
-      var item=_addItems[ai];if(!item)return;
-      if(item.type==='direct') addToDeck(_addDeckIdx,item.kr,item.img);
-      else addToDeckWithImage(_addDeckIdx,item.kr,item.en);
-      return;
-    }
-    if(ev.target.id==='deck-custom-add-btn'){
-      var inp=document.getElementById('deck-custom-input');
-      var v=inp?inp.value.trim():'';
-      if(v){addToDeck(_addDeckIdx,v,'');inp.value='';}
-    }
-  });
 }
 
 /* 카드 추가 (이미지 URL 직접 전달) */
