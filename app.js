@@ -753,9 +753,18 @@ function showScanResultError(msg){
   var rb=document.getElementById('scanResultBody');
   var isQuota=msg.indexOf('429')>=0||msg.indexOf('쿼터')>=0;
   var h='<img class="sr-shot" src="'+_scanShotDataUrl+'">';
-  h+='<div class="scan-status" style="color:#ff9a9a;text-align:left;word-break:break-word;white-space:pre-wrap">⚠️ '+esc(msg)+'</div>';
+  /* 에러 전문 표시 - 스크롤 가능, 복사 가능 */
+  h+='<div style="background:rgba(255,100,100,.1);border:1px solid rgba(255,100,100,.3);border-radius:8px;padding:12px;margin:0 0 12px;max-height:220px;overflow-y:auto">';
+  h+='<div style="font-size:.82rem;color:#ff9a9a;font-family:var(--ft);margin-bottom:6px">⚠️ 오류 발생</div>';
+  h+='<div style="color:#ffcccc;font-size:.75rem;line-height:1.5;word-break:break-word;white-space:pre-wrap;user-select:text;-webkit-user-select:text">'+esc(msg)+'</div>';
+  h+='</div>';
+  /* 디버그 정보 복사 버튼 */
+  h+='<div style="display:flex;gap:6px;margin-bottom:12px">';
+  h+='<button class="btn btn-s btn-g" style="flex:1;background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2)" onclick="copyDebugInfo()">📋 디버그 정보 복사</button>';
+  h+='<button class="btn btn-s btn-g" style="flex:1;background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2)" onclick="showFullDebug()">🔍 전체 응답 보기</button>';
+  h+='</div>';
   if(isQuota){
-    h+='<div style="padding:0 14px 14px"><div style="font-size:.78rem;color:rgba(255,255,255,.7);margin-bottom:8px">🔄 다른 모델로 전환:</div>';
+    h+='<div><div style="font-size:.78rem;color:rgba(255,255,255,.7);margin-bottom:8px">🔄 다른 모델로 전환:</div>';
     h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
     GEMINI_MODELS.forEach(function(m){
       var sel=(m.id===_scanModel);
@@ -763,6 +772,44 @@ function showScanResultError(msg){
     });
     h+='</div></div>';
   }
+  rb.innerHTML=h;
+}
+
+function copyDebugInfo(){
+  var info=window._lastGeminiError||{note:'디버그 정보 없음'};
+  var text='=== Gemini 디버그 정보 ===\n'+
+    'Status: '+(info.status||'?')+'\n'+
+    'Model: '+(info.model||'?')+'\n'+
+    'URL: '+(info.url||'?')+'\n'+
+    'Error Message: '+(info.errorMessage||'?')+'\n'+
+    '--- Raw Body ---\n'+(info.rawBody||JSON.stringify(info.rawData||info,null,2))+'\n'+
+    '--- Browser ---\n'+
+    'UA: '+navigator.userAgent+'\n'+
+    'Location: '+location.href;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){toast('✅ 클립보드에 복사됨','#27ae60');}).catch(function(){fallbackCopy(text);});
+  }else fallbackCopy(text);
+}
+
+function fallbackCopy(text){
+  var ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');toast('✅ 복사됨','#27ae60');}
+  catch(e){toast('복사 실패 - 수동 확인하세요','#e74c3c');}
+  ta.remove();
+}
+
+function showFullDebug(){
+  var info=window._lastGeminiError||{note:'디버그 정보 없음'};
+  var rb=document.getElementById('scanResultBody');
+  var h='<img class="sr-shot" src="'+_scanShotDataUrl+'">';
+  h+='<div style="background:#1a1a1a;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:12px;margin-bottom:12px;max-height:400px;overflow-y:auto">';
+  h+='<div style="color:#ffcb05;font-size:.78rem;font-family:var(--ft);margin-bottom:8px">🔍 전체 디버그 정보</div>';
+  h+='<pre style="color:#ccc;font-size:.68rem;line-height:1.4;white-space:pre-wrap;word-break:break-all;font-family:monospace;margin:0;user-select:text;-webkit-user-select:text">'+esc(JSON.stringify(info,null,2))+'</pre>';
+  h+='</div>';
+  h+='<button class="btn btn-s btn-p" style="width:100%;margin-bottom:8px" onclick="copyDebugInfo()">📋 이 정보 복사하기</button>';
+  h+='<button class="btn btn-s btn-g" style="width:100%;background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2)" onclick="retakeScan()">← 돌아가기</button>';
   rb.innerHTML=h;
 }
 
@@ -798,28 +845,45 @@ function callGeminiWithRetry(body,models,modelIdx){
     .then(function(r){
       if(r.ok)return r.json();
       return r.text().then(function(t){
-        var code=r.status,em='';
-        try{var j=JSON.parse(t);em=(j.error&&j.error.message)||'';}catch(e){em=t;}
+        var code=r.status,em='',rawJson=null;
+        try{rawJson=JSON.parse(t);em=(rawJson.error&&rawJson.error.message)||'';}catch(e){em=t;}
+        /* 디버그 정보 전역 저장 */
+        window._lastGeminiError={status:code,model:model,rawBody:t,errorMessage:em,parsed:rawJson,url:url.replace(/key=[^&]+/,'key=***')};
+        console.error('[Gemini Error]',window._lastGeminiError);
         /* 429 Quota 또는 503 Overloaded → 다음 모델로 폴백 */
         if((code===429||code===503)&&modelIdx+1<models.length){
           console.warn('['+model+'] '+code+' → '+models[modelIdx+1]+'로 폴백');
           return callGeminiWithRetry(body,models,modelIdx+1);
         }
-        /* 에러 메시지 정리 */
+        /* 에러 메시지 정리 - 전체 메시지 보존 */
         var msg;
-        if(code===429)msg='429 쿼터 초과 — '+friendlyQuotaMsg(em);
-        else if(code===400)msg='400 잘못된 요청: '+em.substring(0,100);
-        else if(code===401||code===403)msg=code+' 인증 실패 — API 키를 확인하세요';
-        else if(code===503)msg='503 서버 과부하 — 잠시 후 다시 시도';
-        else msg=code+': '+em.substring(0,120);
+        if(code===429)msg='[429 쿼터 초과] '+em;
+        else if(code===400){
+          if(em.indexOf('API key not valid')>=0||em.indexOf('API_KEY_INVALID')>=0)msg='[400 API 키 무효] 키 값이 잘못되었거나 오타입니다. app.js의 GEMINI_API_KEY를 다시 확인하세요.\n\n원본: '+em;
+          else msg='[400 잘못된 요청] '+em;
+        }
+        else if(code===401)msg='[401 인증 실패] API 키가 없거나 만료됨\n\n원본: '+em;
+        else if(code===403){
+          if(em.indexOf('referer')>=0||em.indexOf('referrer')>=0)msg='[403 Referrer 차단] Cloud Console에서 HTTP referrer 제한을 확인하세요. gengar200005.github.io/* 가 허용 목록에 있어야 합니다.\n\n원본: '+em;
+          else if(em.indexOf('API has not been used')>=0||em.indexOf('SERVICE_DISABLED')>=0)msg='[403 API 미활성화] Generative Language API가 비활성화되어 있습니다. Cloud Console에서 활성화하세요.\n\n원본: '+em;
+          else msg='[403 권한 거부] '+em;
+        }
+        else if(code===404)msg='[404 모델 없음] '+model+' 모델을 찾을 수 없습니다.\n\n원본: '+em;
+        else if(code===503)msg='[503 서버 과부하] 잠시 후 다시 시도\n\n원본: '+em;
+        else msg='['+code+'] '+em;
         throw new Error(msg);
       });
     })
     .then(function(data){
       if(!data)return null; /* 재귀 호출에서 이미 반환됨 */
-      var txt='';try{txt=data.candidates[0].content.parts[0].text;}catch(e){throw new Error('Gemini 응답 파싱 실패 (빈 응답)');}
+      var txt='';try{txt=data.candidates[0].content.parts[0].text;}catch(e){
+        /* 빈 응답도 디버그용 저장 */
+        window._lastGeminiError={status:'empty_response',model:model,rawData:data};
+        console.error('[Gemini Empty Response]',data);
+        throw new Error('[Gemini 빈 응답] candidates 없음\n\n응답: '+JSON.stringify(data).substring(0,200));
+      }
       txt=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
-      var parsed;try{parsed=JSON.parse(txt);}catch(e){throw new Error('JSON 파싱 실패: '+txt.substring(0,80));}
+      var parsed;try{parsed=JSON.parse(txt);}catch(e){throw new Error('[JSON 파싱 실패]\n\n응답: '+txt.substring(0,150));}
       if(!parsed.candidates||!parsed.candidates.length)throw new Error('카드를 인식하지 못했어요 (더 가까이, 밝은 곳에서 다시 시도)');
       return parsed.candidates;
     });
