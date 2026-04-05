@@ -117,6 +117,14 @@ select{padding:8px 12px;border-radius:16px;border:1.5px solid var(--cb);backgrou
 .scan-frame .art-box{position:absolute;top:12%;left:8%;right:8%;height:44%;border:2px dashed rgba(255,255,255,.55);border-radius:4px}
 .scan-tophud{position:absolute;top:0;left:0;right:0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;z-index:3;background:linear-gradient(180deg,rgba(0,0,0,.6),transparent)}
 .scan-tophud .ttl{color:#fff;font-family:var(--ft);font-size:1rem}
+.scan-model-badge{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:5px 12px;font-size:.7rem;cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;transition:.15s}
+.scan-model-badge:active{transform:scale(.95);background:rgba(255,255,255,.25)}
+.scan-model-menu{position:absolute;top:58px;left:50%;transform:translateX(-50%);background:rgba(20,25,35,.96);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:6px;z-index:5;display:none;min-width:200px;backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.scan-model-menu .mm-item{padding:9px 12px;cursor:pointer;border-radius:8px;transition:.1s}
+.scan-model-menu .mm-item:active{background:rgba(255,255,255,.1)}
+.scan-model-menu .mm-item.sel{background:rgba(61,192,236,.2)}
+.scan-model-menu .mm-item .mm-l{color:#fff;font-size:.82rem;font-weight:700}
+.scan-model-menu .mm-item .mm-d{color:rgba(255,255,255,.55);font-size:.68rem;margin-top:1px}
 .scan-close{width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
 .scan-guide-msg{position:absolute;bottom:120px;left:0;right:0;text-align:center;color:#fff;font-size:.85rem;z-index:3;padding:0 16px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
 .scan-controls{position:absolute;bottom:0;left:0;right:0;padding:18px 20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:3;background:linear-gradient(0deg,rgba(0,0,0,.75),transparent)}
@@ -229,9 +237,13 @@ select{padding:8px 12px;border-radius:16px;border:1.5px solid var(--cb);backgrou
   <div class="scan-video-wrap">
     <video class="scan-video" id="scanVideo" playsinline autoplay muted></video>
     <div class="scan-tophud">
-      <div class="ttl">📸 카드 스캔</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="ttl">📸</div>
+        <button class="scan-model-badge" id="scanModelBadge" onclick="toggleModelMenu()">🤖 모델</button>
+      </div>
       <button class="scan-close" onclick="stopScan()">×</button>
     </div>
+    <div class="scan-model-menu" id="scanModelMenu"></div>
     <div class="scan-overlay">
       <div class="scan-frame">
         <div class="corner tl"></div><div class="corner tr"></div>
