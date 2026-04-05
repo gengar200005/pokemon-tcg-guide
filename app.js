@@ -620,15 +620,45 @@ function rRare(){
    📸 Scan Module — Dragon Shield Style
    Gemini Vision API → pokemontcg.io
    ═══════════════════════════════════════════════ */
-var GEMINI_API_KEY='AIzaSyCx8HBxP-PJg7Gj6w-YjNxNmVWYaW9Epa8'; /* ← 여기에 Gemini API 키 입력 */
-var GEMINI_MODEL='gemini-2.0-flash';
+var GEMINI_API_KEY='YOUR_GEMINI_API_KEY_HERE'; /* ← 여기에 Gemini API 키 입력 */
+/* 사용 가능한 Gemini 비전 모델 (쿼터 널널한 순 → 성능 좋은 순) */
+var GEMINI_MODELS=[
+  {id:'gemini-2.0-flash-lite',label:'2.0 Flash-Lite',desc:'빠름·쿼터 여유'},
+  {id:'gemini-2.5-flash',label:'2.5 Flash',desc:'균형'},
+  {id:'gemini-2.0-flash',label:'2.0 Flash',desc:'빠름'},
+  {id:'gemini-2.5-pro',label:'2.5 Pro',desc:'정확·쿼터 빡빡'}
+];
+var _scanModel=(function(){try{return localStorage.getItem('ptcg-scan-model')||GEMINI_MODELS[0].id;}catch(e){return GEMINI_MODELS[0].id;}})();
 var _scanStream=null,_scanFacing='environment',_scanCount=0,_scanCandidates=[],_scanSelectedIdx=-1,_scanShotDataUrl='';
+
+function setScanModel(m){_scanModel=m;try{localStorage.setItem('ptcg-scan-model',m);}catch(e){}renderModelPicker();}
+
+function renderModelPicker(){
+  var el=document.getElementById('scanModelBadge');if(!el)return;
+  var cur=null;for(var i=0;i<GEMINI_MODELS.length;i++){if(GEMINI_MODELS[i].id===_scanModel){cur=GEMINI_MODELS[i];break;}}
+  el.textContent='🤖 '+(cur?cur.label:_scanModel);
+}
+
+function toggleModelMenu(){
+  var menu=document.getElementById('scanModelMenu');
+  if(menu.style.display==='block'){menu.style.display='none';return;}
+  var h='';
+  GEMINI_MODELS.forEach(function(m){
+    var sel=(m.id===_scanModel);
+    h+='<div class="mm-item'+(sel?' sel':'')+'" onclick="setScanModel(\''+m.id+'\');toggleModelMenu()">';
+    h+='<div class="mm-l">'+esc(m.label)+(sel?' ✓':'')+'</div>';
+    h+='<div class="mm-d">'+esc(m.desc)+'</div>';
+    h+='</div>';
+  });
+  menu.innerHTML=h;menu.style.display='block';
+}
 
 function startScan(){
   if(!currentUser){toast('☁️ 먼저 Google 로그인이 필요해요!','#e74c3c');return;}
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('이 브라우저는 카메라를 지원하지 않아요','#e74c3c');return;}
   document.getElementById('scanFs').classList.add('on');
   _scanCount=0;updateScanCount();
+  renderModelPicker();
   openCamera();
 }
 
@@ -721,33 +751,87 @@ function showScanResultLoading(shotUrl,msg){
 
 function showScanResultError(msg){
   var rb=document.getElementById('scanResultBody');
-  rb.innerHTML='<img class="sr-shot" src="'+_scanShotDataUrl+'"><div class="scan-status" style="color:#ff9a9a">⚠️ '+esc(msg)+'<br><span style="font-size:.72rem;opacity:.7">다시 찍어보세요</span></div>';
+  var isQuota=msg.indexOf('429')>=0||msg.indexOf('쿼터')>=0;
+  var h='<img class="sr-shot" src="'+_scanShotDataUrl+'">';
+  h+='<div class="scan-status" style="color:#ff9a9a;text-align:left;word-break:break-word;white-space:pre-wrap">⚠️ '+esc(msg)+'</div>';
+  if(isQuota){
+    h+='<div style="padding:0 14px 14px"><div style="font-size:.78rem;color:rgba(255,255,255,.7);margin-bottom:8px">🔄 다른 모델로 전환:</div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    GEMINI_MODELS.forEach(function(m){
+      var sel=(m.id===_scanModel);
+      h+='<button class="rbtn'+(sel?' active':'')+'" style="background:'+(sel?'var(--accent)':'rgba(255,255,255,.08)')+';color:#fff;border-color:rgba(255,255,255,.2)" onclick="setScanModel(\''+m.id+'\');retakeScan()">'+esc(m.label)+'</button>';
+    });
+    h+='</div></div>';
+  }
+  rb.innerHTML=h;
 }
 
 function recognizeCard(dataUrl){
   if(!GEMINI_API_KEY||GEMINI_API_KEY==='YOUR_GEMINI_API_KEY_HERE'){
-    return Promise.reject(new Error('Gemini API 키가 설정되지 않았어요'));
+    return Promise.reject(new Error('Gemini API 키가 설정되지 않았어요. app.js의 GEMINI_API_KEY를 수정하세요.'));
   }
   var b64=dataUrl.split(',')[1];
   var prompt='You are a Pokemon TCG card recognizer. Look at this image of a Pokemon card and identify it. '+
+    'The card text may be in Korean, Japanese, or English — but ALWAYS return the Pokemon name in English. '+
     'Return ONLY a JSON object (no markdown, no code fences) with this exact structure:\n'+
-    '{"candidates":[{"name":"<English Pokemon name only, e.g. Charizard>","set":"<set name if visible>","number":"<card number if visible, e.g. 4/102>","confidence":"high|medium|low"}]}\n'+
+    '{"candidates":[{"name":"<English Pokemon name only, e.g. Charizard>","set":"<set name or code if visible>","number":"<card number if visible, e.g. 003/021>","confidence":"high|medium|low"}]}\n'+
+    'For mega/ex/VMAX/VSTAR variants include the suffix (e.g. "Mega Gengar ex", "Charizard VMAX"). '+
     'Provide up to 3 candidates ordered by confidence. If you cannot read the card at all, return {"candidates":[]}.';
   var body={
     contents:[{parts:[{text:prompt},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
     generationConfig:{temperature:0.1,responseMimeType:'application/json'}
   };
-  var url='https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent?key='+encodeURIComponent(GEMINI_API_KEY);
+  /* 현재 모델 → 실패 시 lite로 폴백 순서 */
+  var tryModels=[_scanModel];
+  if(_scanModel!==GEMINI_MODELS[0].id)tryModels.push(GEMINI_MODELS[0].id);
+  return callGeminiWithRetry(body,tryModels,0);
+}
+
+function callGeminiWithRetry(body,models,modelIdx){
+  if(modelIdx>=models.length)return Promise.reject(new Error('모든 모델이 실패했어요'));
+  var model=models[modelIdx];
+  var url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(GEMINI_API_KEY);
+  /* 로딩 메시지에 현재 모델 표시 */
+  var statusEl=document.querySelector('#scanResultBody .scan-status p');
+  if(statusEl)statusEl.textContent=model+' 분석중...'+(modelIdx>0?' (폴백)':'');
   return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error('Gemini '+r.status+': '+t.substring(0,120));});return r.json();})
+    .then(function(r){
+      if(r.ok)return r.json();
+      return r.text().then(function(t){
+        var code=r.status,em='';
+        try{var j=JSON.parse(t);em=(j.error&&j.error.message)||'';}catch(e){em=t;}
+        /* 429 Quota 또는 503 Overloaded → 다음 모델로 폴백 */
+        if((code===429||code===503)&&modelIdx+1<models.length){
+          console.warn('['+model+'] '+code+' → '+models[modelIdx+1]+'로 폴백');
+          return callGeminiWithRetry(body,models,modelIdx+1);
+        }
+        /* 에러 메시지 정리 */
+        var msg;
+        if(code===429)msg='429 쿼터 초과 — '+friendlyQuotaMsg(em);
+        else if(code===400)msg='400 잘못된 요청: '+em.substring(0,100);
+        else if(code===401||code===403)msg=code+' 인증 실패 — API 키를 확인하세요';
+        else if(code===503)msg='503 서버 과부하 — 잠시 후 다시 시도';
+        else msg=code+': '+em.substring(0,120);
+        throw new Error(msg);
+      });
+    })
     .then(function(data){
-      var txt='';try{txt=data.candidates[0].content.parts[0].text;}catch(e){throw new Error('Gemini 응답 파싱 실패');}
-      /* ```json 펜스 제거 */
+      if(!data)return null; /* 재귀 호출에서 이미 반환됨 */
+      var txt='';try{txt=data.candidates[0].content.parts[0].text;}catch(e){throw new Error('Gemini 응답 파싱 실패 (빈 응답)');}
       txt=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
-      var parsed;try{parsed=JSON.parse(txt);}catch(e){throw new Error('JSON 파싱 실패: '+txt.substring(0,60));}
-      if(!parsed.candidates||!parsed.candidates.length)throw new Error('카드를 인식하지 못했어요');
+      var parsed;try{parsed=JSON.parse(txt);}catch(e){throw new Error('JSON 파싱 실패: '+txt.substring(0,80));}
+      if(!parsed.candidates||!parsed.candidates.length)throw new Error('카드를 인식하지 못했어요 (더 가까이, 밝은 곳에서 다시 시도)');
       return parsed.candidates;
     });
+}
+
+function friendlyQuotaMsg(rawMsg){
+  /* Google 에러 메시지에서 쿼터 종류 파악 */
+  var m=rawMsg.toLowerCase();
+  if(m.indexOf('per day')>=0||m.indexOf('rpd')>=0)return '일일 한도 소진. 내일 재설정되거나 다른 모델을 시도하세요.';
+  if(m.indexOf('per minute')>=0||m.indexOf('rpm')>=0)return '분당 한도 초과. 1분 후 다시 시도하세요.';
+  if(m.indexOf('free')>=0||m.indexOf('billing')>=0)return '무료 쿼터 소진. Flash-Lite로 전환하거나 결제 계정을 연결하세요.';
+  return '쿼터 초과. 다른 모델로 전환해보세요.';
 }
 
 function searchPokemonTcgIo(geminiCandidates){
