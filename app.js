@@ -368,38 +368,60 @@ function showDeckDetail(di){
   });h+='</div>';}
   document.getElementById('mb').innerHTML=h;document.getElementById('mo').className='mo show';
 }
-function rmFromDeck(di,ci){D.decks[di].cards.splice(ci,1);sv();showDeckDetail(di);}
+function rmFromDeck(di,ci){
+  var c=D.decks[di].cards[ci];
+  if(c&&c.q>1){c.q--;} else {D.decks[di].cards.splice(ci,1);}
+  sv();showDeckDetail(di);
+}
 
 /* ═══════════════════════════════════════════════
    TODO #2+3: 모의덱 카드 추가 — 영문명 기반 API 이미지
    ═══════════════════════════════════════════════ */
+/* 전역 배열: onclick에서 인덱스로 참조 (따옴표 문제 회피) */
+var _addDeckIdx=-1, _addItems=[];
+function _doAdd(idx){
+  var item=_addItems[idx];if(!item)return;
+  if(item.img!==undefined) addToDeck(_addDeckIdx,item.kr,item.img);
+  else addToDeckWithImage(_addDeckIdx,item.kr,item.en);
+}
 function showAddToDeck(di){
+  _addDeckIdx=di;_addItems=[];
   var d=D.decks[di];
   var h='<h3>"'+esc(d.name)+'" \uCE74\uB4DC \uCD94\uAC00</h3>';
   /* 내 카드함 포켓몬 */
   h+='<div style="margin:10px 0"><strong>\uD83D\uDC32 \uB0B4 \uCE74\uB4DC\uD568\uC5D0\uC11C</strong></div>';
-  if(D.cards.length){h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">';D.cards.forEach(function(c){h+='<button class="btn btn-s btn-g" onclick="addToDeck('+di+',\''+esc(c.krName||c.name).replace(/'/g,"\\'")+'\',\''+esc(c.image||'').replace(/'/g,"\\'")+'\')">'+esc(c.krName||c.name)+'</button>';});h+='</div>';}
+  if(D.cards.length){h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">';D.cards.forEach(function(c){
+    var ai=_addItems.length;_addItems.push({kr:c.krName||c.name,img:c.image||''});
+    h+='<button class="btn btn-s btn-g" onclick="_doAdd('+ai+')">'+esc(c.krName||c.name)+'</button>';
+  });h+='</div>';}
   else h+='<p style="font-size:.78rem;color:var(--text3);margin-bottom:12px">\uCE74\uB4DC\uD568\uC774 \uBE44\uC5B4\uC788\uC5B4\uC694</p>';
-  /* 트레이너스 (영문명 포함) */
+  /* 트레이너스 */
   var cats=Object.keys(TRAINERS);
   cats.forEach(function(cat){
     h+='<div style="margin:10px 0"><strong>\uD83C\uDCCF '+esc(cat)+'</strong></div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
     TRAINERS[cat].forEach(function(t){
-      h+='<button class="btn btn-s btn-g" onclick="addToDeckWithImage('+di+',\''+esc(t.kr).replace(/'/g,"\\'")+'\',\''+esc(t.en).replace(/'/g,"\\'")+'\')">'+esc(t.kr)+'</button>';
+      var ai=_addItems.length;_addItems.push({kr:t.kr,en:t.en});
+      h+='<button class="btn btn-s btn-g" onclick="_doAdd('+ai+')">'+esc(t.kr)+'</button>';
     });
     h+='</div>';
   });
   /* 기본 에너지 */
   h+='<div style="margin:10px 0"><strong>\u26A1 \uAE30\uBCF8 \uC5D0\uB108\uC9C0</strong></div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
-  ENERGY.forEach(function(e){h+='<button class="btn btn-s btn-g" onclick="addToDeckWithImage('+di+',\''+esc(e.n).replace(/'/g,"\\'")+'\',\''+esc(e.en).replace(/'/g,"\\'")+'\')">'+esc(e.n)+'</button>';});
+  ENERGY.forEach(function(e){
+    var ai=_addItems.length;_addItems.push({kr:e.n,en:e.en});
+    h+='<button class="btn btn-s btn-g" onclick="_doAdd('+ai+')">'+esc(e.n)+'</button>';
+  });
   h+='</div>';
   /* 특수 에너지 */
   h+='<div style="margin:10px 0"><strong>\uD83C\uDF00 \uD2B9\uC218 \uC5D0\uB108\uC9C0</strong></div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
-  SP_ENERGY.forEach(function(e){h+='<button class="btn btn-s btn-g" onclick="addToDeckWithImage('+di+',\''+esc(e.kr).replace(/'/g,"\\'")+'\',\''+esc(e.en).replace(/'/g,"\\'")+'\')">'+esc(e.kr)+'</button>';});
+  SP_ENERGY.forEach(function(e){
+    var ai=_addItems.length;_addItems.push({kr:e.kr,en:e.en});
+    h+='<button class="btn btn-s btn-g" onclick="_doAdd('+ai+')">'+esc(e.kr)+'</button>';
+  });
   h+='</div>';
   /* 직접 입력 */
   h+='<div style="margin:12px 0;border-top:1px solid var(--cb);padding-top:12px"><strong>\u270D\uFE0F \uC9C1\uC811 \uC785\uB825 (\uBAA9\uB85D\uC5D0 \uC5C6\uB294 \uCE74\uB4DC)</strong></div>';
-  h+='<div class="srch" style="margin-bottom:0"><input type="text" id="deck-custom-input" placeholder="\uCE74\uB4DC \uC774\uB984 \uC785\uB825"><button class="btn btn-p" onclick="var v=document.getElementById(\'deck-custom-input\').value.trim();if(v){addToDeck('+di+',v,\'\');document.getElementById(\'deck-custom-input\').value=\'\';}">\uCD94\uAC00</button></div>';
+  h+='<div class="srch" style="margin-bottom:0"><input type="text" id="deck-custom-input" placeholder="\uCE74\uB4DC \uC774\uB984 \uC785\uB825"><button class="btn btn-p" onclick="var v=document.getElementById(\'deck-custom-input\').value.trim();if(v){addToDeck(_addDeckIdx,v,\'\');document.getElementById(\'deck-custom-input\').value=\'\';}">\uCD94\uAC00</button></div>';
   document.getElementById('mb').innerHTML=h;document.getElementById('mo').className='mo show';
 }
 
