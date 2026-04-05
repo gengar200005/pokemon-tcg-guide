@@ -616,6 +616,247 @@ function rRare(){
   h+='</div>';document.getElementById('rare-l').innerHTML=h;
 }
 
+/* ═══════════════════════════════════════════════
+   📸 Scan Module — Dragon Shield Style
+   Gemini Vision API → pokemontcg.io
+   ═══════════════════════════════════════════════ */
+var GEMINI_API_KEY='AIzaSyCx8HBxP-PJg7Gj6w-YjNxNmVWYaW9Epa8'; /* ← 여기에 Gemini API 키 입력 */
+var GEMINI_MODEL='gemini-2.0-flash';
+var _scanStream=null,_scanFacing='environment',_scanCount=0,_scanCandidates=[],_scanSelectedIdx=-1,_scanShotDataUrl='';
+
+function startScan(){
+  if(!currentUser){toast('☁️ 먼저 Google 로그인이 필요해요!','#e74c3c');return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('이 브라우저는 카메라를 지원하지 않아요','#e74c3c');return;}
+  document.getElementById('scanFs').classList.add('on');
+  _scanCount=0;updateScanCount();
+  openCamera();
+}
+
+function openCamera(){
+  if(_scanStream){_scanStream.getTracks().forEach(function(t){t.stop();});_scanStream=null;}
+  var constraints={video:{facingMode:{ideal:_scanFacing},width:{ideal:1920},height:{ideal:1080}},audio:false};
+  navigator.mediaDevices.getUserMedia(constraints).then(function(stream){
+    _scanStream=stream;
+    var v=document.getElementById('scanVideo');
+    v.srcObject=stream;
+    v.play().catch(function(){});
+  }).catch(function(e){
+    /* Fallback: 후면 카메라 없으면 전면으로 재시도 */
+    if(_scanFacing==='environment'){
+      _scanFacing='user';
+      navigator.mediaDevices.getUserMedia({video:true,audio:false}).then(function(s){
+        _scanStream=s;document.getElementById('scanVideo').srcObject=s;
+      }).catch(function(e2){
+        toast('카메라 접근 실패: '+(e2.message||e2.name||''),'#e74c3c');stopScan();
+      });
+    }else{
+      toast('카메라 접근 실패: '+(e.message||e.name||''),'#e74c3c');stopScan();
+    }
+  });
+}
+
+function flipCamera(){
+  _scanFacing=(_scanFacing==='environment')?'user':'environment';
+  openCamera();
+}
+
+function stopScan(){
+  if(_scanStream){_scanStream.getTracks().forEach(function(t){t.stop();});_scanStream=null;}
+  document.getElementById('scanFs').classList.remove('on');
+  document.getElementById('scanResult').classList.remove('on');
+  document.getElementById('scanResultActions').style.display='none';
+  _scanCandidates=[];_scanSelectedIdx=-1;_scanShotDataUrl='';
+  if(_scanCount>0)try{rColl();}catch(e){}
+}
+
+function captureCard(){
+  var v=document.getElementById('scanVideo');
+  if(!v.videoWidth){toast('카메라가 준비중이에요','#f39c12');return;}
+  var btn=document.getElementById('scanShutter');btn.disabled=true;
+
+  /* 화면상 프레임 위치 계산 → 비디오 좌표로 변환 */
+  var frame=document.querySelector('#scanFs .scan-frame');
+  var wrap=document.querySelector('#scanFs .scan-video-wrap');
+  var fr=frame.getBoundingClientRect(),wr=wrap.getBoundingClientRect();
+  /* object-fit:cover 계산 */
+  var vW=v.videoWidth,vH=v.videoHeight,dW=wr.width,dH=wr.height;
+  var scale=Math.max(dW/vW,dH/vH);
+  var sW=vW*scale,sH=vH*scale;
+  var offX=(dW-sW)/2,offY=(dH-sH)/2;
+  /* frame(screen) → video(px) */
+  var cx=(fr.left-wr.left-offX)/scale;
+  var cy=(fr.top-wr.top-offY)/scale;
+  var cw=fr.width/scale,ch=fr.height/scale;
+  /* 경계 보정 */
+  cx=Math.max(0,Math.min(vW,cx));cy=Math.max(0,Math.min(vH,cy));
+  cw=Math.max(10,Math.min(vW-cx,cw));ch=Math.max(10,Math.min(vH-cy,ch));
+
+  var canvas=document.getElementById('scanCanvas');
+  canvas.width=Math.round(cw);canvas.height=Math.round(ch);
+  var ctx=canvas.getContext('2d');
+  ctx.drawImage(v,cx,cy,cw,ch,0,0,canvas.width,canvas.height);
+  var dataUrl=canvas.toDataURL('image/jpeg',0.85);
+  _scanShotDataUrl=dataUrl;
+
+  /* 결과 패널 오픈 + 로딩 */
+  showScanResultLoading(dataUrl,'Gemini AI가 카드를 분석중...');
+
+  /* Gemini Vision 호출 */
+  recognizeCard(dataUrl).then(function(info){
+    return searchPokemonTcgIo(info);
+  }).then(function(results){
+    _scanCandidates=results;_scanSelectedIdx=0;
+    renderScanCandidates();
+  }).catch(function(err){
+    showScanResultError(err.message||String(err));
+  }).then(function(){btn.disabled=false;});
+}
+
+function showScanResultLoading(shotUrl,msg){
+  var rb=document.getElementById('scanResultBody');
+  rb.innerHTML='<img class="sr-shot" src="'+shotUrl+'"><div class="scan-status"><div class="spinner"></div><p>'+esc(msg)+'</p></div>';
+  document.getElementById('scanResult').classList.add('on');
+  document.getElementById('scanResultActions').style.display='none';
+}
+
+function showScanResultError(msg){
+  var rb=document.getElementById('scanResultBody');
+  rb.innerHTML='<img class="sr-shot" src="'+_scanShotDataUrl+'"><div class="scan-status" style="color:#ff9a9a">⚠️ '+esc(msg)+'<br><span style="font-size:.72rem;opacity:.7">다시 찍어보세요</span></div>';
+}
+
+function recognizeCard(dataUrl){
+  if(!GEMINI_API_KEY||GEMINI_API_KEY==='YOUR_GEMINI_API_KEY_HERE'){
+    return Promise.reject(new Error('Gemini API 키가 설정되지 않았어요'));
+  }
+  var b64=dataUrl.split(',')[1];
+  var prompt='You are a Pokemon TCG card recognizer. Look at this image of a Pokemon card and identify it. '+
+    'Return ONLY a JSON object (no markdown, no code fences) with this exact structure:\n'+
+    '{"candidates":[{"name":"<English Pokemon name only, e.g. Charizard>","set":"<set name if visible>","number":"<card number if visible, e.g. 4/102>","confidence":"high|medium|low"}]}\n'+
+    'Provide up to 3 candidates ordered by confidence. If you cannot read the card at all, return {"candidates":[]}.';
+  var body={
+    contents:[{parts:[{text:prompt},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
+    generationConfig:{temperature:0.1,responseMimeType:'application/json'}
+  };
+  var url='https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent?key='+encodeURIComponent(GEMINI_API_KEY);
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error('Gemini '+r.status+': '+t.substring(0,120));});return r.json();})
+    .then(function(data){
+      var txt='';try{txt=data.candidates[0].content.parts[0].text;}catch(e){throw new Error('Gemini 응답 파싱 실패');}
+      /* ```json 펜스 제거 */
+      txt=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+      var parsed;try{parsed=JSON.parse(txt);}catch(e){throw new Error('JSON 파싱 실패: '+txt.substring(0,60));}
+      if(!parsed.candidates||!parsed.candidates.length)throw new Error('카드를 인식하지 못했어요');
+      return parsed.candidates;
+    });
+}
+
+function searchPokemonTcgIo(geminiCandidates){
+  /* 각 후보에 대해 병렬 조회. 첫 후보 기준 name으로 최대 6장 불러오고, set/number로 필터링 시도 */
+  var top=geminiCandidates[0];
+  if(!top||!top.name)return Promise.reject(new Error('영문명 없음'));
+  var cleanName=top.name.replace(/[^A-Za-z0-9\s\-\.]/g,'').trim();
+  if(!cleanName)return Promise.reject(new Error('영문명 정리 실패'));
+  var q='name:"'+cleanName+'"';
+  var url='https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q)+'&pageSize=12&select=id,name,images,rarity,set,hp,types,supertype,subtypes,number,attacks,abilities,rules,weaknesses,resistances,retreatCost';
+  return fetch(url).then(function(r){return r.json();}).then(function(data){
+    if(!data.data||!data.data.length)throw new Error('"'+cleanName+'" DB 카드 없음');
+    var all=data.data;
+    /* 세트/번호 매칭 점수로 정렬 */
+    var scored=all.map(function(c){
+      var score=0;
+      if(top.set&&c.set&&c.set.name){
+        var sL=top.set.toLowerCase(),cL=c.set.name.toLowerCase();
+        if(cL.indexOf(sL)>=0||sL.indexOf(cL)>=0)score+=50;
+      }
+      if(top.number&&c.number){
+        var n1=String(top.number).split('/')[0].replace(/^0+/,'');
+        var n2=String(c.number).replace(/^0+/,'');
+        if(n1===n2)score+=30;
+      }
+      /* 최신 세트 가산점 */
+      if(c.set&&c.set.releaseDate){score+=parseInt(c.set.releaseDate.split('-')[0],10)/100;}
+      return {c:c,score:score};
+    });
+    scored.sort(function(a,b){return b.score-a.score;});
+    return scored.slice(0,3).map(function(x){return x.c;});
+  });
+}
+
+function renderScanCandidates(){
+  var rb=document.getElementById('scanResultBody');
+  var krName=EN2KR[_scanCandidates[0]&&_scanCandidates[0].name]||'';
+  var h='<img class="sr-shot" src="'+_scanShotDataUrl+'">';
+  h+='<div class="sr-label">✨ 일치하는 카드 '+_scanCandidates.length+'개 — 맞는 것을 선택</div>';
+  h+='<div class="scan-cands">';
+  _scanCandidates.forEach(function(c,i){
+    var img=(c.images&&c.images.small)||'';
+    var sn=(c.set&&c.set.name)||'';
+    var sel=(i===_scanSelectedIdx)?' sel':'';
+    h+='<div class="scan-cand'+sel+'" data-i="'+i+'" onclick="selectScanCand('+i+')">';
+    if(img)h+='<img src="'+esc(img)+'" loading="lazy">';
+    h+='<div class="cn2">'+esc(c.name)+'</div>';
+    h+='<div class="cs">'+esc(sn)+'</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+  rb.innerHTML=h;
+  document.getElementById('scanResultActions').style.display='flex';
+  /* 선택된 카드 한글명 반영 */
+  var c0=_scanCandidates[_scanSelectedIdx];
+  if(c0){
+    var btn=document.getElementById('scanConfirmBtn');
+    var kr=EN2KR[c0.name]||'';
+    btn.textContent=kr?(kr+' 추가'):(c0.name+' 추가');
+  }
+}
+
+function selectScanCand(i){
+  _scanSelectedIdx=i;
+  var cands=document.querySelectorAll('#scanResultBody .scan-cand');
+  for(var k=0;k<cands.length;k++)cands[k].className=(k===i)?'scan-cand sel':'scan-cand';
+  var c=_scanCandidates[i],btn=document.getElementById('scanConfirmBtn');
+  var kr=EN2KR[c.name]||'';
+  btn.textContent=kr?(kr+' 추가'):(c.name+' 추가');
+}
+
+function confirmScanCard(){
+  var c=_scanCandidates[_scanSelectedIdx];if(!c)return;
+  var kr=EN2KR[c.name]||'';
+  var cd={
+    id:c.id,name:c.name,krName:kr,
+    rarity:c.rarity||'Unknown',
+    set:c.set?c.set.name:'-',
+    hp:c.hp||'-',types:c.types?c.types.join(', '):'-',
+    supertype:c.supertype||'Pokémon',
+    image:(c.images&&c.images.small)||''
+  };
+  /* 중복 체크 후 추가 */
+  var dup=false;
+  for(var i=0;i<D.cards.length;i++){if(D.cards[i].id===cd.id){dup=true;break;}}
+  if(dup){toast('이미 카드함에 있어요!','#f39c12');}
+  else{D.cards.push(cd);sv();_scanCount++;updateScanCount();toast('✅ '+(kr||c.name)+' 추가!','#27ae60');}
+  /* 연속 촬영 모드로 복귀 */
+  retakeScan();
+}
+
+function retakeScan(){
+  document.getElementById('scanResult').classList.remove('on');
+  document.getElementById('scanResultActions').style.display='none';
+  _scanCandidates=[];_scanSelectedIdx=-1;_scanShotDataUrl='';
+}
+
+function updateScanCount(){
+  document.getElementById('scanCount').textContent=_scanCount+'장';
+}
+
+function toast(msg,bg){
+  var t=document.createElement('div');
+  t.className='scan-toast';t.textContent=msg;
+  if(bg)t.style.background=bg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(function(){t.remove();},300);},1800);
+}
+
 /* ═══ Init ═══ */
 document.getElementById('dex-q').addEventListener('keydown',function(e){if(e.key==='Enter'){_dexAllCards=[];_dexPage=1;_dexFilter='all';searchDex();}});
 document.getElementById('quick-q').addEventListener('input',function(){quickSearch();});
