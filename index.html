@@ -93,7 +93,62 @@ select{padding:8px 12px;border-radius:16px;border:1.5px solid var(--cb);backgrou
 .preset-card{background:var(--card);border:2px solid var(--cb);border-radius:var(--r);padding:12px;margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow);transition:.2s;display:flex;justify-content:space-between;align-items:center}
 .preset-card:active{transform:scale(.98);border-color:var(--accent)}
 .preset-card .pn{font-family:var(--ft);font-size:.9rem}.preset-card .pt{font-size:.72rem;color:var(--text3)}
-@media(max-width:480px){.hdr h1{font-size:1.3rem}.cnt{padding:10px}.dgrid{grid-template-columns:repeat(auto-fill,minmax(85px,1fr))}.cgrid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}.tab img{width:32px;height:32px}}
+
+/* ═══ Scan (Dragon Shield Style) ═══ */
+.scan-launch{background:linear-gradient(135deg,#3dc0ec,#60d4f0);border:none;border-radius:var(--r);padding:16px;margin-bottom:14px;cursor:pointer;box-shadow:0 4px 14px rgba(61,192,236,.35);display:flex;align-items:center;gap:12px;width:100%;transition:.15s;color:#fff}
+.scan-launch:active{transform:scale(.97)}
+.scan-launch .ic{font-size:2rem;flex-shrink:0}
+.scan-launch .tx{text-align:left;flex:1}
+.scan-launch .tt{font-family:var(--ft);font-size:1rem;margin-bottom:2px}
+.scan-launch .st2{font-size:.72rem;opacity:.9}
+.scan-fs{position:fixed;inset:0;background:#000;z-index:300;display:none;flex-direction:column}
+.scan-fs.on{display:flex}
+.scan-video-wrap{flex:1;position:relative;overflow:hidden;background:#000}
+.scan-video{width:100%;height:100%;object-fit:cover;display:block}
+.scan-overlay{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.scan-dim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.scan-frame{position:relative;width:min(78vw,300px);aspect-ratio:2.5/3.5;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.55);z-index:2}
+.scan-frame .corner{position:absolute;width:22px;height:22px;border:4px solid var(--accent2)}
+.scan-frame .corner.tl{top:-4px;left:-4px;border-right:none;border-bottom:none;border-top-left-radius:10px}
+.scan-frame .corner.tr{top:-4px;right:-4px;border-left:none;border-bottom:none;border-top-right-radius:10px}
+.scan-frame .corner.bl{bottom:-4px;left:-4px;border-right:none;border-top:none;border-bottom-left-radius:10px}
+.scan-frame .corner.br{bottom:-4px;right:-4px;border-left:none;border-top:none;border-bottom-right-radius:10px}
+.scan-frame .type-circle{position:absolute;top:6%;right:6%;width:14%;aspect-ratio:1;border:2px dashed rgba(255,203,5,.9);border-radius:50%}
+.scan-frame .art-box{position:absolute;top:12%;left:8%;right:8%;height:44%;border:2px dashed rgba(255,255,255,.55);border-radius:4px}
+.scan-tophud{position:absolute;top:0;left:0;right:0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;z-index:3;background:linear-gradient(180deg,rgba(0,0,0,.6),transparent)}
+.scan-tophud .ttl{color:#fff;font-family:var(--ft);font-size:1rem}
+.scan-close{width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.scan-guide-msg{position:absolute;bottom:120px;left:0;right:0;text-align:center;color:#fff;font-size:.85rem;z-index:3;padding:0 16px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.scan-controls{position:absolute;bottom:0;left:0;right:0;padding:18px 20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:3;background:linear-gradient(0deg,rgba(0,0,0,.75),transparent)}
+.scan-shutter{width:72px;height:72px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.4);cursor:pointer;box-shadow:0 0 0 3px #fff;transition:.1s;flex-shrink:0;margin:0 auto;padding:0}
+.scan-shutter:active{transform:scale(.9)}
+.scan-shutter:disabled{background:var(--text3);box-shadow:0 0 0 3px var(--text3)}
+.scan-flip{width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:1.3rem;cursor:pointer;backdrop-filter:blur(6px)}
+.scan-count{font-family:var(--ft);color:#fff;font-size:.9rem;min-width:48px;text-align:right}
+
+/* Scan result view */
+.scan-result{position:absolute;inset:0;background:#111;z-index:10;overflow-y:auto;display:none;flex-direction:column;color:#fff}
+.scan-result.on{display:flex}
+.scan-result .sr-hdr{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#111;z-index:2}
+.scan-result .sr-hdr h3{font-family:var(--ft);font-size:1.05rem}
+.scan-result .sr-body{flex:1;padding:14px 16px 90px}
+.scan-result .sr-shot{width:100%;max-width:260px;margin:0 auto 14px;display:block;border-radius:10px;border:1px solid rgba(255,255,255,.15)}
+.scan-result .sr-label{font-family:var(--ft);font-size:.9rem;color:var(--accent2);margin-bottom:10px;text-align:center}
+.scan-cands{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.scan-cand{background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:6px;cursor:pointer;transition:.15s}
+.scan-cand:active{transform:scale(.96)}
+.scan-cand.sel{border-color:var(--accent);background:rgba(61,192,236,.15);box-shadow:0 0 0 1px var(--accent)}
+.scan-cand img{width:100%;aspect-ratio:2.5/3.5;object-fit:contain;border-radius:6px;background:#222;display:block}
+.scan-cand .cn2{font-size:.68rem;margin-top:4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+.scan-cand .cs{font-size:.6rem;color:rgba(255,255,255,.5);text-align:center}
+.scan-result .sr-actions{position:fixed;bottom:0;left:0;right:0;padding:14px 16px 22px;background:linear-gradient(0deg,#111 60%,rgba(17,17,17,.9));display:flex;gap:8px;z-index:3}
+.scan-result .sr-actions .btn{flex:1}
+.scan-status{text-align:center;padding:20px;color:rgba(255,255,255,.7);font-size:.85rem}
+.scan-status .spinner{border-top-color:var(--accent2);margin-bottom:8px}
+.scan-toast{position:fixed;top:20%;left:50%;transform:translateX(-50%);background:rgba(39,174,96,.95);color:#fff;padding:10px 20px;border-radius:24px;font-size:.85rem;z-index:400;box-shadow:0 4px 14px rgba(0,0,0,.3);animation:toastIn .3s ease-out}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
+
+@media(max-width:480px){.hdr h1{font-size:1.3rem}.cnt{padding:10px}.dgrid{grid-template-columns:repeat(auto-fill,minmax(85px,1fr))}.cgrid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}.tab img{width:32px;height:32px}.scan-frame{width:85vw}}
 </style>
 </head>
 <body>
@@ -138,7 +193,12 @@ select{padding:8px 12px;border-radius:16px;border:1.5px solid var(--cb);backgrou
 
 <div class="pnl" id="p-quick">
 <div class="st">⚡ 빠른 카드 등록</div>
-<p style="font-size:.78rem;color:var(--text3);margin-bottom:10px">한글 이름을 입력하면 자동완성! 탭해서 바로 검색</p>
+<button class="scan-launch" onclick="startScan()">
+<span class="ic">📸</span>
+<span class="tx"><span class="tt">카메라로 스캔하기</span><span class="st2">실물 카드를 찍어 자동 등록 (Gemini AI)</span></span>
+<span style="font-size:1.4rem">›</span>
+</button>
+<p style="font-size:.78rem;color:var(--text3);margin-bottom:10px">또는 한글 이름을 입력하면 자동완성! 탭해서 바로 검색</p>
 <div class="srch"><input type="text" id="quick-q" placeholder="포켓몬 이름 입력 (예: 리자)"><button class="btn btn-p" onclick="quickSearch()">검색</button></div>
 <div id="quick-r"></div>
 </div>
@@ -163,6 +223,44 @@ select{padding:8px 12px;border-radius:16px;border:1.5px solid var(--cb);backgrou
   </div>
 </div>
 <div class="mo" id="mo" onclick="if(event.target===this)closeM()"><div class="ml" id="ml"><button class="mx" onclick="closeM()">&times;</button><div id="mb"></div></div></div>
+
+<!-- Dragon Shield style Scan UI -->
+<div class="scan-fs" id="scanFs">
+  <div class="scan-video-wrap">
+    <video class="scan-video" id="scanVideo" playsinline autoplay muted></video>
+    <div class="scan-tophud">
+      <div class="ttl">📸 카드 스캔</div>
+      <button class="scan-close" onclick="stopScan()">×</button>
+    </div>
+    <div class="scan-overlay">
+      <div class="scan-frame">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+        <div class="type-circle"></div>
+        <div class="art-box"></div>
+      </div>
+    </div>
+    <div class="scan-guide-msg">프레임 안에 카드를 맞추고 셔터를 누르세요</div>
+    <div class="scan-controls">
+      <button class="scan-flip" onclick="flipCamera()" title="카메라 전환">🔄</button>
+      <button class="scan-shutter" id="scanShutter" onclick="captureCard()" aria-label="촬영"></button>
+      <div class="scan-count" id="scanCount">0장</div>
+    </div>
+    <!-- Result panel -->
+    <div class="scan-result" id="scanResult">
+      <div class="sr-hdr">
+        <h3>카드 식별 결과</h3>
+        <button class="scan-close" onclick="retakeScan()">×</button>
+      </div>
+      <div class="sr-body" id="scanResultBody"></div>
+      <div class="sr-actions" id="scanResultActions" style="display:none">
+        <button class="btn btn-g" onclick="retakeScan()">다시 찍기</button>
+        <button class="btn btn-p" id="scanConfirmBtn" onclick="confirmScanCard()">카드함에 추가</button>
+      </div>
+    </div>
+  </div>
+</div>
+<canvas id="scanCanvas" style="display:none"></canvas>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
