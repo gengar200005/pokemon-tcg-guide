@@ -620,7 +620,7 @@ function rRare(){
    📸 Scan Module — Dragon Shield Style
    Gemini Vision API → pokemontcg.io
    ═══════════════════════════════════════════════ */
-var GEMINI_API_KEY='YOUR_GEMINI_API_KEY_HERE'; /* ← 여기에 Gemini API 키 입력 */
+var GEMINI_API_KEY='AIzaSyCx8HBxP-PJg7Gj6w-YjNxNmVWYaW9Epa8'; /* ← 여기에 Gemini API 키 입력 */
 /* 사용 가능한 Gemini 비전 모델 (쿼터 널널한 순 → 성능 좋은 순) */
 var GEMINI_MODELS=[
   {id:'gemini-2.0-flash-lite',label:'2.0 Flash-Lite',desc:'빠름·쿼터 여유'},
