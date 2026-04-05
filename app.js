@@ -623,12 +623,24 @@ function rRare(){
 var GEMINI_API_KEY='AIzaSyDAUJteT645yuLYM-W_bOfp6N5u9ONtnVU'; /* ← 여기에 Gemini API 키 입력 */
 /* 사용 가능한 Gemini 비전 모델 (쿼터 널널한 순 → 성능 좋은 순) */
 var GEMINI_MODELS=[
-  {id:'gemini-2.0-flash-lite',label:'2.0 Flash-Lite',desc:'빠름·쿼터 여유'},
-  {id:'gemini-2.5-flash',label:'2.5 Flash',desc:'균형'},
-  {id:'gemini-2.0-flash',label:'2.0 Flash',desc:'빠름'},
-  {id:'gemini-2.5-pro',label:'2.5 Pro',desc:'정확·쿼터 빡빡'}
+  {id:'gemini-2.5-flash-lite',label:'2.5 Flash-Lite',desc:'⚡ 가장 빠름 · 카드 OCR 충분'},
+  {id:'gemini-flash-lite-latest',label:'Flash-Lite Latest',desc:'⚡ 최신 빠른 버전'},
+  {id:'gemini-2.5-flash',label:'2.5 Flash',desc:'균형 (thinking off)'},
+  {id:'gemini-2.0-flash-001',label:'2.0 Flash (001)',desc:'2.0 안정 버전'},
+  {id:'gemini-2.5-pro',label:'2.5 Pro',desc:'정확·느림'}
 ];
-var _scanModel=(function(){try{return localStorage.getItem('ptcg-scan-model')||GEMINI_MODELS[0].id;}catch(e){return GEMINI_MODELS[0].id;}})();
+var _scanModel=(function(){
+  try{
+    var saved=localStorage.getItem('ptcg-scan-model');
+    /* 저장된 모델이 현재 목록에 있는지 확인 */
+    if(saved){
+      for(var i=0;i<GEMINI_MODELS.length;i++){
+        if(GEMINI_MODELS[i].id===saved)return saved;
+      }
+    }
+    return GEMINI_MODELS[0].id;
+  }catch(e){return GEMINI_MODELS[0].id;}
+})();
 var _scanStream=null,_scanFacing='environment',_scanCount=0,_scanCandidates=[],_scanSelectedIdx=-1,_scanShotDataUrl='';
 
 function setScanModel(m){_scanModel=m;try{localStorage.setItem('ptcg-scan-model',m);}catch(e){}renderModelPicker();}
@@ -777,12 +789,14 @@ function showScanResultError(msg){
 
 function copyDebugInfo(){
   var info=window._lastGeminiError||{note:'디버그 정보 없음'};
+  var keyDiag=window._keyDiagnostic||{note:'키 진단 없음'};
   var text='=== Gemini 디버그 정보 ===\n'+
     'Status: '+(info.status||'?')+'\n'+
     'Model: '+(info.model||'?')+'\n'+
     'URL: '+(info.url||'?')+'\n'+
     'Error Message: '+(info.errorMessage||'?')+'\n'+
     '--- Raw Body ---\n'+(info.rawBody||JSON.stringify(info.rawData||info,null,2))+'\n'+
+    '--- Key Diagnostic ---\n'+JSON.stringify(keyDiag,null,2)+'\n'+
     '--- Browser ---\n'+
     'UA: '+navigator.userAgent+'\n'+
     'Location: '+location.href;
@@ -817,6 +831,25 @@ function recognizeCard(dataUrl){
   if(!GEMINI_API_KEY||GEMINI_API_KEY==='YOUR_GEMINI_API_KEY_HERE'){
     return Promise.reject(new Error('Gemini API 키가 설정되지 않았어요. app.js의 GEMINI_API_KEY를 수정하세요.'));
   }
+  /* 키 진단 정보 저장 */
+  var k=GEMINI_API_KEY;
+  var keyDiag={
+    length:k.length,
+    first6:k.substring(0,6),
+    last4:k.substring(k.length-4),
+    startsWithAIza:k.indexOf('AIza')===0,
+    hasSpace:/\s/.test(k),
+    hasQuote:k.indexOf("'")>=0||k.indexOf('"')>=0,
+    hasNewline:k.indexOf('\n')>=0||k.indexOf('\r')>=0,
+    charCodes:[]
+  };
+  /* 앞 4자리와 뒤 4자리의 char code (보이지 않는 문자 탐지) */
+  for(var i=0;i<Math.min(4,k.length);i++)keyDiag.charCodes.push(k.charCodeAt(i));
+  keyDiag.charCodes.push('...');
+  for(var j=Math.max(0,k.length-4);j<k.length;j++)keyDiag.charCodes.push(k.charCodeAt(j));
+  window._keyDiagnostic=keyDiag;
+  console.log('[Key Diagnostic]',keyDiag);
+  
   var b64=dataUrl.split(',')[1];
   var prompt='You are a Pokemon TCG card recognizer. Look at this image of a Pokemon card and identify it. '+
     'The card text may be in Korean, Japanese, or English — but ALWAYS return the Pokemon name in English. '+
@@ -826,7 +859,12 @@ function recognizeCard(dataUrl){
     'Provide up to 3 candidates ordered by confidence. If you cannot read the card at all, return {"candidates":[]}.';
   var body={
     contents:[{parts:[{text:prompt},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
-    generationConfig:{temperature:0.1,responseMimeType:'application/json'}
+    generationConfig:{
+      temperature:0.1,
+      responseMimeType:'application/json',
+      maxOutputTokens:512,
+      thinkingConfig:{thinkingBudget:0}  /* 2.5 시리즈 추론 모드 OFF → 즉시 응답 */
+    }
   };
   /* 현재 모델 → 실패 시 lite로 폴백 순서 */
   var tryModels=[_scanModel];
@@ -838,11 +876,19 @@ function callGeminiWithRetry(body,models,modelIdx){
   if(modelIdx>=models.length)return Promise.reject(new Error('모든 모델이 실패했어요'));
   var model=models[modelIdx];
   var url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(GEMINI_API_KEY);
-  /* 로딩 메시지에 현재 모델 표시 */
+  /* 로딩 메시지 + 경과 시간 카운터 */
   var statusEl=document.querySelector('#scanResultBody .scan-status p');
-  if(statusEl)statusEl.textContent=model+' 분석중...'+(modelIdx>0?' (폴백)':'');
+  var startT=Date.now();
+  var timer=setInterval(function(){
+    var el=document.querySelector('#scanResultBody .scan-status p');
+    if(!el){clearInterval(timer);return;}
+    var sec=((Date.now()-startT)/1000).toFixed(1);
+    el.textContent=model+' 분석중... ('+sec+'초)'+(modelIdx>0?' (폴백)':'');
+  },100);
+  if(statusEl)statusEl.textContent=model+' 분석중... (0.0초)'+(modelIdx>0?' (폴백)':'');
   return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){
+      clearInterval(timer);
       if(r.ok)return r.json();
       return r.text().then(function(t){
         var code=r.status,em='',rawJson=null;
