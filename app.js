@@ -357,16 +357,115 @@ function rDecks(){
 /* ═══════════════════════════════════════════════
    TODO #3: 모의덱 카드 목록에 이미지 표시
    ═══════════════════════════════════════════════ */
+/* ═══ 한글→영문 역매핑 (트레이너스/에너지용) ═══ */
+var _KR2EN_PRESET={};
+(function(){
+  var cats=Object.keys(TRAINERS);
+  for(var i=0;i<cats.length;i++){
+    var arr=TRAINERS[cats[i]];
+    for(var j=0;j<arr.length;j++) _KR2EN_PRESET[arr[j].kr]=arr[j].en;
+  }
+  for(var k=0;k<ENERGY.length;k++) _KR2EN_PRESET[ENERGY[k].n]=ENERGY[k].en;
+  for(var m=0;m<SP_ENERGY.length;m++) _KR2EN_PRESET[SP_ENERGY[m].kr]=SP_ENERGY[m].en;
+})();
+
+var _deckDetailItems=[], _deckDetailIdx=-1;
+function _dcd(ci){
+  var item=_deckDetailItems[ci];if(!item)return;
+  showDeckCardDetail(item.n,item.img,_deckDetailIdx);
+}
 function showDeckDetail(di){
+  _deckDetailIdx=di;_deckDetailItems=[];
   var d=D.decks[di];if(!d)return;
   var h='<h3>'+esc(d.name)+'</h3>';
   if(!d.cards.length){h+='<p style="color:var(--text3)">\uCE74\uB4DC\uAC00 \uC5C6\uC5B4\uC694</p>';}
   else{h+='<div class="dd">';d.cards.forEach(function(c,ci){
-    h+='<div class="ce">';
-    if(c.img)h+='<img src="'+esc(c.img)+'" style="width:36px;height:50px;object-fit:contain;border-radius:4px;flex-shrink:0">';
-    h+='<span style="font-size:.82rem">'+esc(c.n)+'</span><span style="font-size:.72rem;color:var(--text3);margin-left:auto">\xD7'+(c.q||1)+'</span><button class="btn btn-s btn-d" onclick="rmFromDeck('+di+','+ci+')" style="padding:2px 8px;font-size:.65rem">\uC0AD\uC81C</button></div>';
+    _deckDetailItems.push({n:c.n,img:c.img||''});
+    h+='<div class="ce" style="cursor:pointer">';
+    if(c.img)h+='<img src="'+esc(c.img)+'" onclick="_dcd('+ci+')" style="width:36px;height:50px;object-fit:contain;border-radius:4px;flex-shrink:0">';
+    h+='<span style="font-size:.82rem;flex:1" onclick="_dcd('+ci+')">'+esc(c.n)+'</span>';
+    h+='<span style="font-size:.72rem;color:var(--text3);white-space:nowrap">\xD7'+(c.q||1)+'</span>';
+    h+='<button class="btn btn-s btn-d" onclick="event.stopPropagation();rmFromDeck('+di+','+ci+')" style="padding:2px 8px;font-size:.65rem">\uC0AD\uC81C</button></div>';
   });h+='</div>';}
   document.getElementById('mb').innerHTML=h;document.getElementById('mo').className='mo show';
+}
+
+/* 덱 카드 상세 보기 — API에서 풀 데이터 조회 */
+function showDeckCardDetail(krName,imgUrl,deckIdx){
+  var mb=document.getElementById('mb');
+  /* 영문명 찾기: KR2EN(포켓몬) → _KR2EN_PRESET(트레이너스/에너지) */
+  var enName=KR2EN[krName]||_KR2EN_PRESET[krName]||krName;
+  /* 로딩 표시 */
+  mb.innerHTML='<div class="loading"><div class="spinner"></div><p>'+esc(krName)+' 정보 불러오는 중...</p></div>';
+  /* API 검색 */
+  fetch('https://api.pokemontcg.io/v2/cards?q=name:"'+encodeURIComponent(enName)+'"&pageSize=1&select=id,name,images,rarity,set,hp,types,supertype,subtypes,attacks,abilities,rules,weaknesses,resistances,retreatCost')
+  .then(function(r){return r.json();}).then(function(data){
+    if(data.data&&data.data.length){
+      var c=data.data[0];
+      var img=(c.images&&c.images.large)||(c.images&&c.images.small)||imgUrl||'';
+      var r=c.rarity||'',s=c.set?c.set.name:'-',hp=c.hp||'-',ty=c.types?c.types.join(', '):'-',st=c.supertype||'-';
+      var sub=c.subtypes?c.subtypes.join(', '):'';
+      var h='';
+      if(img)h+='<img src="'+esc(img)+'" style="max-width:220px;display:block;margin:0 auto 10px;border-radius:12px">';
+      h+='<h3 style="text-align:center;font-family:var(--ft);color:var(--accent)">'+esc(krName)+'</h3>';
+      h+='<div class="dr"><span class="dl">\uC601\uBB38\uBA85</span><span>'+esc(c.name)+'</span></div>';
+      h+='<div class="dr"><span class="dl">\uCE74\uB4DC\uD0C0\uC785</span><span>'+esc(st)+(sub?' \xB7 '+esc(sub):'')+'</span></div>';
+      if(st==='Pok\u00e9mon'){
+        h+='<div class="dr"><span class="dl">\uD0C0\uC785</span><span>'+esc(ty)+'</span></div>';
+        h+='<div class="dr"><span class="dl">HP</span><span>'+esc(hp)+'</span></div>';
+      }
+      h+='<div class="dr"><span class="dl">\uC138\uD2B8</span><span>'+esc(s)+'</span></div>';
+      if(r)h+='<div class="dr"><span class="dl">\uD76C\uC18C\uB3C4</span><span>'+esc(r)+'</span></div>';
+      /* 특성 */
+      if(c.abilities&&c.abilities.length){
+        h+='<div style="margin-top:10px;padding:8px;background:rgba(61,192,236,.06);border-radius:10px">';
+        c.abilities.forEach(function(a){h+='<div style="margin-bottom:6px"><span style="font-family:var(--ft);font-size:.85rem;color:var(--accent)">\u2728 '+esc(a.name)+'</span> <span style="font-size:.65rem;color:var(--text3)">['+esc(a.type)+']</span><p style="font-size:.75rem;color:var(--text2);margin-top:2px">'+esc(a.text||'')+'</p></div>';});
+        h+='</div>';
+      }
+      /* 기술 */
+      if(c.attacks&&c.attacks.length){
+        h+='<div style="margin-top:10px">';
+        c.attacks.forEach(function(a){
+          var cost=a.cost?a.cost.join(''):'';
+          var ci2=cost.replace(/Grass/g,'\uD83C\uDF3F').replace(/Fire/g,'\uD83D\uDD25').replace(/Water/g,'\uD83D\uDCA7').replace(/Lightning/g,'\u26A1').replace(/Psychic/g,'\uD83D\uDD2E').replace(/Fighting/g,'\uD83D\uDC4A').replace(/Darkness/g,'\uD83C\uDF19').replace(/Metal/g,'\u2699\uFE0F').replace(/Colorless/g,'\u26AA');
+          h+='<div style="padding:8px;background:var(--card);border:1px solid var(--cb);border-radius:8px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--ft);font-size:.85rem">'+esc(ci2)+' '+esc(a.name)+'</span>';
+          if(a.damage)h+='<span style="font-family:var(--ft);font-size:1rem;color:var(--red)">'+esc(a.damage)+'</span>';
+          h+='</div>';if(a.text)h+='<p style="font-size:.72rem;color:var(--text2);margin-top:4px">'+esc(a.text)+'</p>';h+='</div>';
+        });
+        h+='</div>';
+      }
+      /* 효과 텍스트 (트레이너스/에너지) */
+      if(c.rules&&c.rules.length){
+        h+='<div style="margin-top:10px;padding:8px;background:rgba(255,203,5,.08);border-radius:10px">';
+        c.rules.forEach(function(r){h+='<p style="font-size:.75rem;color:var(--text2);margin-bottom:4px">'+esc(r)+'</p>';});
+        h+='</div>';
+      }
+      /* 약점/저항력/후퇴 */
+      if(st==='Pok\u00e9mon'){
+        var wk=c.weaknesses?c.weaknesses.map(function(w){return w.type+' '+w.value;}).join(', '):'-';
+        var rs=c.resistances?c.resistances.map(function(r){return r.type+' '+r.value;}).join(', '):'-';
+        var rc=c.retreatCost?c.retreatCost.length:0;
+        h+='<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;font-size:.75rem;color:var(--text2)"><span>\uC57D\uC810: '+esc(wk)+'</span><span>\uC800\uD56D: '+esc(rs)+'</span><span>\uD6C4\uD1F4: '+rc+'</span></div>';
+      }
+      h+='<button class="btn btn-g" onclick="showDeckDetail('+deckIdx+')" style="margin-top:14px;width:100%">\u2190 \uB371 \uBAA9\uB85D\uC73C\uB85C</button>';
+      mb.innerHTML=h;
+    }else{
+      /* API 결과 없음 — 이미지라도 표시 */
+      var h2='';
+      if(imgUrl)h2+='<img src="'+esc(imgUrl)+'" style="max-width:220px;display:block;margin:0 auto 10px;border-radius:12px">';
+      h2+='<h3 style="text-align:center;font-family:var(--ft);color:var(--accent)">'+esc(krName)+'</h3>';
+      h2+='<p style="text-align:center;font-size:.78rem;color:var(--text3);margin-top:8px">\uC0C1\uC138 \uC815\uBCF4\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC5B4\uC694</p>';
+      h2+='<button class="btn btn-g" onclick="showDeckDetail('+deckIdx+')" style="margin-top:14px;width:100%">\u2190 \uB371 \uBAA9\uB85D\uC73C\uB85C</button>';
+      mb.innerHTML=h2;
+    }
+  }).catch(function(){
+    var h3='';
+    if(imgUrl)h3+='<img src="'+esc(imgUrl)+'" style="max-width:220px;display:block;margin:0 auto 10px;border-radius:12px">';
+    h3+='<h3 style="text-align:center;font-family:var(--ft);color:var(--accent)">'+esc(krName)+'</h3>';
+    h3+='<p style="text-align:center;font-size:.78rem;color:var(--text3);margin-top:8px">\uB124\uD2B8\uC6CC\uD06C \uC624\uB958</p>';
+    h3+='<button class="btn btn-g" onclick="showDeckDetail('+deckIdx+')" style="margin-top:14px;width:100%">\u2190 \uB371 \uBAA9\uB85D\uC73C\uB85C</button>';
+    mb.innerHTML=h3;
+  });
 }
 function rmFromDeck(di,ci){
   var c=D.decks[di].cards[ci];
