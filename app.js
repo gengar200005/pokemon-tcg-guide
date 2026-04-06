@@ -651,8 +651,10 @@ var _scanModel=(function(){
       for(var i=0;i<GEMINI_MODELS.length;i++){
         if(GEMINI_MODELS[i].id===saved)return saved;
       }
+      /* 저장된 값이 현재 목록에 없음 → 기본값으로 리셋 */
+      try{localStorage.removeItem('ptcg-scan-model');}catch(e){}
     }
-    return GEMINI_MODELS[0].id;
+    return GEMINI_MODELS[0].id;  /* 기본: flash-lite (가장 빠름) */
   }catch(e){return GEMINI_MODELS[0].id;}
 })();
 var _scanStream=null,_scanFacing='environment',_scanCount=0,_scanCandidates=[],_scanSelectedIdx=-1,_scanShotDataUrl='';
@@ -748,10 +750,26 @@ function captureCard(){
   cw=Math.max(10,Math.min(vW-cx,cw));ch=Math.max(10,Math.min(vH-cy,ch));
 
   var canvas=document.getElementById('scanCanvas');
-  canvas.width=Math.round(cw);canvas.height=Math.round(ch);
+  /* 이미지 크기 최적화: OCR 최적 해상도 확보 
+     - 최소 720px 너비 보장 (작으면 업스케일)
+     - 최대 1280px 제한 (크면 다운사이즈, 토큰 절약) */
+  var targetW=Math.round(cw),targetH=Math.round(ch);
+  var MIN_W=720,MAX_W=1280;
+  if(targetW<MIN_W){
+    var upScale=MIN_W/targetW;
+    targetW=MIN_W;targetH=Math.round(ch*upScale);
+  }else if(targetW>MAX_W){
+    var downScale=MAX_W/targetW;
+    targetW=MAX_W;targetH=Math.round(ch*downScale);
+  }
+  canvas.width=targetW;canvas.height=targetH;
   var ctx=canvas.getContext('2d');
-  ctx.drawImage(v,cx,cy,cw,ch,0,0,canvas.width,canvas.height);
-  var dataUrl=canvas.toDataURL('image/jpeg',0.85);
+  /* 고품질 보간 */
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality='high';
+  ctx.drawImage(v,cx,cy,cw,ch,0,0,targetW,targetH);
+  /* JPEG 품질 0.92 — OCR에 충분하면서 파일 크기 합리적 */
+  var dataUrl=canvas.toDataURL('image/jpeg',0.92);
   _scanShotDataUrl=dataUrl;
 
   /* 결과 패널 오픈 + 로딩 */
@@ -843,18 +861,20 @@ function showFullDebug(){
 
 function recognizeCard(dataUrl){
   var b64=dataUrl.split(',')[1];
-  var prompt='You are a Pokemon TCG card recognizer. Look at this image of a Pokemon card and identify it. '+
-    'The card text may be in Korean, Japanese, or English — but ALWAYS return the Pokemon name in English. '+
-    'Return ONLY a JSON object (no markdown, no code fences) with this exact structure:\n'+
-    '{"candidates":[{"name":"<English Pokemon name only, e.g. Charizard>","set":"<set name or code if visible>","number":"<card number if visible, e.g. 003/021>","confidence":"high|medium|low"}]}\n'+
-    'For mega/ex/VMAX/VSTAR variants include the suffix (e.g. "Mega Gengar ex", "Charizard VMAX"). '+
-    'Provide up to 3 candidates ordered by confidence. If you cannot read the card at all, return {"candidates":[]}.';
+  /* 간결한 프롬프트 — Gemini가 더 안정적으로 JSON을 생성 */
+  var prompt='Identify this Pokemon TCG card. Return JSON only:\n'+
+    '{"candidates":[{"name":"English Pokemon name","set":"set name/code","number":"001/100","confidence":"high|medium|low"}]}\n'+
+    'Rules:\n'+
+    '- Name MUST be English (e.g. Charizard, not 리자몽/リザードン)\n'+
+    '- Include suffix for variants: ex, EX, V, VMAX, VSTAR, GX, Mega\n'+
+    '- Up to 3 candidates, highest confidence first\n'+
+    '- Empty candidates[] if unreadable';
   var body={
     contents:[{parts:[{text:prompt},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
     generationConfig:{
-      temperature:0.1,
+      temperature:0,
       responseMimeType:'application/json',
-      maxOutputTokens:512,
+      maxOutputTokens:256,
       thinkingConfig:{thinkingBudget:0}  /* 2.5 시리즈 추론 모드 OFF → 즉시 응답 */
     }
   };
