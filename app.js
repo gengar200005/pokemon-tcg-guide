@@ -603,10 +603,13 @@ function normalizeCsvRow(row){
 
 /* pokemontcg.io 단일 카드 조회 (set+number) */
 function fetchPokemonTcgIo(setCode,cardNumber){
-  var key=setCode.toLowerCase()+'-'+cardNumber;
+  /* pokemontcg.io는 number를 0 패딩 없이 저장 ("50", not "050")
+     단, "012VL" 같은 알파벳 포함 번호는 패딩 제거하면 안 됨 */
+  var num=cardNumber;
+  if(/^\d+$/.test(num))num=String(parseInt(num,10));  /* 순수 숫자만 0 제거 */
+  var key=setCode.toLowerCase()+'-'+num;
   if(_ptcgCache[key])return Promise.resolve(_ptcgCache[key]);
-  /* 일부 세트 코드는 매핑 필요할 수 있음. 일단 직접 시도 */
-  var q='set.id:'+setCode.toLowerCase()+' number:'+cardNumber;
+  var q='set.id:'+setCode.toLowerCase()+' number:'+num;
   var url='https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q)+'&pageSize=1&select=id,name,images,types,hp,rarity,supertype,subtypes,set';
   return fetch(url).then(function(r){return r.json();}).then(function(data){
     if(data&&data.data&&data.data.length>0){
