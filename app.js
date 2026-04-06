@@ -884,8 +884,10 @@ function recognizeCard(dataUrl){
   return callGeminiWithRetry(body,tryModels,0);
 }
 
-function callGeminiWithRetry(body,models,modelIdx){
+function callGeminiWithRetry(body,models,modelIdx,edgeRetry){
   if(modelIdx>=models.length)return Promise.reject(new Error('모든 모델이 실패했어요'));
+  if(!edgeRetry)edgeRetry=0;
+  var MAX_EDGE_RETRY=3;  /* Cloudflare 엣지 라우팅 재시도 최대 횟수 */
   var model=models[modelIdx];
   var url=WORKER_URL;
   /* Worker는 body에 model 필드로 모델명을 받음 */
@@ -897,7 +899,9 @@ function callGeminiWithRetry(body,models,modelIdx){
     var el=document.querySelector('#scanResultBody .scan-status p');
     if(!el){clearInterval(timer);return;}
     var sec=((Date.now()-startT)/1000).toFixed(1);
-    el.textContent=model+' 분석중... ('+sec+'초)'+(modelIdx>0?' (폴백)':'');
+    var suffix=modelIdx>0?' (폴백)':'';
+    if(edgeRetry>0)suffix+=' (엣지 재시도 '+edgeRetry+'/'+MAX_EDGE_RETRY+')';
+    el.textContent=model+' 분석중... ('+sec+'초)'+suffix;
   },100);
   if(statusEl)statusEl.textContent=model+' 분석중... (0.0초)'+(modelIdx>0?' (폴백)':'');
   return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(workerBody)})
@@ -906,20 +910,36 @@ function callGeminiWithRetry(body,models,modelIdx){
       if(r.ok)return r.json();
       return r.text().then(function(t){
         var code=r.status,em='',rawJson=null;
-        try{rawJson=JSON.parse(t);em=(rawJson.error&&rawJson.error.message)||'';}catch(e){em=t;}
+        try{rawJson=JSON.parse(t);em=(rawJson.error&&rawJson.error.message)||rawJson.error||'';}catch(e){em=t;}
+        if(typeof em==='object')em=JSON.stringify(em);
         /* 디버그 정보 전역 저장 */
         window._lastGeminiError={status:code,model:model,rawBody:t,errorMessage:em,parsed:rawJson,url:url};
         console.error('[Gemini Error]',window._lastGeminiError);
+        /* Cloudflare 엣지 라우팅 문제 감지 → 같은 모델로 재시도
+           - 400 "User location is not supported" (HKG 등 차단 엣지에서 Gemini가 거부)
+           - 503 "Edge region not supported" (Worker가 사전 차단) */
+        var isEdgeIssue=(code===400&&em.indexOf('location')>=0&&em.indexOf('not supported')>=0)||
+                       (code===503&&(em.indexOf('Edge region')>=0||(rawJson&&rawJson._retry)));
+        if(isEdgeIssue&&edgeRetry<MAX_EDGE_RETRY){
+          console.warn('[Edge Retry '+(edgeRetry+1)+'/'+MAX_EDGE_RETRY+'] '+code+' → 재시도');
+          /* 짧은 지연 후 재시도 (Cloudflare가 다른 엣지로 라우팅하도록 유도) */
+          return new Promise(function(resolve){
+            setTimeout(function(){
+              resolve(callGeminiWithRetry(body,models,modelIdx,edgeRetry+1));
+            },300+edgeRetry*200);  /* 300ms, 500ms, 700ms */
+          });
+        }
         /* 429 Quota 또는 503 Overloaded → 다음 모델로 폴백 */
         if((code===429||code===503)&&modelIdx+1<models.length){
           console.warn('['+model+'] '+code+' → '+models[modelIdx+1]+'로 폴백');
-          return callGeminiWithRetry(body,models,modelIdx+1);
+          return callGeminiWithRetry(body,models,modelIdx+1,0);
         }
         /* 에러 메시지 정리 - 전체 메시지 보존 */
         var msg;
         if(code===429)msg='[429 쿼터 초과] '+em;
         else if(code===400){
           if(em.indexOf('API key not valid')>=0||em.indexOf('API_KEY_INVALID')>=0)msg='[400 API 키 무효] Cloudflare Worker의 GEMINI_API_KEY Secret을 다시 확인하세요.\n\n원본: '+em;
+          else if(em.indexOf('location')>=0)msg='[400 엣지 라우팅 문제] Cloudflare가 Gemini가 차단하는 엣지(예: HKG)로 계속 라우팅 중입니다. Smart Placement를 켜거나 잠시 후 다시 시도하세요.\n\n원본: '+em;
           else msg='[400 잘못된 요청] '+em;
         }
         else if(code===401)msg='[401 인증 실패] API 키가 없거나 만료됨\n\n원본: '+em;
