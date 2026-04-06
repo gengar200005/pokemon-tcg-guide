@@ -181,8 +181,18 @@ function authAction(){
   if(currentUser){if(confirm('\uB85C\uADF8\uC544\uC6C3 \uD558\uC2DC\uACA0\uC5B4\uC694?'))auth.signOut();}
   else{
     var provider=new firebase.auth.GoogleAuthProvider();
-    if(isStandalone()){auth.signInWithRedirect(provider);}
-    else{auth.signInWithPopup(provider).then(function(r){if(r&&r.user){currentUser=r.user;updateAuthUI();loadFromCloud();}}).catch(function(e){if(e.code==='auth/popup-blocked')auth.signInWithRedirect(provider);});}
+    /* Safari ITP 호환: popup 우선 시도, 실패 시 redirect 폴백 */
+    auth.signInWithPopup(provider)
+      .then(function(r){if(r&&r.user){currentUser=r.user;updateAuthUI();loadFromCloud();}})
+      .catch(function(e){
+        /* popup 차단/미지원 환경 → redirect로 폴백 */
+        if(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'||e.code==='auth/operation-not-supported-in-this-environment'){
+          try{auth.signInWithRedirect(provider);}catch(e2){alert('\uB85C\uADF8\uC778 \uC2E4\uD328: '+e2.message);}
+        }else{
+          console.error('[Auth Error]',e);
+          alert('\uB85C\uADF8\uC778 \uC2E4\uD328: '+(e.message||e.code||'\uC54C \uC218 \uC5C6\uB294 \uC624\uB958'));
+        }
+      });
   }
 }
 function updateAuthUI(){
@@ -194,7 +204,13 @@ function updateAuthUI(){
 }
 if(auth){
   auth.onAuthStateChanged(function(u){var w=!currentUser;currentUser=u;updateAuthUI();if(u&&w)loadFromCloud();});
-  auth.getRedirectResult().then(function(r){if(r&&r.user){currentUser=r.user;updateAuthUI();loadFromCloud();}}).catch(function(){});
+  auth.getRedirectResult().then(function(r){if(r&&r.user){currentUser=r.user;updateAuthUI();loadFromCloud();}}).catch(function(e){
+    /* Safari ITP로 sessionStorage 파티션되어 initial state 못 찾는 경우 */
+    if(e&&e.message&&e.message.indexOf('missing initial state')>=0){
+      console.warn('[Auth] Redirect state lost (Safari ITP). Clearing stale state.');
+      try{sessionStorage.clear();}catch(se){}
+    }
+  });
   function pollAuth(){if(auth.currentUser&&!currentUser){currentUser=auth.currentUser;updateAuthUI();loadFromCloud();}else if(auth.currentUser)updateAuthUI();}
   setTimeout(pollAuth,500);setTimeout(pollAuth,1500);setTimeout(pollAuth,3000);setTimeout(pollAuth,5000);setTimeout(pollAuth,8000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(pollAuth,300);});
