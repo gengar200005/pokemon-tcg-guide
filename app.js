@@ -620,13 +620,11 @@ function rRare(){
    📸 Scan Module — Dragon Shield Style
    Gemini Vision API → pokemontcg.io
    ═══════════════════════════════════════════════ */
-var GEMINI_API_KEY='AIzaSyDAUJteT645yuLYM-W_bOfp6N5u9ONtnVU'; /* ← 여기에 Gemini API 키 입력 */
+var WORKER_URL='https://pokemon-tcg-proxy.sieun8475.workers.dev'; /* Cloudflare Worker 프록시 (API 키는 서버에 보관) */
 /* 사용 가능한 Gemini 비전 모델 (쿼터 널널한 순 → 성능 좋은 순) */
 var GEMINI_MODELS=[
   {id:'gemini-2.5-flash-lite',label:'2.5 Flash-Lite',desc:'⚡ 가장 빠름 · 카드 OCR 충분'},
-  {id:'gemini-flash-lite-latest',label:'Flash-Lite Latest',desc:'⚡ 최신 빠른 버전'},
   {id:'gemini-2.5-flash',label:'2.5 Flash',desc:'균형 (thinking off)'},
-  {id:'gemini-2.0-flash-001',label:'2.0 Flash (001)',desc:'2.0 안정 버전'},
   {id:'gemini-2.5-pro',label:'2.5 Pro',desc:'정확·느림'}
 ];
 var _scanModel=(function(){
@@ -828,28 +826,6 @@ function showFullDebug(){
 }
 
 function recognizeCard(dataUrl){
-  if(!GEMINI_API_KEY||GEMINI_API_KEY==='YOUR_GEMINI_API_KEY_HERE'){
-    return Promise.reject(new Error('Gemini API 키가 설정되지 않았어요. app.js의 GEMINI_API_KEY를 수정하세요.'));
-  }
-  /* 키 진단 정보 저장 */
-  var k=GEMINI_API_KEY;
-  var keyDiag={
-    length:k.length,
-    first6:k.substring(0,6),
-    last4:k.substring(k.length-4),
-    startsWithAIza:k.indexOf('AIza')===0,
-    hasSpace:/\s/.test(k),
-    hasQuote:k.indexOf("'")>=0||k.indexOf('"')>=0,
-    hasNewline:k.indexOf('\n')>=0||k.indexOf('\r')>=0,
-    charCodes:[]
-  };
-  /* 앞 4자리와 뒤 4자리의 char code (보이지 않는 문자 탐지) */
-  for(var i=0;i<Math.min(4,k.length);i++)keyDiag.charCodes.push(k.charCodeAt(i));
-  keyDiag.charCodes.push('...');
-  for(var j=Math.max(0,k.length-4);j<k.length;j++)keyDiag.charCodes.push(k.charCodeAt(j));
-  window._keyDiagnostic=keyDiag;
-  console.log('[Key Diagnostic]',keyDiag);
-  
   var b64=dataUrl.split(',')[1];
   var prompt='You are a Pokemon TCG card recognizer. Look at this image of a Pokemon card and identify it. '+
     'The card text may be in Korean, Japanese, or English — but ALWAYS return the Pokemon name in English. '+
@@ -875,7 +851,9 @@ function recognizeCard(dataUrl){
 function callGeminiWithRetry(body,models,modelIdx){
   if(modelIdx>=models.length)return Promise.reject(new Error('모든 모델이 실패했어요'));
   var model=models[modelIdx];
-  var url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(GEMINI_API_KEY);
+  var url=WORKER_URL;
+  /* Worker는 body에 model 필드로 모델명을 받음 */
+  var workerBody=Object.assign({model:model},body);
   /* 로딩 메시지 + 경과 시간 카운터 */
   var statusEl=document.querySelector('#scanResultBody .scan-status p');
   var startT=Date.now();
@@ -886,7 +864,7 @@ function callGeminiWithRetry(body,models,modelIdx){
     el.textContent=model+' 분석중... ('+sec+'초)'+(modelIdx>0?' (폴백)':'');
   },100);
   if(statusEl)statusEl.textContent=model+' 분석중... (0.0초)'+(modelIdx>0?' (폴백)':'');
-  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(workerBody)})
     .then(function(r){
       clearInterval(timer);
       if(r.ok)return r.json();
@@ -894,7 +872,7 @@ function callGeminiWithRetry(body,models,modelIdx){
         var code=r.status,em='',rawJson=null;
         try{rawJson=JSON.parse(t);em=(rawJson.error&&rawJson.error.message)||'';}catch(e){em=t;}
         /* 디버그 정보 전역 저장 */
-        window._lastGeminiError={status:code,model:model,rawBody:t,errorMessage:em,parsed:rawJson,url:url.replace(/key=[^&]+/,'key=***')};
+        window._lastGeminiError={status:code,model:model,rawBody:t,errorMessage:em,parsed:rawJson,url:url};
         console.error('[Gemini Error]',window._lastGeminiError);
         /* 429 Quota 또는 503 Overloaded → 다음 모델로 폴백 */
         if((code===429||code===503)&&modelIdx+1<models.length){
@@ -905,7 +883,7 @@ function callGeminiWithRetry(body,models,modelIdx){
         var msg;
         if(code===429)msg='[429 쿼터 초과] '+em;
         else if(code===400){
-          if(em.indexOf('API key not valid')>=0||em.indexOf('API_KEY_INVALID')>=0)msg='[400 API 키 무효] 키 값이 잘못되었거나 오타입니다. app.js의 GEMINI_API_KEY를 다시 확인하세요.\n\n원본: '+em;
+          if(em.indexOf('API key not valid')>=0||em.indexOf('API_KEY_INVALID')>=0)msg='[400 API 키 무효] Cloudflare Worker의 GEMINI_API_KEY Secret을 다시 확인하세요.\n\n원본: '+em;
           else msg='[400 잘못된 요청] '+em;
         }
         else if(code===401)msg='[401 인증 실패] API 키가 없거나 만료됨\n\n원본: '+em;
