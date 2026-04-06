@@ -220,10 +220,62 @@ if(auth){
 var SK='ptcg-v3',D;
 try{D=JSON.parse(localStorage.getItem(SK));}catch(e){}
 if(!D||!D.cards)D={cards:[],decks:[]};
-function sv(){try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){}if(currentUser){if(_syncTimeout)clearTimeout(_syncTimeout);_syncTimeout=setTimeout(saveToCloud,1000);}}
+/* 로컬 dirty flag (cloud보다 새로운 변경 있는지) */
+var _localDirty=false,_lastLocalSave=0;
+
+/* ═══ 데이터 마이그레이션 (기존 카드 → 신규 스키마) ═══ */
+function migrateCards(){
+  var changed=false;
+  for(var i=0;i<D.cards.length;i++){
+    var c=D.cards[i];
+    if(typeof c.quantity!=='number'){c.quantity=1;changed=true;}
+    if(!c.source){c.source='manual';changed=true;}
+    /* cardId 없는 기존 카드는 fallback id 부여 */
+    if(!c.cardId){
+      c.cardId='manual-'+((c.name||c.krName||c.id||'unknown').toLowerCase().replace(/\s+/g,'-'));
+      changed=true;
+    }
+    /* 폴더 미설정 → "직접 추가" */
+    if(!c.folder){c.folder='\uC9C1\uC811 \uCD94\uAC00';c.folderKey='manual';changed=true;}
+  }
+  return changed;
+}
+if(migrateCards())try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){}
+
+function sv(){
+  _localDirty=true;_lastLocalSave=Date.now();
+  try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){}
+  if(currentUser){if(_syncTimeout)clearTimeout(_syncTimeout);_syncTimeout=setTimeout(saveToCloud,1000);}
+}
 function esc(s){if(typeof s!='string')return'';var o='',i,c;for(i=0;i<s.length;i++){c=s.charCodeAt(i);if(c===38)o+='&amp;';else if(c===34)o+='&quot;';else if(c===39)o+='&#39;';else if(c===60)o+='&lt;';else if(c===62)o+='&gt;';else o+=s[i];}return o;}
-function saveToCloud(){if(!currentUser||!db)return;db.collection('users').doc(currentUser.uid).set({cards:D.cards,decks:D.decks,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),displayName:currentUser.displayName||'',email:currentUser.email||''}).catch(function(){});}
-function loadFromCloud(){if(!currentUser||!db)return;db.collection('users').doc(currentUser.uid).get().then(function(doc){if(doc.exists){var d=doc.data();if(d.cards&&d.cards.length>=D.cards.length){D.cards=d.cards;D.decks=d.decks||[];}else if(D.cards.length>0)saveToCloud();try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){}try{rColl();}catch(e){}try{rDecks();}catch(e){}try{rRare();}catch(e){}}else if(D.cards.length>0)saveToCloud();}).catch(function(){});}
+function saveToCloud(){
+  if(!currentUser||!db)return;
+  db.collection('users').doc(currentUser.uid).set({
+    cards:D.cards,decks:D.decks,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    localTs:_lastLocalSave,
+    displayName:currentUser.displayName||'',email:currentUser.email||''
+  }).then(function(){_localDirty=false;}).catch(function(){});
+}
+function loadFromCloud(){
+  if(!currentUser||!db)return;
+  db.collection('users').doc(currentUser.uid).get().then(function(doc){
+    if(doc.exists){
+      var d=doc.data();
+      /* 클라우드 데이터 유효한지 + 로컬에 dirty 변경 없는지 확인 */
+      var cloudHasData=d.cards&&d.cards.length>0;
+      if(cloudHasData&&!_localDirty){
+        D.cards=d.cards;D.decks=d.decks||[];
+        if(migrateCards())_localDirty=true;
+        try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){}
+        try{rColl();}catch(e){}try{rDecks();}catch(e){}try{rRare();}catch(e){}
+      }else if(D.cards.length>0&&_localDirty){
+        /* 로컬에 dirty 변경 있으면 클라우드 덮어쓰기 */
+        saveToCloud();
+      }
+    }else if(D.cards.length>0)saveToCloud();
+  }).catch(function(){});
+}
 
 /* ═══════════════════════════════════════════════
    TODO #1: 도감 → 포켓몬 전용 검색
@@ -322,18 +374,528 @@ function showModal(c,kr){
   h+='</div>';
   document.getElementById('mb').innerHTML=h;document.getElementById('mo').className='mo show';
 }
-function addCard(cd){var dup=false;for(var i=0;i<D.cards.length;i++){if(D.cards[i].id===cd.id){dup=true;break;}}if(!dup){D.cards.push({id:cd.id,name:cd.name,krName:cd.krName,rarity:cd.rarity,set:cd.set,hp:cd.hp,types:cd.types,supertype:cd.supertype,image:cd.image});sv();}closeM();}
+function addCard(cd){
+  /* cardId 기반 매칭으로 중복 검사 */
+  var existingIdx=-1;
+  var newCardId=cd.cardId||('manual-'+((cd.name||cd.krName||cd.id||'').toLowerCase().replace(/\s+/g,'-')));
+  for(var i=0;i<D.cards.length;i++){if(D.cards[i].cardId===newCardId||D.cards[i].id===cd.id){existingIdx=i;break;}}
+  if(existingIdx>=0){
+    D.cards[existingIdx].quantity=(D.cards[existingIdx].quantity||1)+1;
+  }else{
+    D.cards.push({
+      id:cd.id,cardId:newCardId,
+      name:cd.name,krName:cd.krName,
+      rarity:cd.rarity,set:cd.set,hp:cd.hp,types:cd.types,supertype:cd.supertype,image:cd.image,
+      source:cd.source||'manual',
+      folder:cd.folder||'\uC9C1\uC811 \uCD94\uAC00',
+      folderKey:cd.folderKey||'manual',
+      quantity:cd.quantity||1,
+      updatedAt:Date.now()
+    });
+  }
+  sv();closeM();try{rColl();}catch(e){}
+}
 function rmCard(id){D.cards=D.cards.filter(function(c){return c.id!==id;});sv();closeM();try{rColl();}catch(e){}}
 
 /* ═══ Collection ═══ */
+var _collFolderFilter='all';
+var _USD_TO_KRW=1450;
+
 function rColl(){
-  var f=document.getElementById('cf').value;
+  ensureCollHeader();
+  var rf=document.getElementById('cf');
+  var f=rf?rf.value:'all';
   var fc=f==='all'?D.cards:f==='Ultra'?D.cards.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.indexOf('ultra')>=0||r.indexOf('secret')>=0||r.indexOf('vmax')>=0||r.indexOf('vstar')>=0||r.indexOf('illustration')>=0;}):D.cards.filter(function(c){return(c.rarity||'').indexOf(f)>=0;});
-  document.getElementById('cc').textContent=fc.length+'/'+D.cards.length+'\uC7A5';
-  if(!fc.length){document.getElementById('cg').innerHTML='';document.getElementById('ce').style.display='block';return;}
-  document.getElementById('ce').style.display='none';
-  var h='';fc.forEach(function(c){h+='<div class="cc">';if(c.image)h+='<img src="'+esc(c.image)+'" loading="lazy">';h+='<div class="n">'+esc(c.krName||c.name)+'</div><div class="m">'+esc(c.rarity||'')+'</div><button class="x" onclick="rmCard(\''+esc(c.id)+'\')">\xD7</button></div>';});
-  document.getElementById('cg').innerHTML=h;
+  if(_collFolderFilter!=='all'){
+    fc=fc.filter(function(c){return(c.folderKey||'manual')===_collFolderFilter;});
+  }
+  var totalQty=0;D.cards.forEach(function(c){totalQty+=(c.quantity||1);});
+  var filteredQty=0;fc.forEach(function(c){filteredQty+=(c.quantity||1);});
+  var ccEl=document.getElementById('cc');
+  if(ccEl)ccEl.textContent=filteredQty+'/'+totalQty+'\uC7A5';
+  updateCollValue();
+  renderFolderChips();
+  if(!fc.length){
+    var cg=document.getElementById('cg');if(cg)cg.innerHTML='';
+    var ce=document.getElementById('ce');if(ce)ce.style.display='block';
+    return;
+  }
+  var ce2=document.getElementById('ce');if(ce2)ce2.style.display='none';
+  var h='';fc.forEach(function(c){
+    var qty=c.quantity||1;
+    var srcBadge='';
+    if(c.source==='dragon_shield')srcBadge='<span class="src-bd ds" title="Dragon Shield">\uD83D\uDCE4</span>';
+    else if(c.source==='claude_scan')srcBadge='<span class="src-bd cs" title="Scan">\uD83D\uDCF8</span>';
+    else srcBadge='<span class="src-bd mn" title="\uC9C1\uC811 \uCD94\uAC00">\u270B</span>';
+    var qtyBadge=qty>1?'<span class="qty-bd">x'+qty+'</span>':'';
+    h+='<div class="cc">';
+    if(c.image)h+='<img src="'+esc(c.image)+'" loading="lazy">';
+    h+=srcBadge+qtyBadge;
+    h+='<div class="n">'+esc(c.krName||c.name)+'</div><div class="m">'+esc(c.rarity||'')+'</div>';
+    h+='<button class="x" onclick="rmCard(\''+esc(c.id)+'\')">\xD7</button></div>';
+  });
+  var cg2=document.getElementById('cg');if(cg2)cg2.innerHTML=h;
+}
+
+function ensureCollHeader(){
+  if(document.getElementById('coll-header-ext'))return;
+  var panel=document.getElementById('p-coll');
+  if(!panel)return;
+  var ext=document.createElement('div');
+  ext.id='coll-header-ext';
+  ext.style.cssText='margin-bottom:12px';
+  ext.innerHTML=
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">'+
+      '<button class="btn btn-p btn-s" onclick="document.getElementById(\'csv-file-input\').click()" style="font-size:.78rem">\uD83D\uDCE4 Dragon Shield \uAC00\uC838\uC624\uAE30</button>'+
+      '<input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" onchange="handleCsvFileSelect(this)">'+
+      '<span id="coll-value" style="font-size:.78rem;color:var(--accent);font-family:var(--ft)"></span>'+
+    '</div>'+
+    '<div id="folder-chips" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px"></div>'+
+    '<style>'+
+      '.cc{position:relative}'+
+      '.src-bd{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.65);color:#fff;border-radius:4px;padding:1px 4px;font-size:.62rem;z-index:2}'+
+      '.src-bd.ds{background:rgba(255,128,0,.85)}'+
+      '.src-bd.cs{background:rgba(0,150,136,.85)}'+
+      '.qty-bd{position:absolute;top:4px;right:24px;background:#3dc0ec;color:#fff;border-radius:4px;padding:1px 5px;font-size:.65rem;font-family:var(--ft);z-index:2}'+
+      '.fchip{padding:4px 10px;font-size:.72rem;border-radius:14px;border:1px solid var(--cb);background:transparent;color:var(--text2);cursor:pointer;font-family:var(--ft)}'+
+      '.fchip.active{background:var(--accent);color:#fff;border-color:var(--accent)}'+
+    '</style>';
+  panel.insertBefore(ext,panel.firstChild);
+}
+
+function renderFolderChips(){
+  var el=document.getElementById('folder-chips');
+  if(!el)return;
+  var folderMap={};
+  D.cards.forEach(function(c){
+    var k=c.folderKey||'manual';
+    var label=c.folder||(k==='manual'?'\uC9C1\uC811 \uCD94\uAC00':k);
+    if(!folderMap[k])folderMap[k]={label:label,count:0};
+    folderMap[k].count+=(c.quantity||1);
+  });
+  var keys=Object.keys(folderMap);
+  if(keys.length<=1){el.innerHTML='';return;}
+  var totalQty=0;D.cards.forEach(function(c){totalQty+=(c.quantity||1);});
+  var h='<button class="fchip'+(_collFolderFilter==='all'?' active':'')+'" onclick="setFolderFilter(\'all\')">\uC804\uCCB4 ('+totalQty+')</button>';
+  keys.sort().forEach(function(k){
+    var f=folderMap[k];
+    h+='<button class="fchip'+(_collFolderFilter===k?' active':'')+'" onclick="setFolderFilter(\''+esc(k)+'\')">'+esc(f.label)+' ('+f.count+')</button>';
+  });
+  el.innerHTML=h;
+}
+function setFolderFilter(k){_collFolderFilter=k;rColl();}
+
+function updateCollValue(){
+  var el=document.getElementById('coll-value');
+  if(!el)return;
+  var totalUsd=0;
+  D.cards.forEach(function(c){
+    var p=parseFloat(c.priceMarket||c.priceMid||c.priceBought||0)||0;
+    totalUsd+=p*(c.quantity||1);
+  });
+  if(totalUsd<=0){el.textContent='';return;}
+  var krw=Math.round(totalUsd*_USD_TO_KRW);
+  el.textContent='\uCD1D $'+totalUsd.toFixed(2)+' (\uC57D '+krw.toLocaleString('ko-KR')+'\uC6D0)';
+}
+
+/* ═══════════════════════════════════════════════
+   📤 CSV Import Module — Dragon Shield → 마스터 앱
+   ═══════════════════════════════════════════════ */
+
+/* 폴더명 한국어 매핑 (확장 가능: localStorage에 추가 매핑 저장) */
+var FOLDER_LABEL_MAP={'gaon':'\uAC00\uC628\uC774 \uCE74\uB4DC'};
+(function(){
+  try{
+    var extra=localStorage.getItem('folder-map-v1');
+    if(extra){var p=JSON.parse(extra);for(var k in p)FOLDER_LABEL_MAP[k]=p[k];}
+  }catch(e){}
+})();
+function getFolderLabel(key){return FOLDER_LABEL_MAP[key]||key||'\uC9C1\uC811 \uCD94\uAC00';}
+
+/* pokemontcg.io 응답 캐시 (localStorage) */
+var PTCG_CACHE_KEY='ptcgio-cache-v1';
+var _ptcgCache={};
+try{_ptcgCache=JSON.parse(localStorage.getItem(PTCG_CACHE_KEY)||'{}');}catch(e){_ptcgCache={};}
+function savePtcgCache(){try{localStorage.setItem(PTCG_CACHE_KEY,JSON.stringify(_ptcgCache));}catch(e){}}
+
+/* pokeapi.co 한국어 이름 캐시 */
+var POKEAPI_CACHE_KEY='pokeapi-kr-cache-v1';
+var _pokeapiCache={};
+try{_pokeapiCache=JSON.parse(localStorage.getItem(POKEAPI_CACHE_KEY)||'{}');}catch(e){_pokeapiCache={};}
+function savePokeapiCache(){try{localStorage.setItem(POKEAPI_CACHE_KEY,JSON.stringify(_pokeapiCache));}catch(e){}}
+
+/* SHA-256 해시 (SubtleCrypto) */
+function sha256Hex(str){
+  if(!window.crypto||!window.crypto.subtle)return Promise.resolve('nohash-'+Date.now());
+  var buf=new TextEncoder().encode(str);
+  return crypto.subtle.digest('SHA-256',buf).then(function(h){
+    var arr=Array.from(new Uint8Array(h));
+    return arr.map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  });
+}
+
+/* CSV 파서 — Dragon Shield 포맷 전용 (RFC 4180 호환) */
+function parseDragonShieldCsv(text){
+  /* UTF-8 BOM 제거 */
+  if(text.charCodeAt(0)===0xFEFF)text=text.substring(1);
+  /* "sep=," 라인 스킵 */
+  text=text.replace(/^\s*"?sep=,?"?\s*\r?\n/,'');
+  var lines=text.split(/\r?\n/);
+  if(lines.length<2)throw new Error('CSV \uD30C\uC77C\uC774 \uBE44\uC5B4\uC788\uC5B4\uC694');
+  /* 헤더 파싱 */
+  var headers=parseCsvLine(lines[0]);
+  var rows=[];
+  for(var i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    var fields=parseCsvLine(lines[i]);
+    var row={};
+    for(var j=0;j<headers.length;j++)row[headers[j]]=(fields[j]||'').trim();
+    rows.push(row);
+  }
+  return rows;
+}
+
+/* CSV 한 줄 파싱 (따옴표 + 쉼표 처리) */
+function parseCsvLine(line){
+  var out=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var ch=line[i];
+    if(inQ){
+      if(ch==='"'){
+        if(line[i+1]==='"'){cur+='"';i++;}
+        else inQ=false;
+      }else cur+=ch;
+    }else{
+      if(ch===','){out.push(cur);cur='';}
+      else if(ch==='"')inQ=true;
+      else cur+=ch;
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+/* Dragon Shield row → 정규화된 카드 객체 */
+function normalizeCsvRow(row){
+  var num=(row['Card Number']||'').split('/')[0].trim();
+  var setCode=(row['Set Code']||'').trim();
+  var folderKey=(row['Folder Name']||'').trim()||'manual';
+  return {
+    folderKey:folderKey,
+    folder:getFolderLabel(folderKey),
+    quantity:parseInt(row['Quantity']||'1',10)||1,
+    nameEn:(row['Card Name']||'').trim(),
+    setCode:setCode,
+    setName:(row['Set Name']||'').trim(),
+    cardNumber:num,
+    cardNumberRaw:(row['Card Number']||'').trim(),
+    condition:row['Condition']||'',
+    printing:row['Printing']||'',
+    language:row['Language']||'',
+    priceBought:parseFloat(row['Price Bought']||'0')||0,
+    dateBought:row['Date Bought']||'',
+    priceLow:parseFloat(row['LOW']||'0')||0,
+    priceMid:parseFloat(row['MID']||'0')||0,
+    priceMarket:parseFloat(row['MARKET']||'0')||0,
+    cardId:setCode&&num?(setCode+'-'+num):null
+  };
+}
+
+/* pokemontcg.io 단일 카드 조회 (set+number) */
+function fetchPokemonTcgIo(setCode,cardNumber){
+  var key=setCode.toLowerCase()+'-'+cardNumber;
+  if(_ptcgCache[key])return Promise.resolve(_ptcgCache[key]);
+  /* 일부 세트 코드는 매핑 필요할 수 있음. 일단 직접 시도 */
+  var q='set.id:'+setCode.toLowerCase()+' number:'+cardNumber;
+  var url='https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q)+'&pageSize=1&select=id,name,images,types,hp,rarity,supertype,subtypes,set';
+  return fetch(url).then(function(r){return r.json();}).then(function(data){
+    if(data&&data.data&&data.data.length>0){
+      var c=data.data[0];
+      var result={
+        id:c.id,name:c.name,
+        image:(c.images&&(c.images.small||c.images.large))||'',
+        imageHires:(c.images&&c.images.large)||'',
+        types:c.types||[],hp:c.hp||'',rarity:c.rarity||'',
+        supertype:c.supertype||'',subtypes:c.subtypes||[],
+        setName:(c.set&&c.set.name)||''
+      };
+      _ptcgCache[key]=result;savePtcgCache();
+      return result;
+    }
+    /* 실패 시 negative 캐시 */
+    _ptcgCache[key]={_failed:true};savePtcgCache();
+    return {_failed:true};
+  }).catch(function(){return {_failed:true};});
+}
+
+/* pokeapi.co 한국어 이름 조회 (영문 포켓몬 이름 → 한국어) */
+function fetchPokemonKrName(englishName){
+  /* 1. 내장 EN2KR 먼저 (가장 빠름) */
+  if(EN2KR[englishName])return Promise.resolve(EN2KR[englishName]);
+  /* 2. 캐시 */
+  var key=englishName.toLowerCase();
+  if(_pokeapiCache[key]!==undefined)return Promise.resolve(_pokeapiCache[key]||null);
+  /* 3. 접미사 분리: "Charizard ex" → "Charizard" */
+  var base=englishName.replace(/\s*(ex|EX|V|VMAX|VSTAR|GX|Mega|MEGA|LV\.?\s?X)$/,'').trim();
+  if(EN2KR[base])return Promise.resolve(EN2KR[base]);
+  /* 4. pokeapi 조회 (소문자, 스페이스→하이픈) */
+  var slug=base.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  if(!slug){_pokeapiCache[key]=null;savePokeapiCache();return Promise.resolve(null);}
+  return fetch('https://pokeapi.co/api/v2/pokemon-species/'+slug).then(function(r){
+    if(!r.ok)throw new Error('not found');
+    return r.json();
+  }).then(function(data){
+    var krName=null;
+    if(data.names){
+      for(var i=0;i<data.names.length;i++){
+        if(data.names[i].language&&data.names[i].language.name==='ko'){krName=data.names[i].name;break;}
+      }
+    }
+    _pokeapiCache[key]=krName||null;savePokeapiCache();
+    return krName;
+  }).catch(function(){_pokeapiCache[key]=null;savePokeapiCache();return null;});
+}
+
+/* CSV 파일 선택 → import 워크플로우 시작 */
+function handleCsvFileSelect(input){
+  var f=input.files&&input.files[0];
+  if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var text=e.target.result;
+    /* 파일 선택 input 리셋 (같은 파일 재선택 가능) */
+    input.value='';
+    startCsvImport(text,f.name);
+  };
+  reader.onerror=function(){alert('\uD30C\uC77C \uC77D\uAE30 \uC2E4\uD328');input.value='';};
+  reader.readAsText(f,'UTF-8');
+}
+
+/* Import 메인 워크플로우 */
+function startCsvImport(text,fileName){
+  var rows;
+  try{rows=parseDragonShieldCsv(text);}
+  catch(e){alert('CSV \uD30C\uC2F1 \uC2E4\uD328: '+e.message);return;}
+  if(!rows.length){alert('CSV\uC5D0 \uCE74\uB4DC\uAC00 \uC5C6\uC5B4\uC694');return;}
+
+  /* 파일 해시 + 중복 import 감지 */
+  sha256Hex(text).then(function(hash){
+    /* Firestore imports 컬렉션에서 동일 해시 확인 */
+    checkPriorImport(hash).then(function(prior){
+      var proceed=true;
+      if(prior){
+        proceed=confirm('\u26A0\uFE0F \uC774 \uD30C\uC77C\uC740 \uC774\uBBF8 '+formatRelativeTime(prior.importedAt)+'\uC5D0 \uAC00\uC838\uC654\uC5B4\uC694.\n('+(prior.fileName||'')+', '+(prior.cardCount||0)+'\uC7A5)\n\n\uB2E4\uC2DC \uAC00\uC838\uC62C\uAE4C\uC694? (\uC218\uB7C9\uC740 \uB36E\uC5B4\uC4F0\uAE30 \uB429\uB2C8\uB2E4)');
+      }
+      if(!proceed)return;
+      runCsvImport(rows,hash,fileName);
+    });
+  });
+}
+
+/* Firestore imports 컬렉션에서 동일 해시 import 검색 */
+function checkPriorImport(hash){
+  if(!currentUser||!db)return Promise.resolve(null);
+  return db.collection('users').doc(currentUser.uid).collection('imports').doc(hash).get()
+    .then(function(doc){return doc.exists?doc.data():null;})
+    .catch(function(){return null;});
+}
+
+/* 진행 모달 표시 */
+function showImportProgress(msg,pct){
+  var mb=document.getElementById('mb'),mo=document.getElementById('mo');
+  if(!mb||!mo)return;
+  var bar=pct!=null?'<div style="background:var(--cb);border-radius:8px;height:8px;overflow:hidden;margin-top:10px"><div style="background:var(--accent);height:100%;width:'+pct+'%;transition:width .2s"></div></div>':'';
+  mb.innerHTML='<h3 style="margin:0 0 10px">\uD83D\uDCE4 Dragon Shield \uAC00\uC838\uC624\uAE30</h3><p style="font-size:.85rem;color:var(--text2)">'+esc(msg)+'</p>'+bar;
+  mo.className='mo show';
+}
+
+/* 실제 import 실행 */
+function runCsvImport(rows,fileHash,fileName){
+  showImportProgress('CSV \uD30C\uC2F1 \uC644\uB8CC. '+rows.length+'\uC7A5 \uCC98\uB9AC \uC2DC\uC791...',5);
+  var normalized=rows.map(normalizeCsvRow);
+
+  /* 1. 기존 카드 인덱싱 (cardId 기준) */
+  var existingByCardId={};
+  D.cards.forEach(function(c,idx){
+    if(c.cardId)existingByCardId[c.cardId]=idx;
+  });
+
+  var results={added:[],updated:[],untouched:[],failed:[]};
+  var i=0;
+
+  function processNext(){
+    if(i>=normalized.length){
+      /* 완료 */
+      finishCsvImport(results,fileHash,fileName,normalized.length);
+      return;
+    }
+    var csvCard=normalized[i];
+    var pct=Math.round(((i+1)/normalized.length)*90)+5;
+    showImportProgress((i+1)+'/'+normalized.length+' \uCC98\uB9AC \uC911... ('+esc(csvCard.nameEn)+')',pct);
+
+    if(!csvCard.cardId){
+      results.failed.push({name:csvCard.nameEn,reason:'\uC138\uD2B8/\uBC88\uD638 \uC5C6\uC74C'});
+      i++;processNext();return;
+    }
+
+    var existIdx=existingByCardId[csvCard.cardId];
+    if(existIdx!==undefined){
+      /* 이미 있음 → 수량 덮어쓰기 */
+      var ec=D.cards[existIdx];
+      var oldQty=ec.quantity||1;
+      var newQty=csvCard.quantity;
+      /* 가격/source/folder 업데이트 */
+      ec.quantity=newQty;
+      ec.priceMarket=csvCard.priceMarket;
+      ec.priceLow=csvCard.priceLow;
+      ec.priceMid=csvCard.priceMid;
+      ec.priceBought=csvCard.priceBought;
+      ec.dateBought=csvCard.dateBought;
+      ec.folder=csvCard.folder;
+      ec.folderKey=csvCard.folderKey;
+      ec.source='dragon_shield';
+      ec.csvFileHash=fileHash;
+      ec.updatedAt=Date.now();
+      if(oldQty!==newQty){
+        results.updated.push({name:ec.krName||ec.name,oldQty:oldQty,newQty:newQty});
+      }else{
+        results.untouched.push(csvCard.cardId);
+      }
+      i++;setTimeout(processNext,5);
+    }else{
+      /* 신규 카드 → pokemontcg.io 조회 */
+      fetchPokemonTcgIo(csvCard.setCode,csvCard.cardNumber).then(function(meta){
+        if(meta&&!meta._failed){
+          /* 한국어 이름 조회 (포켓몬만) */
+          var enrichKr=meta.supertype==='Pok\u00e9mon'?fetchPokemonKrName(csvCard.nameEn):Promise.resolve(null);
+          enrichKr.then(function(krName){
+            var newCard={
+              id:meta.id,
+              cardId:csvCard.cardId,
+              name:meta.name||csvCard.nameEn,
+              krName:krName||null,
+              rarity:meta.rarity||'',
+              set:meta.setName||csvCard.setName,
+              hp:meta.hp||'',
+              types:meta.types||[],
+              supertype:meta.supertype||'',
+              image:meta.image||'',
+              imageHires:meta.imageHires||'',
+              source:'dragon_shield',
+              folder:csvCard.folder,
+              folderKey:csvCard.folderKey,
+              quantity:csvCard.quantity,
+              setCode:csvCard.setCode,
+              setName:csvCard.setName,
+              cardNumber:csvCard.cardNumber,
+              priceLow:csvCard.priceLow,
+              priceMid:csvCard.priceMid,
+              priceMarket:csvCard.priceMarket,
+              priceBought:csvCard.priceBought,
+              dateBought:csvCard.dateBought,
+              importedAt:Date.now(),
+              updatedAt:Date.now(),
+              csvFileHash:fileHash
+            };
+            D.cards.push(newCard);
+            existingByCardId[csvCard.cardId]=D.cards.length-1;
+            results.added.push({name:krName||csvCard.nameEn,cardId:csvCard.cardId});
+            i++;setTimeout(processNext,30); /* API rate limit 완화 */
+          });
+        }else{
+          /* 조회 실패 → 기본 정보만 저장 */
+          var fallback={
+            id:'csv-'+csvCard.cardId,
+            cardId:csvCard.cardId,
+            name:csvCard.nameEn,
+            krName:null,
+            rarity:'',set:csvCard.setName,hp:'',types:[],supertype:'',image:'',
+            source:'dragon_shield',
+            folder:csvCard.folder,folderKey:csvCard.folderKey,
+            quantity:csvCard.quantity,
+            setCode:csvCard.setCode,setName:csvCard.setName,cardNumber:csvCard.cardNumber,
+            priceLow:csvCard.priceLow,priceMid:csvCard.priceMid,priceMarket:csvCard.priceMarket,
+            priceBought:csvCard.priceBought,dateBought:csvCard.dateBought,
+            importedAt:Date.now(),updatedAt:Date.now(),csvFileHash:fileHash,
+            _lookupFailed:true
+          };
+          D.cards.push(fallback);
+          existingByCardId[csvCard.cardId]=D.cards.length-1;
+          results.added.push({name:csvCard.nameEn,cardId:csvCard.cardId,failed:true});
+          results.failed.push({name:csvCard.nameEn,reason:'pokemontcg.io \uC870\uD68C \uC2E4\uD328'});
+          i++;setTimeout(processNext,30);
+        }
+      });
+    }
+  }
+  processNext();
+}
+
+/* Import 완료 처리 */
+function finishCsvImport(results,fileHash,fileName,total){
+  /* 저장 */
+  sv();
+  /* Firestore imports 컬렉션 기록 */
+  if(currentUser&&db){
+    db.collection('users').doc(currentUser.uid).collection('imports').doc(fileHash).set({
+      fileHash:fileHash,
+      fileName:fileName||'unknown.csv',
+      importedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      cardCount:total,
+      added:results.added.length,
+      updated:results.updated.length,
+      untouched:results.untouched.length,
+      failed:results.failed.length
+    }).catch(function(){});
+  }
+  /* 결과 모달 */
+  var totalUsd=0;
+  D.cards.forEach(function(c){
+    var p=parseFloat(c.priceMarket||c.priceMid||c.priceBought||0)||0;
+    totalUsd+=p*(c.quantity||1);
+  });
+  var krw=Math.round(totalUsd*_USD_TO_KRW);
+
+  var mb=document.getElementById('mb');
+  if(mb){
+    var h='<h3 style="margin:0 0 12px">\uD83D\uDCE4 \uAC00\uC838\uC624\uAE30 \uC644\uB8CC</h3>';
+    h+='<div style="font-size:.88rem;line-height:1.8">';
+    h+='<div>\u2705 \uC0C8\uB85C \uCD94\uAC00: <strong>'+results.added.length+'\uC7A5</strong></div>';
+    h+='<div>\uD83D\uDD04 \uC218\uB7C9 \uC5C5\uB370\uC774\uD2B8: <strong>'+results.updated.length+'\uC7A5</strong></div>';
+    if(results.updated.length>0&&results.updated.length<=10){
+      h+='<div style="margin-left:18px;font-size:.78rem;color:var(--text2)">';
+      results.updated.forEach(function(u){
+        h+='&nbsp;\u00B7 '+esc(u.name)+': '+u.oldQty+'\uC7A5 \u2192 '+u.newQty+'\uC7A5<br>';
+      });
+      h+='</div>';
+    }
+    h+='<div>\uD83D\uDCCC \uADF8\uB300\uB85C: <strong>'+results.untouched.length+'\uC7A5</strong></div>';
+    if(results.failed.length>0){
+      h+='<div>\u26A0\uFE0F \uC870\uD68C \uC2E4\uD328: <strong>'+results.failed.length+'\uC7A5</strong> <span style="font-size:.7rem;color:var(--text3)">(\uAE30\uBCF8 \uC815\uBCF4\uB85C \uC800\uC7A5\uB428)</span></div>';
+    }
+    h+='</div>';
+    h+='<div style="margin-top:14px;padding:10px;background:rgba(61,192,236,.08);border-radius:10px;font-family:var(--ft);font-size:.92rem;color:var(--accent)">';
+    h+='\uD83D\uDCB0 \uCD1D \uCEEC\uB809\uC158 \uAC00\uCE58: $'+totalUsd.toFixed(2)+' (\uC57D '+krw.toLocaleString('ko-KR')+'\uC6D0)';
+    h+='</div>';
+    h+='<div class="acts" style="margin-top:14px"><button class="btn btn-p" onclick="closeM();rColl();">\uD655\uC778</button></div>';
+    mb.innerHTML=h;
+  }
+  toast('\uAC00\uC838\uC624\uAE30 \uC644\uB8CC: \u2795'+results.added.length+' / \uD83D\uDD04'+results.updated.length,'#3dc0ec');
+}
+
+/* 상대 시간 표시 */
+function formatRelativeTime(ts){
+  if(!ts)return '\uC774\uC804';
+  var d=ts.toDate?ts.toDate():new Date(ts);
+  var diff=Date.now()-d.getTime();
+  var min=Math.floor(diff/60000);
+  if(min<1)return '\uBC29\uAE08 \uC804';
+  if(min<60)return min+'\uBD84 \uC804';
+  var hr=Math.floor(min/60);
+  if(hr<24)return hr+'\uC2DC\uAC04 \uC804';
+  var day=Math.floor(hr/24);
+  if(day<30)return day+'\uC77C \uC804';
+  return d.toLocaleDateString('ko-KR');
 }
 
 /* ═══ Quick Add ═══ */
@@ -634,28 +1196,26 @@ function rRare(){
 
 /* ═══════════════════════════════════════════════
    📸 Scan Module — Dragon Shield Style
-   Gemini Vision API → pokemontcg.io
+   Claude Haiku Vision API → pokemontcg.io
    ═══════════════════════════════════════════════ */
 var WORKER_URL='https://pokemon-tcg-proxy.sieun8475.workers.dev'; /* Cloudflare Worker 프록시 (API 키는 서버에 보관) */
-/* 사용 가능한 Gemini 비전 모델 (쿼터 널널한 순 → 성능 좋은 순) */
-var GEMINI_MODELS=[
-  {id:'gemini-2.5-flash-lite',label:'2.5 Flash-Lite',desc:'⚡ 가장 빠름 · 카드 OCR 충분'},
-  {id:'gemini-2.5-flash',label:'2.5 Flash',desc:'균형 (thinking off)'},
-  {id:'gemini-2.5-pro',label:'2.5 Pro',desc:'정확·느림'}
+/* Claude 비전 모델 (단일) */
+var CLAUDE_MODELS=[
+  {id:'claude-haiku-4-5',label:'Claude Haiku 4.5',desc:'\u26A1 \uBE60\uB984 \xB7 \uACE0\uC815\uD655 \xB7 \uC9C0\uC5ED \uC81C\uD55C \uC5C6\uC74C'}
 ];
+/* 호환을 위해 GEMINI_MODELS alias 유지 (다른 함수에서 참조 가능성) */
+var GEMINI_MODELS=CLAUDE_MODELS;
 var _scanModel=(function(){
   try{
     var saved=localStorage.getItem('ptcg-scan-model');
-    /* 저장된 모델이 현재 목록에 있는지 확인 */
     if(saved){
-      for(var i=0;i<GEMINI_MODELS.length;i++){
-        if(GEMINI_MODELS[i].id===saved)return saved;
+      for(var i=0;i<CLAUDE_MODELS.length;i++){
+        if(CLAUDE_MODELS[i].id===saved)return saved;
       }
-      /* 저장된 값이 현재 목록에 없음 → 기본값으로 리셋 */
       try{localStorage.removeItem('ptcg-scan-model');}catch(e){}
     }
-    return GEMINI_MODELS[0].id;  /* 기본: flash-lite (가장 빠름) */
-  }catch(e){return GEMINI_MODELS[0].id;}
+    return CLAUDE_MODELS[0].id;
+  }catch(e){return CLAUDE_MODELS[0].id;}
 })();
 var _scanStream=null,_scanFacing='environment',_scanCount=0,_scanCandidates=[],_scanSelectedIdx=-1,_scanShotDataUrl='';
 
@@ -820,9 +1380,9 @@ function showScanResultError(msg){
 }
 
 function copyDebugInfo(){
-  var info=window._lastGeminiError||{note:'디버그 정보 없음'};
-  var keyDiag=window._keyDiagnostic||{note:'키 진단 없음'};
-  var text='=== Gemini 디버그 정보 ===\n'+
+  var info=window._lastClaudeError||window._lastGeminiError||{note:'\uB514\uBC84\uADF8 \uC815\uBCF4 \uC5C6\uC74C'};
+  var keyDiag=window._keyDiagnostic||{note:'\uD0A4 \uC9C4\uB2E8 \uC5C6\uC74C'};
+  var text='=== Claude \uB514\uBC84\uADF8 \uC815\uBCF4 ===\n'+
     'Status: '+(info.status||'?')+'\n'+
     'Model: '+(info.model||'?')+'\n'+
     'URL: '+(info.url||'?')+'\n'+
@@ -833,7 +1393,7 @@ function copyDebugInfo(){
     'UA: '+navigator.userAgent+'\n'+
     'Location: '+location.href;
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){toast('✅ 클립보드에 복사됨','#27ae60');}).catch(function(){fallbackCopy(text);});
+    navigator.clipboard.writeText(text).then(function(){toast('\u2705 \uD074\uB9BD\uBCF4\uB4DC\uC5D0 \uBCF5\uC0AC\uB428','#27ae60');}).catch(function(){fallbackCopy(text);});
   }else fallbackCopy(text);
 }
 
@@ -841,28 +1401,28 @@ function fallbackCopy(text){
   var ta=document.createElement('textarea');
   ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
   document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy');toast('✅ 복사됨','#27ae60');}
-  catch(e){toast('복사 실패 - 수동 확인하세요','#e74c3c');}
+  try{document.execCommand('copy');toast('\u2705 \uBCF5\uC0AC\uB428','#27ae60');}
+  catch(e){toast('\uBCF5\uC0AC \uC2E4\uD328 - \uC218\uB3D9 \uD655\uC778\uD558\uC138\uC694','#e74c3c');}
   ta.remove();
 }
 
 function showFullDebug(){
-  var info=window._lastGeminiError||{note:'디버그 정보 없음'};
+  var info=window._lastClaudeError||window._lastGeminiError||{note:'\uB514\uBC84\uADF8 \uC815\uBCF4 \uC5C6\uC74C'};
   var rb=document.getElementById('scanResultBody');
   var h='<img class="sr-shot" src="'+_scanShotDataUrl+'">';
   h+='<div style="background:#1a1a1a;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:12px;margin-bottom:12px;max-height:400px;overflow-y:auto">';
-  h+='<div style="color:#ffcb05;font-size:.78rem;font-family:var(--ft);margin-bottom:8px">🔍 전체 디버그 정보</div>';
+  h+='<div style="color:#ffcb05;font-size:.78rem;font-family:var(--ft);margin-bottom:8px">\uD83D\uDD0D \uC804\uCCB4 \uB514\uBC84\uADF8 \uC815\uBCF4</div>';
   h+='<pre style="color:#ccc;font-size:.68rem;line-height:1.4;white-space:pre-wrap;word-break:break-all;font-family:monospace;margin:0;user-select:text;-webkit-user-select:text">'+esc(JSON.stringify(info,null,2))+'</pre>';
   h+='</div>';
-  h+='<button class="btn btn-s btn-p" style="width:100%;margin-bottom:8px" onclick="copyDebugInfo()">📋 이 정보 복사하기</button>';
-  h+='<button class="btn btn-s btn-g" style="width:100%;background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2)" onclick="retakeScan()">← 돌아가기</button>';
+  h+='<button class="btn btn-s btn-p" style="width:100%;margin-bottom:8px" onclick="copyDebugInfo()">\uD83D\uDCCB \uC774 \uC815\uBCF4 \uBCF5\uC0AC\uD558\uAE30</button>';
+  h+='<button class="btn btn-s btn-g" style="width:100%;background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.2)" onclick="retakeScan()">\u2190 \uB3CC\uC544\uAC00\uAE30</button>';
   rb.innerHTML=h;
 }
 
 function recognizeCard(dataUrl){
   var b64=dataUrl.split(',')[1];
-  /* 간결한 프롬프트 — Gemini가 더 안정적으로 JSON을 생성 */
-  var prompt='Identify this Pokemon TCG card. Return JSON only:\n'+
+  /* Anthropic Messages API 포맷 */
+  var prompt='Identify this Pokemon TCG card. Return JSON only (no markdown, no code fences):\n'+
     '{"candidates":[{"name":"English Pokemon name","set":"set name/code","number":"001/100","confidence":"high|medium|low"}]}\n'+
     'Rules:\n'+
     '- Name MUST be English (e.g. Charizard, not 리자몽/リザードン)\n'+
@@ -870,104 +1430,89 @@ function recognizeCard(dataUrl){
     '- Up to 3 candidates, highest confidence first\n'+
     '- Empty candidates[] if unreadable';
   var body={
-    contents:[{parts:[{text:prompt},{inline_data:{mime_type:'image/jpeg',data:b64}}]}],
-    generationConfig:{
-      temperature:0,
-      responseMimeType:'application/json',
-      maxOutputTokens:256,
-      thinkingConfig:{thinkingBudget:0}  /* 2.5 시리즈 추론 모드 OFF → 즉시 응답 */
-    }
+    model:_scanModel,
+    max_tokens:512,
+    messages:[{
+      role:'user',
+      content:[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+        {type:'text',text:prompt}
+      ]
+    }]
   };
-  /* 현재 모델 → 실패 시 lite로 폴백 순서 */
-  var tryModels=[_scanModel];
-  if(_scanModel!==GEMINI_MODELS[0].id)tryModels.push(GEMINI_MODELS[0].id);
-  return callGeminiWithRetry(body,tryModels,0);
+  return callClaudeWithRetry(body);
 }
 
-function callGeminiWithRetry(body,models,modelIdx,edgeRetry){
-  if(modelIdx>=models.length)return Promise.reject(new Error('모든 모델이 실패했어요'));
-  if(!edgeRetry)edgeRetry=0;
-  var MAX_EDGE_RETRY=3;  /* Cloudflare 엣지 라우팅 재시도 최대 횟수 */
-  var model=models[modelIdx];
+function callClaudeWithRetry(body,retry){
+  if(!retry)retry=0;
+  var MAX_RETRY=2;
+  var model=body.model||_scanModel;
   var url=WORKER_URL;
-  /* Worker는 body에 model 필드로 모델명을 받음 */
-  var workerBody=Object.assign({model:model},body);
   /* 로딩 메시지 + 경과 시간 카운터 */
-  var statusEl=document.querySelector('#scanResultBody .scan-status p');
   var startT=Date.now();
   var timer=setInterval(function(){
     var el=document.querySelector('#scanResultBody .scan-status p');
     if(!el){clearInterval(timer);return;}
     var sec=((Date.now()-startT)/1000).toFixed(1);
-    var suffix=modelIdx>0?' (폴백)':'';
-    if(edgeRetry>0)suffix+=' (엣지 재시도 '+edgeRetry+'/'+MAX_EDGE_RETRY+')';
-    el.textContent=model+' 분석중... ('+sec+'초)'+suffix;
+    var suffix=retry>0?' (\uC7AC\uC2DC\uB3C4 '+retry+'/'+MAX_RETRY+')':'';
+    el.textContent='Claude Haiku \uBD84\uC11D\uC911... ('+sec+'\uCD08)'+suffix;
   },100);
-  if(statusEl)statusEl.textContent=model+' 분석중... (0.0초)'+(modelIdx>0?' (폴백)':'');
-  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(workerBody)})
+  var statusEl=document.querySelector('#scanResultBody .scan-status p');
+  if(statusEl)statusEl.textContent='Claude Haiku \uBD84\uC11D\uC911... (0.0\uCD08)';
+
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){
       clearInterval(timer);
       if(r.ok)return r.json();
       return r.text().then(function(t){
         var code=r.status,em='',rawJson=null;
-        try{rawJson=JSON.parse(t);em=(rawJson.error&&rawJson.error.message)||rawJson.error||'';}catch(e){em=t;}
+        try{rawJson=JSON.parse(t);em=(rawJson.error&&(rawJson.error.message||rawJson.error))||rawJson.error||'';}catch(e){em=t;}
         if(typeof em==='object')em=JSON.stringify(em);
-        /* 디버그 정보 전역 저장 */
-        window._lastGeminiError={status:code,model:model,rawBody:t,errorMessage:em,parsed:rawJson,url:url};
-        console.error('[Gemini Error]',window._lastGeminiError);
-        /* Cloudflare 엣지 라우팅 문제 감지 → 같은 모델로 재시도
-           - 400 "User location is not supported" (HKG 등 차단 엣지에서 Gemini가 거부)
-           - 503 "Edge region not supported" (Worker가 사전 차단) */
-        var isEdgeIssue=(code===400&&em.indexOf('location')>=0&&em.indexOf('not supported')>=0)||
-                       (code===503&&(em.indexOf('Edge region')>=0||(rawJson&&rawJson._retry)));
-        if(isEdgeIssue&&edgeRetry<MAX_EDGE_RETRY){
-          console.warn('[Edge Retry '+(edgeRetry+1)+'/'+MAX_EDGE_RETRY+'] '+code+' → 재시도');
-          /* 짧은 지연 후 재시도 (Cloudflare가 다른 엣지로 라우팅하도록 유도) */
+        window._lastClaudeError={status:code,model:model,rawBody:t,errorMessage:em,parsed:rawJson,url:url};
+        console.error('[Claude Error]',window._lastClaudeError);
+        /* 5xx 일시적 오류 → 재시도 */
+        if((code===500||code===503||code===529)&&retry<MAX_RETRY){
+          console.warn('['+code+'] \uC7AC\uC2DC\uB3C4 '+(retry+1)+'/'+MAX_RETRY);
           return new Promise(function(resolve){
-            setTimeout(function(){
-              resolve(callGeminiWithRetry(body,models,modelIdx,edgeRetry+1));
-            },300+edgeRetry*200);  /* 300ms, 500ms, 700ms */
+            setTimeout(function(){resolve(callClaudeWithRetry(body,retry+1));},500+retry*500);
           });
         }
-        /* 429 Quota 또는 503 Overloaded → 다음 모델로 폴백 */
-        if((code===429||code===503)&&modelIdx+1<models.length){
-          console.warn('['+model+'] '+code+' → '+models[modelIdx+1]+'로 폴백');
-          return callGeminiWithRetry(body,models,modelIdx+1,0);
-        }
-        /* 에러 메시지 정리 - 전체 메시지 보존 */
         var msg;
-        if(code===429)msg='[429 쿼터 초과] '+em;
-        else if(code===400){
-          if(em.indexOf('API key not valid')>=0||em.indexOf('API_KEY_INVALID')>=0)msg='[400 API 키 무효] Cloudflare Worker의 GEMINI_API_KEY Secret을 다시 확인하세요.\n\n원본: '+em;
-          else if(em.indexOf('location')>=0)msg='[400 엣지 라우팅 문제] Cloudflare가 Gemini가 차단하는 엣지(예: HKG)로 계속 라우팅 중입니다. Smart Placement를 켜거나 잠시 후 다시 시도하세요.\n\n원본: '+em;
-          else msg='[400 잘못된 요청] '+em;
-        }
-        else if(code===401)msg='[401 인증 실패] API 키가 없거나 만료됨\n\n원본: '+em;
-        else if(code===403){
-          if(em.indexOf('referer')>=0||em.indexOf('referrer')>=0)msg='[403 Referrer 차단] Cloud Console에서 HTTP referrer 제한을 확인하세요. gengar200005.github.io/* 가 허용 목록에 있어야 합니다.\n\n원본: '+em;
-          else if(em.indexOf('API has not been used')>=0||em.indexOf('SERVICE_DISABLED')>=0)msg='[403 API 미활성화] Generative Language API가 비활성화되어 있습니다. Cloud Console에서 활성화하세요.\n\n원본: '+em;
-          else msg='[403 권한 거부] '+em;
-        }
-        else if(code===404)msg='[404 모델 없음] '+model+' 모델을 찾을 수 없습니다.\n\n원본: '+em;
-        else if(code===503)msg='[503 서버 과부하] 잠시 후 다시 시도\n\n원본: '+em;
+        if(code===401)msg='[401 \uC778\uC99D \uC2E4\uD328] Worker\uC758 ANTHROPIC_API_KEY Secret\uC744 \uD655\uC778\uD558\uC138\uC694.\n\n\uC6D0\uBCF8: '+em;
+        else if(code===429)msg='[429 \uC2A4\uB85C\uD2C0] \uC694\uCCAD\uC774 \uB108\uBB34 \uB9CE\uC544\uC694. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.\n\n\uC6D0\uBCF8: '+em;
+        else if(code===400)msg='[400 \uC798\uBABB\uB41C \uC694\uCCAD] '+em;
+        else if(code===403)msg='[403 \uAD8C\uD55C \uAC70\uBD80] '+em;
+        else if(code===404)msg='[404 \uC5D4\uB4DC\uD3EC\uC778\uD2B8 \uC5C6\uC74C] Worker URL\uC744 \uD655\uC778\uD558\uC138\uC694.';
+        else if(code>=500)msg='[\uC11C\uBC84 \uC624\uB958 '+code+'] Anthropic API \uC77C\uC2DC \uC624\uB958. \uC7A0\uC2DC \uD6C4 \uC7AC\uC2DC\uB3C4.\n\n\uC6D0\uBCF8: '+em;
         else msg='['+code+'] '+em;
         throw new Error(msg);
       });
     })
     .then(function(data){
-      if(!data)return null; /* 재귀 호출에서 이미 반환됨 */
-      var txt='';try{txt=data.candidates[0].content.parts[0].text;}catch(e){
-        /* 빈 응답도 디버그용 저장 */
-        window._lastGeminiError={status:'empty_response',model:model,rawData:data};
-        console.error('[Gemini Empty Response]',data);
-        throw new Error('[Gemini 빈 응답] candidates 없음\n\n응답: '+JSON.stringify(data).substring(0,200));
+      if(!data)return null;
+      /* Anthropic 응답: data.content[0].text */
+      var txt='';
+      try{
+        if(data.content&&data.content.length){
+          for(var i=0;i<data.content.length;i++){
+            if(data.content[i].type==='text'){txt=data.content[i].text;break;}
+          }
+        }
+      }catch(e){}
+      if(!txt){
+        window._lastClaudeError={status:'empty_response',model:model,rawData:data};
+        console.error('[Claude Empty Response]',data);
+        throw new Error('[\uBE48 \uC751\uB2F5] content[].text \uC5C6\uC74C\n\n\uC751\uB2F5: '+JSON.stringify(data).substring(0,200));
       }
       txt=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
-      var parsed;try{parsed=JSON.parse(txt);}catch(e){throw new Error('[JSON 파싱 실패]\n\n응답: '+txt.substring(0,150));}
-      if(!parsed.candidates||!parsed.candidates.length)throw new Error('카드를 인식하지 못했어요 (더 가까이, 밝은 곳에서 다시 시도)');
+      var parsed;try{parsed=JSON.parse(txt);}catch(e){throw new Error('[JSON \uD30C\uC2F1 \uC2E4\uD328]\n\n\uC751\uB2F5: '+txt.substring(0,150));}
+      if(!parsed.candidates||!parsed.candidates.length)throw new Error('\uCE74\uB4DC\uB97C \uC778\uC2DD\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694 (\uB354 \uAC00\uAE4C\uC774, \uBC1D\uC740 \uACF3\uC5D0\uC11C \uB2E4\uC2DC \uC2DC\uB3C4)');
       return parsed.candidates;
     });
 }
+
+/* 호환: 옛 함수명을 호출하는 코드가 있으면 그대로 동작 */
+function callGeminiWithRetry(body){return callClaudeWithRetry(body);}
 
 function friendlyQuotaMsg(rawMsg){
   /* Google 에러 메시지에서 쿼터 종류 파악 */
@@ -1050,20 +1595,39 @@ function selectScanCand(i){
 function confirmScanCard(){
   var c=_scanCandidates[_scanSelectedIdx];if(!c)return;
   var kr=EN2KR[c.name]||'';
+  /* set.id + number 조합으로 cardId 생성 (pokemontcg.io 형식과 일치) */
+  var setCode=(c.set&&(c.set.id||c.set.code)||'').toUpperCase();
+  var cardNum=c.number||'';
+  var newCardId=setCode&&cardNum?(setCode+'-'+cardNum):('scan-'+(c.id||Date.now()));
   var cd={
-    id:c.id,name:c.name,krName:kr,
+    id:c.id||newCardId,
+    cardId:newCardId,
+    name:c.name,krName:kr,
     rarity:c.rarity||'Unknown',
     set:c.set?c.set.name:'-',
     hp:c.hp||'-',types:c.types?c.types.join(', '):'-',
-    supertype:c.supertype||'Pokémon',
-    image:(c.images&&c.images.small)||''
+    supertype:c.supertype||'Pok\u00e9mon',
+    image:(c.images&&c.images.small)||'',
+    source:'claude_scan',
+    folder:'\uC9C1\uC811 \uCD94\uAC00',
+    folderKey:'manual',
+    quantity:1,
+    setCode:setCode,
+    cardNumber:cardNum,
+    updatedAt:Date.now()
   };
-  /* 중복 체크 후 추가 */
-  var dup=false;
-  for(var i=0;i<D.cards.length;i++){if(D.cards[i].id===cd.id){dup=true;break;}}
-  if(dup){toast('이미 카드함에 있어요!','#f39c12');}
-  else{D.cards.push(cd);sv();_scanCount++;updateScanCount();toast('✅ '+(kr||c.name)+' 추가!','#27ae60');}
-  /* 연속 촬영 모드로 복귀 */
+  /* addCard에 위임 (중복 시 수량 +1) */
+  var existingIdx=-1;
+  for(var i=0;i<D.cards.length;i++){if(D.cards[i].cardId===newCardId||D.cards[i].id===cd.id){existingIdx=i;break;}}
+  if(existingIdx>=0){
+    D.cards[existingIdx].quantity=(D.cards[existingIdx].quantity||1)+1;
+    sv();_scanCount++;updateScanCount();
+    toast('\u2795 '+(kr||c.name)+' (x'+D.cards[existingIdx].quantity+')','#3498db');
+  }else{
+    D.cards.push(cd);
+    sv();_scanCount++;updateScanCount();
+    toast('\u2705 '+(kr||c.name)+' \uCD94\uAC00!','#27ae60');
+  }
   retakeScan();
 }
 
@@ -1074,7 +1638,11 @@ function retakeScan(){
 }
 
 function updateScanCount(){
-  document.getElementById('scanCount').textContent=_scanCount+'장';
+  var el=document.getElementById('scanCount');
+  if(el){
+    var costKrw=Math.round(_scanCount*3.3);
+    el.textContent=_scanCount+'\uC7A5'+(_scanCount>0?' (\uC57D '+costKrw+'\uC6D0)':'');
+  }
 }
 
 function toast(msg,bg){
