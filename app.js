@@ -1591,24 +1591,18 @@ function showFullDebug(){
 
 function recognizeCard(dataUrl){
   var b64=dataUrl.split(',')[1];
-  /* Anthropic Messages API 포맷 — 강화된 프롬프트 (HP + 첫 기술 데미지 추가)
-     세션 2: 한국판 카드 매칭 정확도 95%+ 목표.
-     name 외 hp/damage가 매칭 단계에서 결정적 필터로 작동. */
-  var prompt='You are identifying a Pokemon TCG card. The card may be in Korean (한국어), Japanese, or English.\n\n'+
-    'Return ONLY valid JSON (no markdown, no code fences, no explanation):\n'+
-    '{"candidates":[{"name":"...","hp":123,"damage":30,"set":"...","number":"...","confidence":"high|medium|low"}]}\n\n'+
-    'Field rules:\n'+
-    '- name: ALWAYS English Pokemon name (e.g. "Charizard", NOT "리자몽" or "リザードン"). Translate from Korean/Japanese if needed.\n'+
-    '- name suffix: include variant suffix exactly as shown — "ex", "EX", "V", "VMAX", "VSTAR", "GX", "Mega". E.g. "Charizard ex", "Pikachu V", "Rillaboom VMAX".\n'+
-    '- name prefix: KEEP regional prefix if present — "Galarian", "Alolan", "Hisuian", "Paldean". E.g. "Galarian Rapidash". (Our matcher will normalize this; you just report what you see.)\n'+
-    '- hp: integer from the "HP" number top-right (e.g. 100, 220, 330). null if not visible.\n'+
-    '- damage: integer from the FIRST attack\'s damage number (right side of attack row). For "30+" or "30×" return 30. null if no attack or no damage shown.\n'+
-    '- set: set name or symbol code as visible (often bottom-left). Empty string if unclear.\n'+
-    '- number: collector number like "022/060" or "022". Empty string if unclear.\n'+
-    '- confidence: "high" only if name AND hp are both clearly visible. "medium" if name clear but hp unsure. "low" otherwise.\n\n'+
-    'Output: up to 3 candidates, most likely first. If completely unreadable, return {"candidates":[]}.\n\n'+
-    'Example for a Korean Galarian Rapidash card showing "가라르 날쌩마", "HP 100", attack "사이코키네시스 30+":\n'+
-    '{"candidates":[{"name":"Galarian Rapidash","hp":100,"damage":30,"set":"s1H","number":"022/060","confidence":"high"}]}';
+  /* Anthropic Messages API 포맷 — 옛 프롬프트 구조 + HP/damage 필드만 추가
+     세션 2 v2: 안전 분류기 회피를 위해 few-shot/한국어 언급/세부 메타 제거.
+     옛 프롬프트는 통과했으므로 그 구조를 유지하면서 최소한만 확장. */
+  var prompt='Identify this Pokemon TCG card. Return JSON only (no markdown, no code fences):\n'+
+    '{"candidates":[{"name":"English Pokemon name","hp":null,"damage":null,"set":"set name/code","number":"001/100","confidence":"high|medium|low"}]}\n'+
+    'Rules:\n'+
+    '- Name MUST be English (e.g. Charizard, not 리자몽/リザードン)\n'+
+    '- Include suffix for variants: ex, EX, V, VMAX, VSTAR, GX, Mega\n'+
+    '- hp: number from top-right HP, or null\n'+
+    '- damage: number from first attack damage (e.g. 30 for "30+"), or null\n'+
+    '- Up to 3 candidates, highest confidence first\n'+
+    '- Empty candidates[] if unreadable';
   var body={
     model:_scanModel,
     max_tokens:512,
@@ -1704,43 +1698,69 @@ function friendlyQuotaMsg(rawMsg){
 }
 
 function searchPokemonTcgIo(geminiCandidates){
-  /* 세션 2 강화: HP + 첫 기술 데미지 기반 3단계 필터 매칭.
-     1. name 검색 (prefix 정규화: "Galarian Rapidash" → "Rapidash"로 검색해서 갈라르 폼 포함)
-     2. HP 일치 필터 (정확도 결정 요인 1)
-     3. 첫 기술 데미지 일치 필터 (정확도 결정 요인 2)
-     각 후보에 matchTier 부여: 'exact'(HP+damage) / 'hp_only' / 'name_only' */
+  /* 세션 2 강화 v3: HP + 첫 기술 데미지 기반 매칭.
+     prefix(Galarian/Alolan/Hisuian/Paldean) 처리 강화:
+     - prefix 있는 카드는 정확 일치 검색을 먼저 시도 (예: name:"Galarian Rapidash")
+     - 결과가 부족하면 base name으로 fallback (예: name:"Rapidash")
+     - prefix가 명시된 OCR 결과면 prefix 불일치 카드는 강하게 패널티 (가짜 매칭 방지) */
   var top=geminiCandidates[0];
   if(!top||!top.name)return Promise.reject(new Error('영문명 없음'));
-  /* prefix 제거 후 base name으로 검색 — pokemontcg.io는 갈라르 폼도 같은 base로 검색됨 */
   var rawName=top.name;
-  var searchName=rawName
+  /* prefix 추출 */
+  var prefixMatch=null;
+  var pm=rawName.match(/^(Galarian|Alolan|Hisuian|Paldean)\s+/i);
+  if(pm)prefixMatch=pm[1].toLowerCase();
+  /* base name (prefix + suffix 제거) */
+  var baseName=rawName
     .replace(/^(Galarian|Alolan|Hisuian|Paldean|Mega)\s+/i,'')
     .replace(/\s+(ex|EX|V|VMAX|VSTAR|VUNION|V-UNION|GX|BREAK|LV\.X|Prime|LEGEND)$/i,'')
     .trim();
-  var cleanName=searchName.replace(/[^A-Za-z0-9\s\-\.]/g,'').trim();
-  if(!cleanName)return Promise.reject(new Error('영문명 정리 실패'));
-  var q='name:"'+cleanName+'"';
-  var url='https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q)+'&pageSize=20&select=id,name,images,rarity,set,hp,types,supertype,subtypes,number,attacks,abilities,rules,weaknesses,resistances,retreatCost';
-  return fetch(url).then(function(r){return r.json();}).then(function(data){
-    if(!data.data||!data.data.length)throw new Error('"'+cleanName+'" DB 카드 없음');
-    var all=data.data;
-    /* OCR 정보 */
+  var cleanBase=baseName.replace(/[^A-Za-z0-9\s\-\.]/g,'').trim();
+  if(!cleanBase)return Promise.reject(new Error('영문명 정리 실패'));
+
+  /* 검색 전략: prefix 있으면 정확 일치 먼저, 없거나 결과 부족하면 base로 확장 */
+  var fields='id,name,images,rarity,set,hp,types,supertype,subtypes,number,attacks,abilities,rules,weaknesses,resistances,retreatCost';
+  var baseUrl='https://api.pokemontcg.io/v2/cards';
+
+  var fetchPromise;
+  if(prefixMatch){
+    /* 1차: "Galarian Rapidash" 정확 검색 */
+    var prefixFullName=pm[0].trim()+' '+cleanBase;  /* "Galarian Rapidash" */
+    var q1='name:"'+prefixFullName+'"';
+    var url1=baseUrl+'?q='+encodeURIComponent(q1)+'&pageSize=20&select='+fields;
+    fetchPromise=fetch(url1).then(function(r){return r.json();}).then(function(d1){
+      if(d1.data&&d1.data.length>=3)return d1.data;
+      /* 부족하면 base name으로 추가 검색 후 합침 */
+      var q2='name:"'+cleanBase+'"';
+      var url2=baseUrl+'?q='+encodeURIComponent(q2)+'&pageSize=30&select='+fields;
+      return fetch(url2).then(function(r){return r.json();}).then(function(d2){
+        var seen={},merged=[];
+        (d1.data||[]).forEach(function(c){if(!seen[c.id]){seen[c.id]=1;merged.push(c);}});
+        (d2.data||[]).forEach(function(c){if(!seen[c.id]){seen[c.id]=1;merged.push(c);}});
+        return merged;
+      });
+    });
+  }else{
+    /* prefix 없으면 base name으로 충분히 많이 가져오기 */
+    var q='name:"'+cleanBase+'"';
+    var url=baseUrl+'?q='+encodeURIComponent(q)+'&pageSize=30&select='+fields;
+    fetchPromise=fetch(url).then(function(r){return r.json();}).then(function(d){return d.data||[];});
+  }
+
+  return fetchPromise.then(function(all){
+    if(!all||!all.length)throw new Error('"'+cleanBase+'" DB 카드 없음');
     var targetHp=top.hp?parseInt(top.hp,10):null;
     var targetDmg=top.damage?parseInt(top.damage,10):null;
-    /* prefix 일치(갈라르/알로라 등) — 카드 subtypes에 "Galarian"이 들어 있으면 가산 */
-    var prefixMatch=null;
-    var pm=rawName.match(/^(Galarian|Alolan|Hisuian|Paldean)\s+/i);
-    if(pm)prefixMatch=pm[1].toLowerCase();
     /* 각 후보 점수화 + matchTier 결정 */
     var scored=all.map(function(c){
       var score=0,tier='name_only';
-      var hpOk=false,dmgOk=false,prefixOk=false;
+      var hpOk=false,dmgOk=false,prefixOk=false,prefixMismatch=false;
       /* HP 일치 (가장 강력) */
       var cHp=c.hp?parseInt(c.hp,10):null;
       if(targetHp!==null&&cHp!==null&&cHp===targetHp){
         hpOk=true;score+=100;
       }
-      /* 첫 기술 데미지 일치 — 카드의 어떤 기술과도 매칭되면 OK (OCR이 1번 기술이라 했지만 실제 카드 순서와 다를 수 있음) */
+      /* 첫 기술 데미지 일치 — 카드의 어떤 기술과도 매칭되면 OK */
       if(targetDmg!==null&&c.attacks&&c.attacks.length){
         for(var ai=0;ai<c.attacks.length;ai++){
           var ad=c.attacks[ai].damage;
@@ -1749,12 +1769,15 @@ function searchPokemonTcgIo(geminiCandidates){
           if(!isNaN(adNum)&&adNum===targetDmg){dmgOk=true;score+=80;break;}
         }
       }
-      /* prefix 일치 (갈라르 폼이면 카드 이름이나 subtypes에 표시) */
+      /* prefix 일치/불일치 — pokemontcg.io는 카드 이름에 "Galarian"을 직접 박아 넣음 */
       if(prefixMatch){
         var cN=(c.name||'').toLowerCase();
         var cSubs=(c.subtypes||[]).map(function(s){return String(s).toLowerCase();});
         if(cN.indexOf(prefixMatch)>=0||cSubs.indexOf(prefixMatch)>=0){
-          prefixOk=true;score+=60;
+          prefixOk=true;score+=200;  /* 강한 가산 — prefix가 핵심 식별 정보 */
+        }else{
+          /* prefix가 명시됐는데 카드에 없음 = 거의 확실한 mismatch */
+          prefixMismatch=true;score-=300;  /* 강한 패널티 */
         }
       }
       /* 세트 부분 일치 */
@@ -1770,13 +1793,19 @@ function searchPokemonTcgIo(geminiCandidates){
       }
       /* 최신 세트 미세 가산점 */
       if(c.set&&c.set.releaseDate){score+=parseInt(c.set.releaseDate.split('-')[0],10)/100;}
-      /* matchTier 결정 — 사용자에게 보여줄 신뢰도 라벨 */
-      if(hpOk&&dmgOk)tier='exact';        /* 🎯 정확 — HP + 데미지 둘 다 일치 */
-      else if(hpOk)tier='hp_only';         /* ✅ 추정 — HP만 일치 */
-      else tier='name_only';               /* ⚠️ 불확실 — 이름만 일치 (가짜 매칭 위험) */
+      /* matchTier 결정 — prefix 불일치는 자동으로 name_only로 강등 */
+      if(prefixMismatch){
+        tier='name_only';
+      }else if(hpOk&&dmgOk){
+        tier='exact';        /* 🎯 HP + 데미지 + (prefix 일치하거나 prefix 없음) */
+      }else if(hpOk){
+        tier='hp_only';
+      }else{
+        tier='name_only';
+      }
       c._matchTier=tier;
       c._matchScore=score;
-      c._matchFlags={hp:hpOk,dmg:dmgOk,prefix:prefixOk};
+      c._matchFlags={hp:hpOk,dmg:dmgOk,prefix:prefixOk,prefixMismatch:prefixMismatch};
       return {c:c,score:score,tier:tier};
     });
     /* 정렬: tier 우선(exact > hp_only > name_only), 같은 tier 안에서는 score 높은 순 */
@@ -1788,7 +1817,6 @@ function searchPokemonTcgIo(geminiCandidates){
     });
     /* 상위 3장 반환 */
     var result=scored.slice(0,3).map(function(x){return x.c;});
-    /* OCR 메타도 첨부 (사용자에게 "OCR이 인식한 것" 표시용) */
     if(result.length){
       result[0]._ocrMeta={hp:targetHp,damage:targetDmg,name:rawName};
     }
