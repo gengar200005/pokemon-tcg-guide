@@ -421,20 +421,86 @@ function rColl(){
     return;
   }
   var ce2=document.getElementById('ce');if(ce2)ce2.style.display='none';
-  var h='';fc.forEach(function(c){
+  var h='';fc.forEach(function(c,idx){
     var qty=c.quantity||1;
     var srcBadge='';
     if(c.source==='dragon_shield')srcBadge='<span class="src-bd ds" title="Dragon Shield">\uD83D\uDCE4</span>';
     else if(c.source==='claude_scan')srcBadge='<span class="src-bd cs" title="Scan">\uD83D\uDCF8</span>';
     else srcBadge='<span class="src-bd mn" title="\uC9C1\uC811 \uCD94\uAC00">\u270B</span>';
     var qtyBadge=qty>1?'<span class="qty-bd">x'+qty+'</span>':'';
-    h+='<div class="cc">';
+    h+='<div class="cc" data-coll-idx="'+idx+'" style="cursor:pointer">';
     if(c.image)h+='<img src="'+esc(c.image)+'" loading="lazy">';
     h+=srcBadge+qtyBadge;
     h+='<div class="n">'+esc(c.krName||c.name)+'</div><div class="m">'+esc(c.rarity||'')+'</div>';
-    h+='<button class="x" onclick="rmCard(\''+esc(c.id)+'\')">\xD7</button></div>';
+    h+='<button class="x" onclick="event.stopPropagation();rmCard(\''+esc(c.id)+'\')">\xD7</button></div>';
   });
-  var cg2=document.getElementById('cg');if(cg2)cg2.innerHTML=h;
+  var cg2=document.getElementById('cg');
+  if(cg2){
+    cg2.innerHTML=h;
+    /* 카드 클릭 → 상세 모달 */
+    window._collFiltered=fc;
+    var els=cg2.querySelectorAll('.cc');
+    for(var i=0;i<els.length;i++){
+      els[i].addEventListener('click',(function(idx){return function(){
+        showCollCardDetail(window._collFiltered[idx]);
+      };})(i));
+    }
+  }
+}
+
+/* 카드함 카드 상세 모달 (큰 이미지 + 정보) */
+function showCollCardDetail(c){
+  if(!c)return;
+  var mb=document.getElementById('mb'),mo=document.getElementById('mo');
+  if(!mb||!mo)return;
+  var qty=c.quantity||1;
+  var imgUrl=c.imageHires||c.image||'';
+  var srcLabel='';
+  if(c.source==='dragon_shield')srcLabel='\uD83D\uDCE4 Dragon Shield';
+  else if(c.source==='claude_scan')srcLabel='\uD83D\uDCF8 \uCE74\uBA54\uB77C \uC2A4\uCE94';
+  else srcLabel='\u270B \uC9C1\uC811 \uCD94\uAC00';
+  var h='';
+  if(imgUrl)h+='<img src="'+esc(imgUrl)+'" style="width:100%;max-width:340px;display:block;margin:0 auto 12px;border-radius:8px">';
+  h+='<h3 style="margin:0 0 8px;text-align:center">'+esc(c.krName||c.name||'-')+'</h3>';
+  if(c.krName&&c.name&&c.krName!==c.name){
+    h+='<div style="text-align:center;font-size:.78rem;color:var(--text3);margin-bottom:10px">'+esc(c.name)+'</div>';
+  }
+  h+='<div class="dr"><span class="dl">\uCD9C\uCC98</span><span>'+srcLabel+'</span></div>';
+  if(qty>1)h+='<div class="dr"><span class="dl">\uC218\uB7C9</span><span style="color:var(--accent);font-family:var(--ft)">'+qty+'\uC7A5</span></div>';
+  if(c.folder)h+='<div class="dr"><span class="dl">\uD3F4\uB354</span><span>'+esc(c.folder)+'</span></div>';
+  if(c.rarity)h+='<div class="dr"><span class="dl">\uD76C\uC18C\uB3C4</span><span>'+esc(c.rarity)+'</span></div>';
+  if(c.set)h+='<div class="dr"><span class="dl">\uC138\uD2B8</span><span>'+esc(c.set)+'</span></div>';
+  else if(c.setName)h+='<div class="dr"><span class="dl">\uC138\uD2B8</span><span>'+esc(c.setName)+'</span></div>';
+  if(c.cardNumber)h+='<div class="dr"><span class="dl">\uC138\uD2B8 \uBC88\uD638</span><span>'+esc(c.cardNumber)+'</span></div>';
+  if(c.hp&&c.hp!=='-')h+='<div class="dr"><span class="dl">HP</span><span>'+esc(c.hp)+'</span></div>';
+  if(c.types){
+    var ty=Array.isArray(c.types)?c.types.join(', '):c.types;
+    if(ty&&ty!=='-')h+='<div class="dr"><span class="dl">\uD0C0\uC785</span><span>'+esc(ty)+'</span></div>';
+  }
+  /* 가격 정보 (dragon_shield 카드만) */
+  if(c.priceMarket||c.priceMid||c.priceBought){
+    var price=parseFloat(c.priceMarket||c.priceMid||c.priceBought||0)||0;
+    if(price>0){
+      var krw=Math.round(price*_USD_TO_KRW*qty);
+      var label=qty>1?'\uCCB4 \uAC00\uCE58 ('+qty+'\uC7A5)':'\uC2DC\uC138';
+      h+='<div class="dr"><span class="dl">'+label+'</span><span style="color:var(--accent);font-family:var(--ft)">$'+(price*qty).toFixed(2)+' (\uC57D '+krw.toLocaleString('ko-KR')+'\uC6D0)</span></div>';
+    }
+  }
+  h+='<div class="acts" style="margin-top:14px;gap:8px">';
+  h+='<button class="btn btn-d" onclick="rmCardFromColl(\''+esc(c.id)+'\')" style="flex:1">\uC81C\uAC70</button>';
+  h+='<button class="btn btn-g" onclick="closeM()" style="flex:1">\uB2EB\uAE30</button>';
+  h+='</div>';
+  mb.innerHTML=h;
+  mo.className='mo show';
+}
+
+/* 카드함에서 카드 제거 (모달 닫고 rColl 호출) */
+function rmCardFromColl(id){
+  if(!confirm('\uC774 \uCE74\uB4DC\uB97C \uCE74\uB4DC\uD568\uC5D0\uC11C \uC81C\uAC70\uD560\uAE4C\uC694?'))return;
+  D.cards=D.cards.filter(function(c){return c.id!==id;});
+  sv();
+  closeM();
+  rColl();
 }
 
 function ensureCollHeader(){
@@ -444,11 +510,14 @@ function ensureCollHeader(){
   var ext=document.createElement('div');
   ext.id='coll-header-ext';
   ext.style.cssText='margin-bottom:12px';
+  /* CSV import 기능은 한국판 카드 매칭 정확도 문제로 일시 비활성화됨.
+     관련 코드는 모두 보존되어 있음 (handleCsvFileSelect, runCsvImport 등).
+     다시 활성화하려면 아래 input/button을 주석 해제하면 됨. */
   ext.innerHTML=
     '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">'+
-      '<button class="btn btn-p btn-s" onclick="document.getElementById(\'csv-file-input\').click()" style="font-size:.78rem">\uD83D\uDCE4 Dragon Shield \uAC00\uC838\uC624\uAE30</button>'+
-      '<input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" onchange="handleCsvFileSelect(this)">'+
       '<span id="coll-value" style="font-size:.78rem;color:var(--accent);font-family:var(--ft)"></span>'+
+      /* '<button class="btn btn-p btn-s" onclick="document.getElementById(\'csv-file-input\').click()" style="font-size:.78rem">📤 Dragon Shield 가져오기</button>'+ */
+      /* '<input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" onchange="handleCsvFileSelect(this)">'+ */
     '</div>'+
     '<div id="folder-chips" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px"></div>'+
     '<style>'+
