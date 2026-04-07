@@ -1589,6 +1589,15 @@ function showFullDebug(){
   rb.innerHTML=h;
 }
 
+/* ═══ 실험 모드: Dual OCR — 한글 OCR 능력 측정 ═══
+   콘솔에서 _dualOcr=true 로 켜면 매 스캔마다 두 번째 호출이 추가로 일어남.
+   호출 1: 영문명 추론 (현재 프롬프트)
+   호출 2: 카드 상단 큰 글자를 본 그대로 받아 적기
+   결과 화면에 두 응답을 나란히 표시 → Claude Haiku가 한글 OCR 가능한지 검증.
+   기본값 false (비용 2배라 평소엔 꺼두고, 실험 시에만 켬). */
+window._dualOcr=window._dualOcr||false;
+window._lastDualOcrResult=null;
+
 function recognizeCard(dataUrl){
   var b64=dataUrl.split(',')[1];
   /* Anthropic Messages API 포맷 — 옛 프롬프트 구조 + HP/damage 필드만 추가
@@ -1614,6 +1623,46 @@ function recognizeCard(dataUrl){
       ]
     }]
   };
+  /* Dual OCR 실험 모드: 두 번째 호출 병렬 실행 */
+  if(window._dualOcr){
+    var rawTextPrompt='Read the large text at the top of this trading card EXACTLY as printed. Just transcribe what you see literally, character by character. Do not translate, do not interpret, do not infer the Pokemon name. If the text is in Korean (Hangul), output Korean. If Japanese, output Japanese. If English, output English.\n\n'+
+      'Return JSON only:\n'+
+      '{"top_text_raw":"...","script":"korean|japanese|english|other","confidence":"high|medium|low"}';
+    var body2={
+      model:_scanModel,
+      max_tokens:200,
+      messages:[{
+        role:'user',
+        content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+          {type:'text',text:rawTextPrompt}
+        ]
+      }]
+    };
+    /* 두 호출 병렬 — Promise.all로 묶음 */
+    var p1=callClaudeWithRetry(body);
+    var p2=fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body2)})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(d){
+        if(!d||!d.content)return null;
+        var txt='';
+        for(var i=0;i<d.content.length;i++){
+          if(d.content[i].type==='text'){txt=d.content[i].text;break;}
+        }
+        txt=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+        try{return JSON.parse(txt);}catch(e){return {top_text_raw:txt,script:'parse_error'};}
+      })
+      .catch(function(e){return {top_text_raw:'(에러: '+e.message+')',script:'error'};});
+    return Promise.all([p1,p2]).then(function(results){
+      window._lastDualOcrResult=results[1];
+      /* 첫 번째 결과(영문명 추론)의 첫 후보에 dualOcr 메타 첨부 */
+      var candidates=results[0];
+      if(candidates&&candidates.length&&results[1]){
+        candidates[0]._dualOcr=results[1];
+      }
+      return candidates;
+    });
+  }
   return callClaudeWithRetry(body);
 }
 
@@ -1836,6 +1885,46 @@ function renderScanCandidates(){
     if(m.damage)ocrLine+=' · 데미지 '+m.damage;
     h+='<div class="sr-ocr-meta">'+ocrLine+'</div>';
   }
+  /* Dual OCR 실험 결과 표시 — 한글 OCR 능력 검증 */
+  if(top&&top._dualOcr){
+    var d=top._dualOcr;
+    var rawText=d.top_text_raw||'(없음)';
+    var script=d.script||'?';
+    var conf=d.confidence||'?';
+    /* KR2EN 자동 변환 시도 */
+    var krConverted='';
+    if(script==='korean'&&rawText){
+      /* "가라르 날쌩마" 같은 케이스 처리: prefix + base 분리해서 KR2EN 조회 */
+      var clean=rawText.replace(/[\s\u00A0]+/g,' ').trim();
+      var directHit=KR2EN[clean];
+      if(directHit){krConverted=directHit;}
+      else{
+        /* prefix 제거 후 base 시도 */
+        var krPrefixMatch=clean.match(/^(가라르|알로라|히수이|팔데아)\s+(.+)$/);
+        if(krPrefixMatch){
+          var base=krPrefixMatch[2];
+          var basEn=KR2EN[base];
+          if(basEn){krConverted=krPrefixMatch[1]+' → '+basEn;}
+        }
+        /* 마지막 글자가 V/EX/GX/VMAX/VSTAR 등이면 떼고 시도 */
+        if(!krConverted){
+          var krSuffixMatch=clean.match(/^(.+?)\s+(V|VMAX|VSTAR|GX|EX|ex)$/);
+          if(krSuffixMatch){
+            var bs=krSuffixMatch[1];
+            var bsEn=KR2EN[bs];
+            if(bsEn){krConverted=bsEn+' '+krSuffixMatch[2];}
+          }
+        }
+      }
+    }
+    h+='<div class="sr-dual-ocr">'+
+      '<div style="font-weight:600;margin-bottom:4px">🧪 Dual OCR (실험)</div>'+
+      '<div>본 그대로: <b>'+esc(rawText)+'</b></div>'+
+      '<div style="font-size:.65rem;opacity:.8">스크립트: '+esc(script)+' · 신뢰도: '+esc(conf)+'</div>'+
+      (krConverted?'<div style="margin-top:4px;color:#3dc06c">✓ KR2EN 변환: <b>'+esc(krConverted)+'</b></div>':
+        (script==='korean'?'<div style="margin-top:4px;color:#f39c12">⚠ KR2EN 매핑 없음</div>':''))+
+      '</div>';
+  }
   /* 매칭 신뢰도 헤드라인 — 첫 후보의 tier 기반 */
   var tier=(top&&top._matchTier)||'name_only';
   var tierMsg='';
@@ -1843,6 +1932,10 @@ function renderScanCandidates(){
   else if(tier==='hp_only')tierMsg='✅ 추정 매칭 — HP 일치 (데미지 미확인)';
   else tierMsg='⚠️ 불확실 — 이름만 일치, 카드를 직접 확인하세요';
   h+='<div class="sr-label sr-tier-'+tier+'">'+tierMsg+'</div>';
+  /* Dual OCR 토글 버튼 (콘솔 안 쓰고 켤 수 있게) */
+  h+='<div style="text-align:center;margin:8px 0">'+
+    '<button onclick="window._dualOcr=!window._dualOcr;alert(\'Dual OCR \'+(window._dualOcr?\'ON ✅ — 다음 스캔부터 적용\':\'OFF\'))" style="font-size:.65rem;padding:4px 10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;cursor:pointer">'+
+    '🧪 Dual OCR '+(window._dualOcr?'ON':'OFF')+'</button></div>';
   h+='<div class="scan-cands">';
   _scanCandidates.forEach(function(c,i){
     var img=(c.images&&c.images.small)||'';
@@ -1869,6 +1962,7 @@ function renderScanCandidates(){
     var st=document.createElement('style');
     st.id='scan-tier-style';
     st.textContent='.sr-ocr-meta{font-size:.72rem;color:rgba(255,255,255,.7);background:rgba(255,255,255,.05);padding:6px 10px;border-radius:8px;margin:8px 0 6px;border:1px solid rgba(255,255,255,.08)}'+
+      '.sr-dual-ocr{font-size:.72rem;color:rgba(255,255,255,.85);background:rgba(155,89,182,.1);padding:8px 12px;border-radius:8px;margin:6px 0;border:1px solid rgba(155,89,182,.3)}'+
       '.sr-tier-exact{color:#3dc06c!important;font-weight:600}'+
       '.sr-tier-hp_only{color:#5fb3e0!important;font-weight:600}'+
       '.sr-tier-name_only{color:#f39c12!important;font-weight:600}'+
