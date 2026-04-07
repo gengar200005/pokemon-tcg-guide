@@ -1591,14 +1591,24 @@ function showFullDebug(){
 
 function recognizeCard(dataUrl){
   var b64=dataUrl.split(',')[1];
-  /* Anthropic Messages API 포맷 */
-  var prompt='Identify this Pokemon TCG card. Return JSON only (no markdown, no code fences):\n'+
-    '{"candidates":[{"name":"English Pokemon name","set":"set name/code","number":"001/100","confidence":"high|medium|low"}]}\n'+
-    'Rules:\n'+
-    '- Name MUST be English (e.g. Charizard, not 리자몽/リザードン)\n'+
-    '- Include suffix for variants: ex, EX, V, VMAX, VSTAR, GX, Mega\n'+
-    '- Up to 3 candidates, highest confidence first\n'+
-    '- Empty candidates[] if unreadable';
+  /* Anthropic Messages API 포맷 — 강화된 프롬프트 (HP + 첫 기술 데미지 추가)
+     세션 2: 한국판 카드 매칭 정확도 95%+ 목표.
+     name 외 hp/damage가 매칭 단계에서 결정적 필터로 작동. */
+  var prompt='You are identifying a Pokemon TCG card. The card may be in Korean (한국어), Japanese, or English.\n\n'+
+    'Return ONLY valid JSON (no markdown, no code fences, no explanation):\n'+
+    '{"candidates":[{"name":"...","hp":123,"damage":30,"set":"...","number":"...","confidence":"high|medium|low"}]}\n\n'+
+    'Field rules:\n'+
+    '- name: ALWAYS English Pokemon name (e.g. "Charizard", NOT "리자몽" or "リザードン"). Translate from Korean/Japanese if needed.\n'+
+    '- name suffix: include variant suffix exactly as shown — "ex", "EX", "V", "VMAX", "VSTAR", "GX", "Mega". E.g. "Charizard ex", "Pikachu V", "Rillaboom VMAX".\n'+
+    '- name prefix: KEEP regional prefix if present — "Galarian", "Alolan", "Hisuian", "Paldean". E.g. "Galarian Rapidash". (Our matcher will normalize this; you just report what you see.)\n'+
+    '- hp: integer from the "HP" number top-right (e.g. 100, 220, 330). null if not visible.\n'+
+    '- damage: integer from the FIRST attack\'s damage number (right side of attack row). For "30+" or "30×" return 30. null if no attack or no damage shown.\n'+
+    '- set: set name or symbol code as visible (often bottom-left). Empty string if unclear.\n'+
+    '- number: collector number like "022/060" or "022". Empty string if unclear.\n'+
+    '- confidence: "high" only if name AND hp are both clearly visible. "medium" if name clear but hp unsure. "low" otherwise.\n\n'+
+    'Output: up to 3 candidates, most likely first. If completely unreadable, return {"candidates":[]}.\n\n'+
+    'Example for a Korean Galarian Rapidash card showing "가라르 날쌩마", "HP 100", attack "사이코키네시스 30+":\n'+
+    '{"candidates":[{"name":"Galarian Rapidash","hp":100,"damage":30,"set":"s1H","number":"022/060","confidence":"high"}]}';
   var body={
     model:_scanModel,
     max_tokens:512,
@@ -1694,54 +1704,150 @@ function friendlyQuotaMsg(rawMsg){
 }
 
 function searchPokemonTcgIo(geminiCandidates){
-  /* 각 후보에 대해 병렬 조회. 첫 후보 기준 name으로 최대 6장 불러오고, set/number로 필터링 시도 */
+  /* 세션 2 강화: HP + 첫 기술 데미지 기반 3단계 필터 매칭.
+     1. name 검색 (prefix 정규화: "Galarian Rapidash" → "Rapidash"로 검색해서 갈라르 폼 포함)
+     2. HP 일치 필터 (정확도 결정 요인 1)
+     3. 첫 기술 데미지 일치 필터 (정확도 결정 요인 2)
+     각 후보에 matchTier 부여: 'exact'(HP+damage) / 'hp_only' / 'name_only' */
   var top=geminiCandidates[0];
   if(!top||!top.name)return Promise.reject(new Error('영문명 없음'));
-  var cleanName=top.name.replace(/[^A-Za-z0-9\s\-\.]/g,'').trim();
+  /* prefix 제거 후 base name으로 검색 — pokemontcg.io는 갈라르 폼도 같은 base로 검색됨 */
+  var rawName=top.name;
+  var searchName=rawName
+    .replace(/^(Galarian|Alolan|Hisuian|Paldean|Mega)\s+/i,'')
+    .replace(/\s+(ex|EX|V|VMAX|VSTAR|VUNION|V-UNION|GX|BREAK|LV\.X|Prime|LEGEND)$/i,'')
+    .trim();
+  var cleanName=searchName.replace(/[^A-Za-z0-9\s\-\.]/g,'').trim();
   if(!cleanName)return Promise.reject(new Error('영문명 정리 실패'));
   var q='name:"'+cleanName+'"';
-  var url='https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q)+'&pageSize=12&select=id,name,images,rarity,set,hp,types,supertype,subtypes,number,attacks,abilities,rules,weaknesses,resistances,retreatCost';
+  var url='https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q)+'&pageSize=20&select=id,name,images,rarity,set,hp,types,supertype,subtypes,number,attacks,abilities,rules,weaknesses,resistances,retreatCost';
   return fetch(url).then(function(r){return r.json();}).then(function(data){
     if(!data.data||!data.data.length)throw new Error('"'+cleanName+'" DB 카드 없음');
     var all=data.data;
-    /* 세트/번호 매칭 점수로 정렬 */
+    /* OCR 정보 */
+    var targetHp=top.hp?parseInt(top.hp,10):null;
+    var targetDmg=top.damage?parseInt(top.damage,10):null;
+    /* prefix 일치(갈라르/알로라 등) — 카드 subtypes에 "Galarian"이 들어 있으면 가산 */
+    var prefixMatch=null;
+    var pm=rawName.match(/^(Galarian|Alolan|Hisuian|Paldean)\s+/i);
+    if(pm)prefixMatch=pm[1].toLowerCase();
+    /* 각 후보 점수화 + matchTier 결정 */
     var scored=all.map(function(c){
-      var score=0;
-      if(top.set&&c.set&&c.set.name){
-        var sL=top.set.toLowerCase(),cL=c.set.name.toLowerCase();
-        if(cL.indexOf(sL)>=0||sL.indexOf(cL)>=0)score+=50;
+      var score=0,tier='name_only';
+      var hpOk=false,dmgOk=false,prefixOk=false;
+      /* HP 일치 (가장 강력) */
+      var cHp=c.hp?parseInt(c.hp,10):null;
+      if(targetHp!==null&&cHp!==null&&cHp===targetHp){
+        hpOk=true;score+=100;
       }
+      /* 첫 기술 데미지 일치 — 카드의 어떤 기술과도 매칭되면 OK (OCR이 1번 기술이라 했지만 실제 카드 순서와 다를 수 있음) */
+      if(targetDmg!==null&&c.attacks&&c.attacks.length){
+        for(var ai=0;ai<c.attacks.length;ai++){
+          var ad=c.attacks[ai].damage;
+          if(!ad)continue;
+          var adNum=parseInt(String(ad).replace(/[^0-9]/g,''),10);
+          if(!isNaN(adNum)&&adNum===targetDmg){dmgOk=true;score+=80;break;}
+        }
+      }
+      /* prefix 일치 (갈라르 폼이면 카드 이름이나 subtypes에 표시) */
+      if(prefixMatch){
+        var cN=(c.name||'').toLowerCase();
+        var cSubs=(c.subtypes||[]).map(function(s){return String(s).toLowerCase();});
+        if(cN.indexOf(prefixMatch)>=0||cSubs.indexOf(prefixMatch)>=0){
+          prefixOk=true;score+=60;
+        }
+      }
+      /* 세트 부분 일치 */
+      if(top.set&&c.set&&c.set.name){
+        var sL=String(top.set).toLowerCase(),cL=c.set.name.toLowerCase();
+        if(cL.indexOf(sL)>=0||sL.indexOf(cL)>=0)score+=30;
+      }
+      /* 카드 번호 일치 */
       if(top.number&&c.number){
         var n1=String(top.number).split('/')[0].replace(/^0+/,'');
         var n2=String(c.number).replace(/^0+/,'');
-        if(n1===n2)score+=30;
+        if(n1===n2)score+=25;
       }
-      /* 최신 세트 가산점 */
+      /* 최신 세트 미세 가산점 */
       if(c.set&&c.set.releaseDate){score+=parseInt(c.set.releaseDate.split('-')[0],10)/100;}
-      return {c:c,score:score};
+      /* matchTier 결정 — 사용자에게 보여줄 신뢰도 라벨 */
+      if(hpOk&&dmgOk)tier='exact';        /* 🎯 정확 — HP + 데미지 둘 다 일치 */
+      else if(hpOk)tier='hp_only';         /* ✅ 추정 — HP만 일치 */
+      else tier='name_only';               /* ⚠️ 불확실 — 이름만 일치 (가짜 매칭 위험) */
+      c._matchTier=tier;
+      c._matchScore=score;
+      c._matchFlags={hp:hpOk,dmg:dmgOk,prefix:prefixOk};
+      return {c:c,score:score,tier:tier};
     });
-    scored.sort(function(a,b){return b.score-a.score;});
-    return scored.slice(0,3).map(function(x){return x.c;});
+    /* 정렬: tier 우선(exact > hp_only > name_only), 같은 tier 안에서는 score 높은 순 */
+    var tierRank={exact:3,hp_only:2,name_only:1};
+    scored.sort(function(a,b){
+      var tr=tierRank[b.tier]-tierRank[a.tier];
+      if(tr!==0)return tr;
+      return b.score-a.score;
+    });
+    /* 상위 3장 반환 */
+    var result=scored.slice(0,3).map(function(x){return x.c;});
+    /* OCR 메타도 첨부 (사용자에게 "OCR이 인식한 것" 표시용) */
+    if(result.length){
+      result[0]._ocrMeta={hp:targetHp,damage:targetDmg,name:rawName};
+    }
+    return result;
   });
 }
 
 function renderScanCandidates(){
   var rb=document.getElementById('scanResultBody');
-  var krName=EN2KR[_scanCandidates[0]&&_scanCandidates[0].name]||'';
   var h='<img class="sr-shot" src="'+_scanShotDataUrl+'">';
-  h+='<div class="sr-label">✨ 일치하는 카드 '+_scanCandidates.length+'개 — 맞는 것을 선택</div>';
+  /* OCR이 인식한 것 표시 (디버깅 + 사용자 신뢰) */
+  var top=_scanCandidates[0];
+  if(top&&top._ocrMeta){
+    var m=top._ocrMeta;
+    var ocrLine='AI 인식: <b>'+esc(m.name||'?')+'</b>';
+    if(m.hp)ocrLine+=' · HP '+m.hp;
+    if(m.damage)ocrLine+=' · 데미지 '+m.damage;
+    h+='<div class="sr-ocr-meta">'+ocrLine+'</div>';
+  }
+  /* 매칭 신뢰도 헤드라인 — 첫 후보의 tier 기반 */
+  var tier=(top&&top._matchTier)||'name_only';
+  var tierMsg='';
+  if(tier==='exact')tierMsg='🎯 정확 매칭 — HP와 기술 데미지 모두 일치';
+  else if(tier==='hp_only')tierMsg='✅ 추정 매칭 — HP 일치 (데미지 미확인)';
+  else tierMsg='⚠️ 불확실 — 이름만 일치, 카드를 직접 확인하세요';
+  h+='<div class="sr-label sr-tier-'+tier+'">'+tierMsg+'</div>';
   h+='<div class="scan-cands">';
   _scanCandidates.forEach(function(c,i){
     var img=(c.images&&c.images.small)||'';
     var sn=(c.set&&c.set.name)||'';
     var sel=(i===_scanSelectedIdx)?' sel':'';
+    /* 카드별 미니 신뢰도 배지 */
+    var t=c._matchTier||'name_only';
+    var badge='';
+    if(t==='exact')badge='<span class="cand-badge be">🎯</span>';
+    else if(t==='hp_only')badge='<span class="cand-badge bh">✅</span>';
+    else badge='<span class="cand-badge bn">⚠️</span>';
     h+='<div class="scan-cand'+sel+'" data-i="'+i+'" onclick="selectScanCand('+i+')">';
     if(img)h+='<img src="'+esc(img)+'" loading="lazy">';
-    h+='<div class="cn2">'+esc(c.name)+'</div>';
-    h+='<div class="cs">'+esc(sn)+'</div>';
+    h+=badge;
+    /* 한글명 우선 표시 */
+    var kr=toKrPureName(c.name);
+    h+='<div class="cn2">'+esc(kr)+'</div>';
+    h+='<div class="cs">'+esc(sn)+(c.hp?' · HP '+c.hp:'')+'</div>';
     h+='</div>';
   });
   h+='</div>';
+  /* 인라인 스타일 1회 inject (CSS 파일 손대지 않기 위함) */
+  if(!document.getElementById('scan-tier-style')){
+    var st=document.createElement('style');
+    st.id='scan-tier-style';
+    st.textContent='.sr-ocr-meta{font-size:.72rem;color:rgba(255,255,255,.7);background:rgba(255,255,255,.05);padding:6px 10px;border-radius:8px;margin:8px 0 6px;border:1px solid rgba(255,255,255,.08)}'+
+      '.sr-tier-exact{color:#3dc06c!important;font-weight:600}'+
+      '.sr-tier-hp_only{color:#5fb3e0!important;font-weight:600}'+
+      '.sr-tier-name_only{color:#f39c12!important;font-weight:600}'+
+      '.scan-cand{position:relative}'+
+      '.cand-badge{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.7rem;z-index:2}';
+    document.head.appendChild(st);
+  }
   rb.innerHTML=h;
   document.getElementById('scanResultActions').style.display='flex';
   /* 선택된 카드 한글명 반영 */
