@@ -237,6 +237,8 @@ function migrateCards(){
     }
     /* 폴더 미설정 → "직접 추가" */
     if(!c.folder){c.folder='\uC9C1\uC811 \uCD94\uAC00';c.folderKey='manual';changed=true;}
+    /* krName 없거나 영문 그대로면 EN2KR 재조회 */
+    if(c.name&&(!c.krName||c.krName===c.name)){var _mk=EN2KR[c.name]||'';if(!_mk){var _mb=(c.name).replace(/\s+(ex|EX|V|VMAX|VSTAR|GX|Mega|MEGA)$/,'').trim();var _mbk=EN2KR[_mb]||'';if(_mbk){var _ms=(c.name).slice(_mb.length).trim();_mk=_mbk+(_ms?' '+_ms:'');}}if(_mk){c.krName=_mk;changed=true;}}
   }
   return changed;
 }
@@ -378,13 +380,24 @@ function addCard(cd){
   /* cardId 기반 매칭으로 중복 검사 */
   var existingIdx=-1;
   var newCardId=cd.cardId||('manual-'+((cd.name||cd.krName||cd.id||'').toLowerCase().replace(/\s+/g,'-')));
+  /* 한글명 보장 — 없으면 EN2KR 조회 후 suffix 재조립 */
+  var resolvedKr=cd.krName||'';
+  if(!resolvedKr||resolvedKr===cd.name){
+    resolvedKr=EN2KR[cd.name]||'';
+    if(!resolvedKr&&cd.name){
+      var _base=(cd.name).replace(/\s+(ex|EX|V|VMAX|VSTAR|GX|Mega|MEGA)$/,'').trim();
+      var _bkr=EN2KR[_base]||'';
+      if(_bkr){var _sfx=(cd.name).slice(_base.length).trim();resolvedKr=_bkr+(_sfx?' '+_sfx:'');}
+    }
+  }
   for(var i=0;i<D.cards.length;i++){if(D.cards[i].cardId===newCardId||D.cards[i].id===cd.id){existingIdx=i;break;}}
   if(existingIdx>=0){
     D.cards[existingIdx].quantity=(D.cards[existingIdx].quantity||1)+1;
+    if(resolvedKr&&(!D.cards[existingIdx].krName||D.cards[existingIdx].krName===D.cards[existingIdx].name))D.cards[existingIdx].krName=resolvedKr;
   }else{
     D.cards.push({
       id:cd.id,cardId:newCardId,
-      name:cd.name,krName:cd.krName,
+      name:cd.name,krName:resolvedKr||cd.name,
       rarity:cd.rarity,set:cd.set,hp:cd.hp,types:cd.types,supertype:cd.supertype,image:cd.image,
       source:cd.source||'manual',
       folder:cd.folder||'\uC9C1\uC811 \uCD94\uAC00',
@@ -399,16 +412,48 @@ function rmCard(id){D.cards=D.cards.filter(function(c){return c.id!==id;});sv();
 
 /* ═══ Collection ═══ */
 var _collFolderFilter='all';
+var _collSort='recent'; /* recent|dex|name */
 var _USD_TO_KRW=1450;
 
 function rColl(){
   ensureCollHeader();
+  var _ss=document.getElementById('coll-sort-sel');if(_ss&&_ss.value!==_collSort)_ss.value=_collSort;
   var rf=document.getElementById('cf');
   var f=rf?rf.value:'all';
   var fc=f==='all'?D.cards:f==='Ultra'?D.cards.filter(function(c){var r=(c.rarity||'').toLowerCase();return r.indexOf('ultra')>=0||r.indexOf('secret')>=0||r.indexOf('vmax')>=0||r.indexOf('vstar')>=0||r.indexOf('illustration')>=0;}):D.cards.filter(function(c){return(c.rarity||'').indexOf(f)>=0;});
   if(_collFolderFilter!=='all'){
     fc=fc.filter(function(c){return(c.folderKey||'manual')===_collFolderFilter;});
   }
+  /* 정렬 — _collSort: recent(최신등록순) | dex(포켓몬 번호순) | name(가나다순) */
+  (function(){
+    var DEX_ORDER={};
+    /* KR_NAMES는 가나다 정렬이라 포켓몬 번호 불가 — EN2KR 매핑 배열 순서 사용 */
+    var _dexList=['이상해씨','이상해풀','이상해꽃','파이리','리자드','리자몽','꼬부기','어니부기','거북왕','캐터피','버터플','피카츄','라이츄','니드퀸','니드킹','삐삐','픽시','식스테일','나인테일','푸린','주뱃','골뱃','뚜벅초','라플레시아','디그다','나옹','고라파덕','골덕','가디','윈디','케이시','후딘','괴력몬','야돈','야도란','코일','레어코일','질퍽이','팬텀','고오스','고우스트','롱스톤','슬리퍼','마임맨','스라크','에레브','마그마','잉어킹','갸라도스','라프라스','메타몽','이브이','샤미드','쥬피썬더','부스터','폴리곤','프테라','잠만보','프리져','썬더','파이어','미니드래곤','망나뇽','뮤츠','뮤','치코리타','메가니움','브케인','블레이범','리아코','장크로다일','피츄','토게피','토게틱','에이팜','에브이','블래키','마릴','마릴리','글라이거','스틸릭스','핫삼','헤라크로스','델빌','헬가','포트데스','해피너스','라이코','엔테이','스이쿤','요기라스','마기라스','루기아','칠색조','세레비','나무지기','나무킹','아차모','번치코','물짱이','대짱이','랄토스','킬리아','가디안','게을킹','플러시','마이농','샤프니아','밀로틱','어둠여우','다골','메탕','메타그로스','타츠','쉘곤','보만다','레지락','레지아이스','레지스틸','라티아스','라티오스','가이오가','그란돈','레쿠쟈','지라치','테오키스','모부기','토대부기','불꽃숭이','초염몽','팽도리','엠페르트','찌르호크','렌트라','로즈레이드','루카리오','리오루','딥상어동','한카리아스','가부리아스','리피아','글레이시아','맘모꾸리','엘레이드','토게키스','폴리곤Z','유크시','엠라이트','아그놈','디아루가','펄기아','히드런','레지기가스','기라티나','크레세리아','다크라이','쉐이미','아르세우스','비크티니','주리비얀','샤로다','뚜꾸리','염무왕','수댕이','대검귀','조로아','조로아크','치라미','모노두','삼삼드래','볼켄','코바르온','테라키온','비리디온','토네로스','볼트로스','레시라무','제크롬','랜드로스','큐레무','켈디오','메로엣타','게노세크트','도치마론','브리가론','푸호꼬','마폭시','개구마르','개굴닌자','님피아','루차불','데덴네','미끄래곤','제르네아스','이벨타르','지가르데','디안시','후파','볼케니온','나몰빼미','모크나이퍼','냐오불','어흥염','누리공','누리보스','이와늑대','미믹큐','큐아르','솔가레오','루나아라','카푸꼬꼬꼬','카푸나비나','네크로즈마','마샤도','제라오라','흥나숭이','고릴타','염버니','에이스번','울머기','인텔리레온','갈가부기','약어리','스트린더','두랄루돈','드래펄트','자시안','자마젠타','무한다이노','레지에레키','레지드래고','버드렉스','우르프','뉴비','마스카나','크래피','라우드보네','꾸왁스','웨이니발','파모','파모트','파모트리','가르가나클','팔미기모스','소울블레이즈','딜클레이스','깨비드릴조','코라이돈','미라이돈','테라파고스'];
+    for(var _di=0;_di<_dexList.length;_di++){DEX_ORDER[_dexList[_di]]=_di;}
+    function getDexIdx(c){
+      var kr=c.krName||'';
+      /* suffix 제거 후 기본명 조회 */
+      var base=kr.replace(/\s+(ex|EX|V|VMAX|VSTAR|GX|Mega|MEGA|일반|알로라|가라르|히수이|팔데아).*$/,'').trim();
+      var idx=DEX_ORDER[base];
+      if(idx===undefined)idx=DEX_ORDER[kr];
+      return (idx===undefined)?9999:idx;
+    }
+    if(_collSort==='recent'){
+      fc=fc.slice().sort(function(a,b){return (b.updatedAt||0)-(a.updatedAt||0);});
+    }else if(_collSort==='dex'){
+      fc=fc.slice().sort(function(a,b){
+        var da=getDexIdx(a),db2=getDexIdx(b);
+        if(da!==db2)return da-db2;
+        /* 같은 포켓몬끼리는 최신등록순 */
+        return (b.updatedAt||0)-(a.updatedAt||0);
+      });
+    }else if(_collSort==='name'){
+      fc=fc.slice().sort(function(a,b){
+        var na=(a.krName||a.name||''),nb=(b.krName||b.name||'');
+        return na.localeCompare(nb,'ko');
+      });
+    }
+  })();
   var totalQty=0;D.cards.forEach(function(c){totalQty+=(c.quantity||1);});
   var filteredQty=0;fc.forEach(function(c){filteredQty+=(c.quantity||1);});
   var ccEl=document.getElementById('cc');
@@ -516,8 +561,11 @@ function ensureCollHeader(){
   ext.innerHTML=
     '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">'+
       '<span id="coll-value" style="font-size:.78rem;color:var(--accent);font-family:var(--ft)"></span>'+
-      /* '<button class="btn btn-p btn-s" onclick="document.getElementById(\'csv-file-input\').click()" style="font-size:.78rem">📤 Dragon Shield 가져오기</button>'+ */
-      /* '<input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" onchange="handleCsvFileSelect(this)">'+ */
+      '<select id="coll-sort-sel" style="font-size:.75rem;padding:3px 8px;border:1px solid var(--cb);border-radius:8px;background:var(--card);color:var(--text1);cursor:pointer;font-family:var(--ft)" onchange="_collSort=this.value;rColl()">'+
+        '<option value="recent">🕐 최신 등록순</option>'+
+        '<option value="dex">🔢 포켓몬 번호순</option>'+
+        '<option value="name">가나다순</option>'+
+      '</select>'+
     '</div>'+
     '<div id="folder-chips" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px"></div>'+
     '<style>'+
@@ -1699,7 +1747,16 @@ function selectScanCand(i){
 
 function confirmScanCard(){
   var c=_scanCandidates[_scanSelectedIdx];if(!c)return;
+  /* 영문명에서 한글명 조회 — suffix(ex, V 등) 제거 후 재시도 */
   var kr=EN2KR[c.name]||'';
+  if(!kr){
+    var baseName=c.name.replace(/\s+(ex|EX|V|VMAX|VSTAR|GX|Mega|MEGA)$/,'').trim();
+    var baseKr=EN2KR[baseName]||'';
+    if(baseKr){
+      var suffix=c.name.slice(baseName.length).trim();
+      kr=baseKr+(suffix?' '+suffix:'');
+    }
+  }
   /* set.id + number 조합으로 cardId 생성 (pokemontcg.io 형식과 일치) */
   var setCode=(c.set&&(c.set.id||c.set.code)||'').toUpperCase();
   var cardNum=c.number||'';
@@ -1707,7 +1764,7 @@ function confirmScanCard(){
   var cd={
     id:c.id||newCardId,
     cardId:newCardId,
-    name:c.name,krName:kr,
+    name:c.name,krName:kr||c.name,
     rarity:c.rarity||'Unknown',
     set:c.set?c.set.name:'-',
     hp:c.hp||'-',types:c.types?c.types.join(', '):'-',
