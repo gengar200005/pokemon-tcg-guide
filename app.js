@@ -601,34 +601,67 @@ function normalizeCsvRow(row){
   };
 }
 
-/* pokemontcg.io 단일 카드 조회 (set+number) */
-function fetchPokemonTcgIo(setCode,cardNumber){
+/* pokemontcg.io 카드 조회 — 3단계 fallback
+   1단계: set.id + number 정확 매칭 (가장 정확)
+   2단계: 이름 검색 → 카드 번호로 우선순위
+   3단계: 첫 번째 후보 (대부분 가장 인기있는 카드)
+*/
+function fetchPokemonTcgIo(setCode,cardNumber,cardName){
   /* pokemontcg.io는 number를 0 패딩 없이 저장 ("50", not "050")
      단, "012VL" 같은 알파벳 포함 번호는 패딩 제거하면 안 됨 */
   var num=cardNumber;
   if(/^\d+$/.test(num))num=String(parseInt(num,10));  /* 순수 숫자만 0 제거 */
   var key=setCode.toLowerCase()+'-'+num;
   if(_ptcgCache[key])return Promise.resolve(_ptcgCache[key]);
-  var q='set.id:'+setCode.toLowerCase()+' number:'+num;
-  var url='https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q)+'&pageSize=1&select=id,name,images,types,hp,rarity,supertype,subtypes,set';
-  return fetch(url).then(function(r){return r.json();}).then(function(data){
+
+  /* 1단계: set.id + number 정확 매칭 */
+  var q1='set.id:'+setCode.toLowerCase()+' number:'+num;
+  var url1='https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q1)+'&pageSize=1&select=id,name,images,types,hp,rarity,supertype,subtypes,set,number';
+  return fetch(url1).then(function(r){return r.json();}).then(function(data){
     if(data&&data.data&&data.data.length>0){
-      var c=data.data[0];
-      var result={
-        id:c.id,name:c.name,
-        image:(c.images&&(c.images.small||c.images.large))||'',
-        imageHires:(c.images&&c.images.large)||'',
-        types:c.types||[],hp:c.hp||'',rarity:c.rarity||'',
-        supertype:c.supertype||'',subtypes:c.subtypes||[],
-        setName:(c.set&&c.set.name)||''
-      };
-      _ptcgCache[key]=result;savePtcgCache();
-      return result;
+      return finalizePtcgResult(key,data.data[0],'exact');
     }
-    /* 실패 시 negative 캐시 */
-    _ptcgCache[key]={_failed:true};savePtcgCache();
-    return {_failed:true};
-  }).catch(function(){return {_failed:true};});
+    /* 2단계: 카드 이름으로 검색 (cardName이 있을 때만) */
+    if(!cardName)return finalizePtcgFailed(key);
+    var cleanName=cardName.replace(/[^A-Za-z0-9\s\-\.]/g,'').trim();
+    if(!cleanName)return finalizePtcgFailed(key);
+    var q2='name:"'+cleanName+'"';
+    var url2='https://api.pokemontcg.io/v2/cards?q='+encodeURIComponent(q2)+'&pageSize=20&select=id,name,images,types,hp,rarity,supertype,subtypes,set,number';
+    return fetch(url2).then(function(r){return r.json();}).then(function(data2){
+      if(!data2||!data2.data||data2.data.length===0)return finalizePtcgFailed(key);
+      var candidates=data2.data;
+      /* 3단계 우선순위: 카드 번호 일치하는 것 우선 */
+      var numTarget=parseInt(num,10);
+      var byNumber=[];
+      var others=[];
+      candidates.forEach(function(c){
+        var cn=parseInt(c.number||'0',10);
+        if(!isNaN(numTarget)&&cn===numTarget)byNumber.push(c);
+        else others.push(c);
+      });
+      var picked=byNumber.length>0?byNumber[0]:candidates[0];
+      return finalizePtcgResult(key,picked,byNumber.length>0?'name+number':'name');
+    }).catch(function(){return finalizePtcgFailed(key);});
+  }).catch(function(){return finalizePtcgFailed(key);});
+}
+
+/* 검색 결과를 표준 형식으로 정규화 + 캐시 저장 */
+function finalizePtcgResult(key,c,matchType){
+  var result={
+    id:c.id,name:c.name,
+    image:(c.images&&(c.images.small||c.images.large))||'',
+    imageHires:(c.images&&c.images.large)||'',
+    types:c.types||[],hp:c.hp||'',rarity:c.rarity||'',
+    supertype:c.supertype||'',subtypes:c.subtypes||[],
+    setName:(c.set&&c.set.name)||'',
+    matchType:matchType||'exact'  /* 매칭 신뢰도 표시용 */
+  };
+  _ptcgCache[key]=result;savePtcgCache();
+  return result;
+}
+function finalizePtcgFailed(key){
+  _ptcgCache[key]={_failed:true};savePtcgCache();
+  return {_failed:true};
 }
 
 /* pokeapi.co 한국어 이름 조회 (영문 포켓몬 이름 → 한국어) */
@@ -767,7 +800,7 @@ function runCsvImport(rows,fileHash,fileName){
       i++;setTimeout(processNext,5);
     }else{
       /* 신규 카드 → pokemontcg.io 조회 */
-      fetchPokemonTcgIo(csvCard.setCode,csvCard.cardNumber).then(function(meta){
+      fetchPokemonTcgIo(csvCard.setCode,csvCard.cardNumber,csvCard.nameEn).then(function(meta){
         if(meta&&!meta._failed){
           /* 한국어 이름 조회 (포켓몬만) */
           var enrichKr=meta.supertype==='Pok\u00e9mon'?fetchPokemonKrName(csvCard.nameEn):Promise.resolve(null);
