@@ -88,7 +88,23 @@ function togAcc(el){
   el.classList.toggle('open');
   el.nextElementSibling.classList.toggle('open');
 }
-function closeM(){$('mo').className='mo';}
+var _returnToDeckId=null;
+function closeM(){
+  $('mo').className='mo';
+  /* 카드 상세 → 덱 상세 자동 복귀 */
+  if(_returnToDeckId){
+    var rid=_returnToDeckId;
+    _returnToDeckId=null;
+    setTimeout(function(){viewDeckDetail(rid);},150);
+  }
+}
+/* 덱 상세 모달 안에서 카드 행 탭 → 카드 상세 모달 띄우고 닫으면 덱으로 복귀 */
+function openCardFromDeck(deckId,bc){
+  var c=dbByCode[bc];
+  if(!c){toast('카드 정보를 찾을 수 없어요','#e74c3c');return;}
+  _returnToDeckId=deckId;
+  showCardModal(c);
+}
 
 /* ═══ Auth ═══ */
 function authAction(){
@@ -844,14 +860,14 @@ function viewDeckDetail(id){
       for(var y=0;y<arr.length;y++){
         var item=arr[y];
         var c2=item.card;
-        h+='<div style="display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--cb)"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c2.name_kr||'')+'</span><span style="color:var(--text3);flex-shrink:0;margin-left:8px">×'+item.qty+'</span></div>';
+        h+='<div onclick="event.stopPropagation();openCardFromDeck(\''+esc(d.id)+'\',\''+esc(c2.bs_code)+'\')" style="display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px solid var(--cb);cursor:pointer;border-radius:4px;transition:background .15s" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c2.name_kr||'')+'</span><span style="color:var(--text3);flex-shrink:0;margin-left:8px">×'+item.qty+'</span></div>';
       }
     }
     h+='</div>';
   }
 
   /* 액션 버튼 */
-  h+='<div class="acts" style="margin-top:14px"><button class="btn btn-b" onclick="closeM();editDeck(\''+esc(d.id)+'\')">✏️ 편집</button></div>';
+  h+='<div class="acts" style="margin-top:14px"><button class="btn btn-b" onclick="_returnToDeckId=null;closeM();editDeck(\''+esc(d.id)+'\')">✏️ 편집</button></div>';
 
   $('mb').innerHTML=h;
   $('mo').className='mo show';
