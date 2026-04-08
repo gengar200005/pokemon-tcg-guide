@@ -21,92 +21,131 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .auth-strip{flex-shrink:0;background:linear-gradient(90deg,#e0f4fd,#f0faff);padding:5px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--cb);font-size:.75rem}
 .auth-strip .abtn{padding:5px 14px;border-radius:14px;border:none;font-family:var(--fb);font-size:.7rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px}
 
-/* Tabs - 2 rows, bigger icons */
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg2);border-bottom:1px solid var(--cb);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.tab{padding:6px 2px 5px;border:none;background:none;color:var(--text3);font-family:var(--fb);font-size:.62rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;border-bottom:3px solid transparent;-webkit-appearance:none;transition:.2s}
+/* DB 로딩 상태 바 */
+.db-status{flex-shrink:0;background:linear-gradient(90deg,#fff7e6,#fffbe6);padding:6px 14px;text-align:center;font-size:.72rem;color:var(--text2);border-bottom:1px solid #ffe6a0}
+
+/* Tabs - 5탭 */
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--bg2);border-bottom:1px solid var(--cb);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.tab{padding:8px 2px 6px;border:none;background:none;color:var(--text3);font-family:var(--fb);font-size:.66rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;border-bottom:3px solid transparent;-webkit-appearance:none;transition:.2s}
 .tab.on{color:var(--accent);border-bottom-color:var(--accent);background:rgba(61,192,236,.06)}
-.tab img{width:36px;height:36px;pointer-events:none;transition:transform .2s}
+.tab img{width:38px;height:38px;pointer-events:none;transition:transform .2s}
 .tab.on img{transform:scale(1.15)}
 
 .cnt{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;-webkit-overflow-scrolling:touch}
 .pnl{display:none}.pnl.on{display:block}
 .st{font-family:var(--ft);font-size:1.1rem;color:var(--accent);margin-bottom:10px}
+
+/* 규칙 탭 (보존) */
 .box{background:var(--card);border:1px solid var(--cb);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
-.box h3{font-family:var(--ft);font-size:.95rem;margin-bottom:6px}.box p,.box li{font-size:.83rem;color:var(--text2);line-height:1.7}.box ul{padding-left:16px}.box li{margin-bottom:3px}
-.srch{display:flex;gap:6px;margin-bottom:14px}
-.srch input{flex:1;padding:10px 14px;border-radius:24px;border:2px solid var(--cb);background:#fff;color:var(--text);font-family:var(--fb);font-size:.88rem;outline:0;transition:border .2s}
-.srch input:focus{border-color:var(--accent)}
-.btn{padding:10px 18px;border:none;border-radius:24px;font-family:var(--fb);font-size:.82rem;font-weight:700;cursor:pointer;transition:.15s}
-.btn-p{background:linear-gradient(135deg,#3dc0ec,#60d4f0);color:#fff;box-shadow:0 3px 10px rgba(61,192,236,.3)}
-.btn-p:active{transform:scale(.96)}
-.btn-d{background:#ff6b6b;color:#fff}.btn-s{padding:6px 12px;font-size:.72rem;border-radius:16px}
-.btn-g{background:none;border:1.5px solid var(--cb);color:var(--text2);border-radius:16px}
-.btn-b{background:linear-gradient(135deg,#ffcb05,#ffd54f);color:#333;box-shadow:0 2px 8px rgba(255,203,5,.3)}
-select{padding:8px 12px;border-radius:16px;border:1.5px solid var(--cb);background:#fff;color:var(--text);font-family:var(--fb);font-size:.82rem;outline:0}
+.box h3{font-family:var(--ft);font-size:.95rem;margin-bottom:6px}
+.box p,.box li{font-size:.83rem;color:var(--text2);line-height:1.7}
+.box ul{padding-left:16px}.box li{margin-bottom:3px}
 .acc{margin-bottom:6px}
 .acc-h{background:var(--card);border:1.5px solid var(--cb);border-radius:var(--r);padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:var(--ft);font-size:.92rem;box-shadow:var(--shadow);-webkit-user-select:none;user-select:none;transition:.2s}
 .acc-h.open{border-color:var(--accent);background:linear-gradient(135deg,rgba(61,192,236,.06),rgba(61,192,236,.02))}
-.acc-h .arrow{transition:transform .2s;color:var(--text3);font-size:.8rem}.acc-h.open .arrow{transform:rotate(180deg);color:var(--accent)}
+.acc-h .arrow{transition:transform .2s;color:var(--text3);font-size:.8rem}
+.acc-h.open .arrow{transform:rotate(180deg);color:var(--accent)}
 .acc-b{display:none;padding:12px 14px;background:var(--bg3);border:1px solid var(--cb);border-top:none;border-radius:0 0 var(--r) var(--r);font-size:.83rem;color:var(--text2);line-height:1.75}
-.acc-b.open{display:block}.acc-b ul{padding-left:16px;margin:4px 0}.acc-b li{margin-bottom:3px}
+.acc-b.open{display:block}
+.acc-b ul{padding-left:16px;margin:4px 0}
+.acc-b li{margin-bottom:3px}
 .acc-b h4{font-family:var(--ft);font-size:.88rem;color:var(--text);margin:10px 0 4px}
 .tip{background:linear-gradient(135deg,rgba(255,203,5,.1),rgba(255,203,5,.04));border-left:3px solid var(--accent2);padding:8px 10px;margin:8px 0;border-radius:0 var(--rs) var(--rs) 0;font-size:.78rem;color:var(--text2)}
-.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+
+/* 검색창 */
+.srch{display:flex;gap:6px;margin-bottom:14px}
+.srch input{flex:1;padding:10px 14px;border-radius:24px;border:2px solid var(--cb);background:#fff;color:var(--text);font-family:var(--fb);font-size:.88rem;outline:0;transition:border .2s}
+.srch input:focus{border-color:var(--accent)}
+
+/* 버튼 */
+.btn{padding:10px 18px;border:none;border-radius:24px;font-family:var(--fb);font-size:.82rem;font-weight:700;cursor:pointer;transition:.15s}
+.btn-p{background:linear-gradient(135deg,#3dc0ec,#60d4f0);color:#fff;box-shadow:0 3px 10px rgba(61,192,236,.3)}
+.btn-p:active{transform:scale(.96)}
+.btn-d{background:#ff6b6b;color:#fff}
+.btn-s{padding:6px 12px;font-size:.72rem;border-radius:16px}
+.btn-g{background:none;border:1.5px solid var(--cb);color:var(--text2);border-radius:16px}
+.btn-b{background:linear-gradient(135deg,#ffcb05,#ffd54f);color:#333;box-shadow:0 2px 8px rgba(255,203,5,.3)}
+
+/* 도감 서브탭 (포켓몬/트레이너/에너지/스타디움) */
+.subtabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--bg3);border-radius:24px;padding:4px;margin-bottom:12px}
+.subtab{padding:8px 4px;border:none;background:none;color:var(--text3);font-family:var(--fb);font-size:.78rem;font-weight:700;cursor:pointer;border-radius:20px;transition:.15s}
+.subtab.on{background:var(--accent);color:#fff;box-shadow:0 2px 6px rgba(61,192,236,.3)}
+.subtab:active{transform:scale(.96)}
+
+.dex-meta{font-size:.78rem;color:var(--text2);margin-bottom:10px;text-align:center}
+.dex-meta b{color:var(--accent);font-family:var(--ft)}
+
+/* 카드 그리드 */
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px}
 .dc{background:var(--card);border:2px solid var(--cb);border-radius:var(--r);overflow:hidden;cursor:pointer;position:relative;box-shadow:var(--shadow);transition:.2s}
 .dc:active{transform:scale(.97)}
 .dc img{width:100%;aspect-ratio:2.5/3.5;object-fit:contain;background:#f4fafd;display:block}
-.dc .nm{padding:4px 6px;font-size:.65rem;color:var(--text2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dc.owned{border-color:var(--green);box-shadow:0 0 0 2px rgba(39,174,96,.2)}.dc.unowned{opacity:.4;filter:grayscale(.3)}
-.dc .ob{position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#fff;pointer-events:none}
-.dc.owned .ob{background:var(--green)}.dc.unowned .ob{background:rgba(0,0,0,.3)}
-.loading{text-align:center;padding:30px;color:var(--text3)}
-.spinner{width:28px;height:28px;border:3px solid var(--bg4);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px}@keyframes spin{to{transform:rotate(360deg)}}
-.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
-.cc{background:var(--card);border:1.5px solid var(--cb);border-radius:var(--r);padding:8px;display:flex;flex-direction:column;align-items:center;position:relative;box-shadow:var(--shadow)}
-.cc img{width:80px;border-radius:8px;margin-bottom:4px}.cc .n{font-size:.78rem;font-weight:700;text-align:center}.cc .m{font-size:.65rem;color:var(--text3);margin-top:1px}
-.cc .x{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:#ff6b6b;color:#fff;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s}.cc:hover .x,.cc:active .x{opacity:1}
-.di{background:var(--card);border:1.5px solid var(--cb);border-radius:var(--r);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;box-shadow:var(--shadow)}
-.di .dn{font-family:var(--ft);font-size:.95rem}.di .dc2{font-size:.72rem;color:var(--text3)}
-.dd{background:var(--bg3);border-radius:var(--r);padding:10px;margin-top:8px}.dd .ce{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--cb);font-size:.82rem}.dd .ce:last-child{border-bottom:none}
-.rt{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1.5px solid var(--cb);border-radius:var(--r);margin-bottom:6px;box-shadow:var(--shadow)}
-.rt .ri{font-size:1.4rem;flex-shrink:0}.rt .rl{font-weight:700;font-size:.85rem}.rt .rp{font-size:.73rem;color:var(--orange);font-weight:700;margin-top:1px}
-.rec-card{background:linear-gradient(135deg,#fff,var(--bg3));border:2px solid var(--accent);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:0 2px 12px rgba(61,192,236,.15)}
-.rec-card h3{font-family:var(--ft);color:var(--accent);font-size:.95rem;margin-bottom:6px}
-.rec-card .card-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.rec-card .card-list span{background:var(--bg4);padding:3px 8px;border-radius:12px;font-size:.72rem;color:var(--text2)}
-.battle-log{background:var(--bg3);border-radius:var(--r);padding:12px;max-height:400px;overflow-y:auto;font-size:.78rem;color:var(--text2);line-height:1.8}
-.battle-log .turn{margin-bottom:6px;padding:8px;background:var(--card);border-radius:var(--rs);box-shadow:var(--shadow)}
-.battle-log .dmg{color:var(--red);font-weight:700}.battle-log .ko{color:var(--orange);font-weight:700;font-size:.85rem}
-.battle-log .win{text-align:center;padding:14px;font-family:var(--ft);font-size:1.2rem;color:var(--accent2);margin-top:8px}
-.vs-display{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px 0;flex-wrap:wrap}
-.vs-team{text-align:center;background:var(--card);border-radius:var(--r);padding:12px 18px;min-width:100px;box-shadow:var(--shadow);border:1.5px solid var(--cb)}
-.vs-team .name{font-family:var(--ft);font-size:.9rem;margin-bottom:4px}.vs-team .cnt2{font-size:.72rem;color:var(--text3)}
-.vs-label{font-family:var(--ft);font-size:1.3rem;color:var(--accent2)}
-.mo{display:none;position:fixed;inset:0;background:rgba(0,40,80,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;justify-content:center;align-items:center;padding:12px}.mo.show{display:flex}
-.ml{background:var(--bg2);border:1.5px solid var(--cb);border-radius:20px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto;padding:20px;position:relative;box-shadow:0 8px 40px rgba(0,40,80,.2)}
-.mx{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:none;background:var(--bg4);color:var(--text2);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10}
-.ml img{width:100%;max-width:220px;margin:0 auto 10px;display:block;border-radius:12px}.ml h3{font-family:var(--ft);font-size:1.05rem;text-align:center;margin-bottom:8px;color:var(--accent)}
-.ml .dr{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--cb);font-size:.82rem}.ml .dr:last-child{border-bottom:none}.ml .dl{color:var(--text3)}
-.ml .acts{display:flex;gap:6px;margin-top:14px}.ml .acts .btn{flex:1}
-.empty{text-align:center;padding:30px 16px;color:var(--text3)}.empty .ei{font-size:2.5rem;margin-bottom:8px}.empty p{font-size:.82rem}
-.rbtn{padding:4px 10px;border-radius:14px;border:1.5px solid var(--cb);background:var(--bg2);color:var(--text2);font-family:var(--fb);font-size:.68rem;cursor:pointer;transition:.15s;white-space:nowrap}
-.rbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}.rbtn:active{transform:scale(.95)}
-.preset-card{background:var(--card);border:2px solid var(--cb);border-radius:var(--r);padding:12px;margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow);transition:.2s;display:flex;justify-content:space-between;align-items:center}
-.preset-card:active{transform:scale(.98);border-color:var(--accent)}
-.preset-card .pn{font-family:var(--ft);font-size:.9rem}.preset-card .pt{font-size:.72rem;color:var(--text3)}
+.dc .nm{padding:5px 6px;font-size:.7rem;color:var(--text2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc.owned{border-color:var(--green);box-shadow:0 0 0 2px rgba(39,174,96,.18)}
+.dc.unowned img{filter:grayscale(100%) brightness(.7)}
+.dc.unowned{opacity:.85}
+.dc .ob{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.dc.owned .ob{background:var(--green)}
+.dc.unowned .ob{background:rgba(0,0,0,.35)}
 
-/* ═══ Scan (Dragon Shield Style) ═══ */
-.scan-launch{background:linear-gradient(135deg,#3dc0ec,#60d4f0);border:none;border-radius:var(--r);padding:16px;margin-bottom:14px;cursor:pointer;box-shadow:0 4px 14px rgba(61,192,236,.35);display:flex;align-items:center;gap:12px;width:100%;transition:.15s;color:#fff}
+.loading{text-align:center;padding:40px 20px;color:var(--text3)}
+.spinner{width:32px;height:32px;border:3px solid var(--bg4);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:40px 16px;color:var(--text3)}
+.empty .ei{font-size:2.8rem;margin-bottom:10px}
+.empty p{font-size:.85rem;line-height:1.6}
+
+/* 수집 탭: 요약 + 필터 */
+.coll-summary{background:linear-gradient(135deg,#fff,var(--bg3));border:1.5px solid var(--cb);border-radius:var(--r);padding:12px 16px;margin-bottom:10px;box-shadow:var(--shadow);text-align:center}
+.coll-summary .cs-row{font-family:var(--ft);font-size:1rem;color:var(--text);margin-bottom:4px}
+.coll-summary .cs-row b{color:var(--accent);font-size:1.15rem}
+.coll-summary .cs-breakdown{font-size:.75rem;color:var(--text2)}
+.coll-filters{background:var(--card);border:1.5px solid var(--cb);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.coll-filters summary{font-family:var(--ft);font-size:.88rem;color:var(--accent);cursor:pointer;-webkit-user-select:none;user-select:none}
+.coll-filters[open] summary{margin-bottom:8px}
+.fgroup{margin:8px 0}
+.fl{font-size:.72rem;color:var(--text3);margin-bottom:4px;font-weight:700}
+.frow{display:flex;flex-wrap:wrap;gap:4px}
+.fchip{padding:5px 11px;border-radius:14px;border:1.5px solid var(--cb);background:var(--bg2);color:var(--text2);font-family:var(--fb);font-size:.7rem;cursor:pointer;transition:.15s;white-space:nowrap}
+.fchip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.fchip:active{transform:scale(.95)}
+
+/* 덱 탭 placeholder */
+.deck-notice{background:linear-gradient(135deg,rgba(255,203,5,.12),rgba(255,203,5,.04));border:1.5px dashed var(--accent2);border-radius:var(--r);padding:14px 16px}
+.preset-card{background:var(--card);border:2px solid var(--cb);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow);transition:.2s;display:flex;justify-content:space-between;align-items:center}
+.preset-card:active{transform:scale(.98);border-color:var(--accent)}
+.preset-card .pn{font-family:var(--ft);font-size:.92rem}
+.preset-card .pt{font-size:.72rem;color:var(--text3);margin-top:2px}
+
+/* 모달 */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,40,80,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;justify-content:center;align-items:center;padding:12px}
+.mo.show{display:flex}
+.ml{background:var(--bg2);border:1.5px solid var(--cb);border-radius:20px;max-width:420px;width:100%;max-height:88vh;overflow-y:auto;padding:20px;position:relative;box-shadow:0 8px 40px rgba(0,40,80,.2)}
+.mx{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;border:none;background:var(--bg4);color:var(--text2);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10}
+.ml img{width:100%;max-width:240px;margin:0 auto 12px;display:block;border-radius:12px;background:#f4fafd}
+.ml h3{font-family:var(--ft);font-size:1.1rem;text-align:center;margin-bottom:10px;color:var(--accent)}
+.ml .dr{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--cb);font-size:.82rem}
+.ml .dr:last-child{border-bottom:none}
+.ml .dl{color:var(--text3)}
+.ml .acts{display:flex;gap:6px;margin-top:14px}
+.ml .acts .btn{flex:1}
+
+/* 토스트 */
+.scan-toast{position:fixed;top:20%;left:50%;transform:translateX(-50%);background:rgba(39,174,96,.95);color:#fff;padding:11px 22px;border-radius:24px;font-size:.85rem;z-index:400;box-shadow:0 4px 14px rgba(0,0,0,.3);animation:toastIn .3s ease-out;font-weight:700}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* 스캔 UI (Dragon Shield style — 보존) */
+.scan-launch{background:linear-gradient(135deg,#3dc0ec,#60d4f0);border:none;border-radius:var(--r);padding:18px;margin-bottom:14px;cursor:pointer;box-shadow:0 4px 14px rgba(61,192,236,.35);display:flex;align-items:center;gap:14px;width:100%;transition:.15s;color:#fff}
 .scan-launch:active{transform:scale(.97)}
-.scan-launch .ic{font-size:2rem;flex-shrink:0}
+.scan-launch .ic{font-size:2.2rem;flex-shrink:0}
 .scan-launch .tx{text-align:left;flex:1}
-.scan-launch .tt{font-family:var(--ft);font-size:1rem;margin-bottom:2px}
-.scan-launch .st2{font-size:.72rem;opacity:.9}
+.scan-launch .tt{font-family:var(--ft);font-size:1.05rem;display:block;margin-bottom:2px}
+.scan-launch .st2{font-size:.74rem;opacity:.92}
 .scan-fs{position:fixed;inset:0;background:#000;z-index:300;display:none;flex-direction:column}
 .scan-fs.on{display:flex}
 .scan-video-wrap{flex:1;position:relative;overflow:hidden;background:#000}
 .scan-video{width:100%;height:100%;object-fit:cover;display:block}
 .scan-overlay{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center}
-.scan-dim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
 .scan-frame{position:relative;width:min(78vw,300px);aspect-ratio:2.5/3.5;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 9999px rgba(0,0,0,.55);z-index:2}
 .scan-frame .corner{position:absolute;width:22px;height:22px;border:4px solid var(--accent2)}
 .scan-frame .corner.tl{top:-4px;left:-4px;border-right:none;border-bottom:none;border-top-left-radius:10px}
@@ -114,49 +153,25 @@ select{padding:8px 12px;border-radius:16px;border:1.5px solid var(--cb);backgrou
 .scan-frame .corner.bl{bottom:-4px;left:-4px;border-right:none;border-top:none;border-bottom-left-radius:10px}
 .scan-frame .corner.br{bottom:-4px;right:-4px;border-left:none;border-top:none;border-bottom-right-radius:10px}
 .scan-frame .type-circle{position:absolute;top:6%;right:6%;width:14%;aspect-ratio:1;border:2px dashed rgba(255,203,5,.9);border-radius:50%}
-.scan-frame .art-box{position:absolute;top:12%;left:8%;right:8%;height:44%;border:2px dashed rgba(255,255,255,.55);border-radius:4px}
 .scan-tophud{position:absolute;top:0;left:0;right:0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;z-index:3;background:linear-gradient(180deg,rgba(0,0,0,.6),transparent)}
 .scan-tophud .ttl{color:#fff;font-family:var(--ft);font-size:1rem}
-.scan-model-badge{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:5px 12px;font-size:.7rem;cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap;transition:.15s}
-.scan-model-badge:active{transform:scale(.95);background:rgba(255,255,255,.25)}
-.scan-model-menu{position:absolute;top:58px;left:50%;transform:translateX(-50%);background:rgba(20,25,35,.96);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:6px;z-index:5;display:none;min-width:200px;backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
-.scan-model-menu .mm-item{padding:9px 12px;cursor:pointer;border-radius:8px;transition:.1s}
-.scan-model-menu .mm-item:active{background:rgba(255,255,255,.1)}
-.scan-model-menu .mm-item.sel{background:rgba(61,192,236,.2)}
-.scan-model-menu .mm-item .mm-l{color:#fff;font-size:.82rem;font-weight:700}
-.scan-model-menu .mm-item .mm-d{color:rgba(255,255,255,.55);font-size:.68rem;margin-top:1px}
 .scan-close{width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
 .scan-guide-msg{position:absolute;bottom:120px;left:0;right:0;text-align:center;color:#fff;font-size:.85rem;z-index:3;padding:0 16px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
 .scan-controls{position:absolute;bottom:0;left:0;right:0;padding:18px 20px 28px;display:flex;align-items:center;justify-content:space-between;z-index:3;background:linear-gradient(0deg,rgba(0,0,0,.75),transparent)}
 .scan-shutter{width:72px;height:72px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.4);cursor:pointer;box-shadow:0 0 0 3px #fff;transition:.1s;flex-shrink:0;margin:0 auto;padding:0}
 .scan-shutter:active{transform:scale(.9)}
-.scan-shutter:disabled{background:var(--text3);box-shadow:0 0 0 3px var(--text3)}
 .scan-flip{width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:1.3rem;cursor:pointer;backdrop-filter:blur(6px)}
 .scan-count{font-family:var(--ft);color:#fff;font-size:.9rem;min-width:48px;text-align:right}
 
-/* Scan result view */
-.scan-result{position:absolute;inset:0;background:#111;z-index:10;overflow-y:auto;display:none;flex-direction:column;color:#fff}
-.scan-result.on{display:flex}
-.scan-result .sr-hdr{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#111;z-index:2}
-.scan-result .sr-hdr h3{font-family:var(--ft);font-size:1.05rem}
-.scan-result .sr-body{flex:1;padding:14px 16px 90px}
-.scan-result .sr-shot{width:100%;max-width:260px;margin:0 auto 14px;display:block;border-radius:10px;border:1px solid rgba(255,255,255,.15)}
-.scan-result .sr-label{font-family:var(--ft);font-size:.9rem;color:var(--accent2);margin-bottom:10px;text-align:center}
-.scan-cands{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.scan-cand{background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:6px;cursor:pointer;transition:.15s}
-.scan-cand:active{transform:scale(.96)}
-.scan-cand.sel{border-color:var(--accent);background:rgba(61,192,236,.15);box-shadow:0 0 0 1px var(--accent)}
-.scan-cand img{width:100%;aspect-ratio:2.5/3.5;object-fit:contain;border-radius:6px;background:#222;display:block}
-.scan-cand .cn2{font-size:.68rem;margin-top:4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-.scan-cand .cs{font-size:.6rem;color:rgba(255,255,255,.5);text-align:center}
-.scan-result .sr-actions{position:fixed;bottom:0;left:0;right:0;padding:14px 16px 22px;background:linear-gradient(0deg,#111 60%,rgba(17,17,17,.9));display:flex;gap:8px;z-index:3}
-.scan-result .sr-actions .btn{flex:1}
-.scan-status{text-align:center;padding:20px;color:rgba(255,255,255,.7);font-size:.85rem}
-.scan-status .spinner{border-top-color:var(--accent2);margin-bottom:8px}
-.scan-toast{position:fixed;top:20%;left:50%;transform:translateX(-50%);background:rgba(39,174,96,.95);color:#fff;padding:10px 20px;border-radius:24px;font-size:.85rem;z-index:400;box-shadow:0 4px 14px rgba(0,0,0,.3);animation:toastIn .3s ease-out}
-@keyframes toastIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
-
-@media(max-width:480px){.hdr h1{font-size:1.3rem}.cnt{padding:10px}.dgrid{grid-template-columns:repeat(auto-fill,minmax(85px,1fr))}.cgrid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}.tab img{width:32px;height:32px}.scan-frame{width:85vw}}
+@media(max-width:480px){
+  .hdr h1{font-size:1.3rem}
+  .cnt{padding:10px}
+  .dgrid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}
+  .tab img{width:34px;height:34px}
+  .tab{font-size:.62rem}
+  .scan-frame{width:85vw}
+  .subtab{font-size:.7rem;padding:7px 2px}
+}
 </style>
 </head>
 <body>
@@ -172,18 +187,17 @@ select{padding:8px 12px;border-radius:16px;border:1.5px solid var(--cb);backgrou
       <span id="auth-label">Google 로그인</span>
     </button>
   </div>
+  <div class="db-status" id="db-status">💾 카드 DB 준비 중...</div>
   <div class="tabs" id="tabbar">
     <button class="tab on" onclick="switchTab('rules',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="">규칙</button>
     <button class="tab" onclick="switchTab('dex',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="">도감</button>
-    <button class="tab" onclick="switchTab('coll',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png" alt="">카드함</button>
-    <button class="tab" onclick="switchTab('quick',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png" alt="">빠른등록</button>
-    <button class="tab" onclick="switchTab('deck',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png" alt="">모의덱</button>
-    <button class="tab" onclick="switchTab('rec',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png" alt="">추천</button>
-    <button class="tab" onclick="switchTab('battle',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png" alt="">배틀</button>
-    <button class="tab" onclick="switchTab('rare',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/384.png" alt="">희소</button>
+    <button class="tab" onclick="switchTab('coll',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png" alt="">수집</button>
+    <button class="tab" onclick="switchTab('scan',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png" alt="">스캔</button>
+    <button class="tab" onclick="switchTab('deck',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png" alt="">덱</button>
   </div>
   <div class="cnt">
 
+<!-- 📖 규칙 탭 (보존) -->
 <div class="pnl on" id="p-rules">
 <div class="st">📖 포켓몬 TCG 공식 규칙</div>
 <p style="font-size:.78rem;color:var(--text3);margin-bottom:12px">공식 룰북 기반 · 아이가 이해하기 쉽게!</p>
@@ -195,98 +209,87 @@ select{padding:8px 12px;border-radius:16px;border:1.5px solid var(--cb);backgrou
 <div class="acc"><div class="acc-h" onclick="togAcc(this)">📐 덱 구성 가이드 <span class="arrow">▼</span></div><div class="acc-b"><p>60장 (같은 이름 최대 4장)</p><ul><li>포켓몬 12~20, 트레이너스 25~35, 에너지 10~15</li></ul></div></div>
 </div>
 
-<div class="pnl" id="p-dex"><div class="st">📚 카드 도감</div><div class="srch"><input type="text" id="dex-q" placeholder="포켓몬 이름 검색"><button class="btn btn-p" onclick="_dexAllCards=[];_dexPage=1;_dexFilter='all';searchDex()">검색</button></div><p style="font-size:.72rem;color:var(--text3);margin-bottom:10px">포켓몬 카드 검색! 기술/특성/약점/저항력 상세 확인</p><div id="dex-r"><div class="empty"><div class="ei">🔍</div><p>포켓몬 이름을 검색해보세요!<br><span style="font-size:.72rem">예: 피카츄, 리자몽, Charizard, Pikachu 등</span></p></div></div></div>
-
-<div class="pnl" id="p-coll"><div class="st">🃏 내 카드함</div><div style="display:flex;gap:6px;margin-bottom:12px;align-items:center"><select id="cf" onchange="rColl()"><option value="all">전체</option><option value="Common">Common</option><option value="Uncommon">Uncommon</option><option value="Rare">Rare</option><option value="Rare Holo">Rare Holo</option><option value="Ultra">Ultra+</option></select><span id="cc" style="font-size:.72rem;color:var(--text3)"></span></div><div class="cgrid" id="cg"></div><div id="ce" class="empty" style="display:none"><div class="ei">🃏</div><p>도감에서 카드를 추가하세요!</p></div></div>
-
-<div class="pnl" id="p-quick">
-<div class="st">⚡ 빠른 카드 등록</div>
-<button class="scan-launch" onclick="startScan()">
-<span class="ic">📸</span>
-<span class="tx"><span class="tt">카메라로 스캔하기</span><span class="st2">실물 카드를 찍어 자동 등록 (Gemini AI)</span></span>
-<span style="font-size:1.4rem">›</span>
-</button>
-<p style="font-size:.78rem;color:var(--text3);margin-bottom:10px">또는 한글 이름을 입력하면 자동완성! 탭해서 바로 검색</p>
-<div class="srch"><input type="text" id="quick-q" placeholder="포켓몬 이름 입력 (예: 리자)"><button class="btn btn-p" onclick="quickSearch()">검색</button></div>
-<div id="quick-r"></div>
+<!-- 📚 도감 탭 -->
+<div class="pnl" id="p-dex">
+  <div class="st">📚 카드 도감</div>
+  <div class="subtabs" id="dex-subtabs">
+    <button class="subtab on" onclick="setDexClass('pokemon',this)">🐾 포켓몬</button>
+    <button class="subtab" onclick="setDexClass('trainer',this)">🎫 트레이너</button>
+    <button class="subtab" onclick="setDexClass('energy',this)">⚡ 에너지</button>
+    <button class="subtab" onclick="setDexClass('stadium',this)">🏟️ 스타디움</button>
+  </div>
+  <div class="srch">
+    <input type="text" id="dex-q" placeholder="이름 검색 (예: 피카츄)" oninput="onDexSearch()">
+  </div>
+  <div id="dex-r"><div class="loading"><div class="spinner"></div><p>카드 DB 로딩 중...</p></div></div>
 </div>
 
+<!-- 🃏 수집 탭 -->
+<div class="pnl" id="p-coll">
+  <div class="st">🃏 내 수집함</div>
+  <div id="coll-r"><div class="loading"><div class="spinner"></div><p>준비 중...</p></div></div>
+</div>
+
+<!-- 📸 스캔 탭 -->
+<div class="pnl" id="p-scan">
+  <div class="st">📸 카드 스캔</div>
+  <button class="scan-launch" onclick="startScan()">
+    <span class="ic">📸</span>
+    <span class="tx"><span class="tt">카메라로 스캔하기</span><span class="st2">실물 카드를 찍어 자동 등록 (Gemini AI)</span></span>
+    <span style="font-size:1.4rem">›</span>
+  </button>
+  <div class="deck-notice" style="margin-top:12px">
+    <div style="font-family:var(--ft);font-size:.95rem;color:var(--accent);margin-bottom:6px">🚧 본구현은 세션 8 예정</div>
+    <p style="font-size:.78rem;color:var(--text2);line-height:1.6">Dragon Shield 스타일 라이브 프리뷰 + Gemini Vision API로 카드를 자동 인식해 수집함에 한 번에 등록할 수 있게 됩니다.</p>
+  </div>
+</div>
+
+<!-- 🏗️ 덱 탭 -->
 <div class="pnl" id="p-deck">
-<div class="st">🏗️ 모의 덱 빌더</div>
-<div class="srch"><input type="text" id="dk-n" placeholder="새 덱 이름"><button class="btn btn-p" onclick="createDeck()">만들기</button></div>
-
-<div style="margin-bottom:14px">
-<p style="font-family:var(--ft);font-size:.88rem;color:var(--accent);margin-bottom:8px">📦 시판 덱 한 번에 불러오기</p>
-<div id="preset-list"></div>
+  <div class="st">🏗️ 덱 빌더</div>
+  <div id="deck-r"><div class="loading"><div class="spinner"></div><p>준비 중...</p></div></div>
 </div>
-
-<div id="dk-l"></div>
-<div id="dk-e" class="empty" style="display:none"><div class="ei">🏗️</div><p>새 덱을 만들거나 시판 덱을 불러오세요!</p></div>
-</div>
-
-<div class="pnl" id="p-rec"><div class="st">🎯 추천 덱</div><button class="btn btn-b" onclick="genRec()" style="margin-bottom:14px">🔄 내 카드 분석하기</button><div id="rec-r"></div></div>
-<div class="pnl" id="p-battle"><div class="st">⚔️ 배틀 시뮬</div><div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center"><select id="bt-a"></select><span style="font-family:var(--ft);color:var(--accent2)">VS</span><select id="bt-b"></select><button class="btn btn-b" onclick="runBattle()">⚔️ 배틀!</button></div><div id="bt-r"></div></div>
-<div class="pnl" id="p-rare"><div class="st">✨ 희소도 등급</div><div class="rt"><div class="ri">⬜</div><div><div class="rl">Common</div><div class="rp">100~500원</div></div></div><div class="rt"><div class="ri">🔷</div><div><div class="rl">Uncommon</div><div class="rp">300~1,500원</div></div></div><div class="rt"><div class="ri">⭐</div><div><div class="rl">Rare</div><div class="rp">1,000~5,000원</div></div></div><div class="rt"><div class="ri">🌟</div><div><div class="rl">Rare Holo</div><div class="rp">2,000~15,000원</div></div></div><div class="rt"><div class="ri">💎</div><div><div class="rl">V / VMAX / ex</div><div class="rp">3,000~50,000원</div></div></div><div class="rt"><div class="ri">🔥</div><div><div class="rl">Ultra Rare</div><div class="rp">10,000~200,000원+</div></div></div><div class="rt"><div class="ri">👑</div><div><div class="rl">Secret / SAR</div><div class="rp">50,000~500,000원+</div></div></div><div style="margin-top:14px"><div class="st">💎 내 희소카드</div><div id="rare-l"></div><div id="rare-e" class="empty" style="display:none"><div class="ei">💎</div><p>Rare 이상을 모으면 여기에!</p></div></div></div>
 
   </div>
 </div>
-<div class="mo" id="mo" onclick="if(event.target===this)closeM()"><div class="ml" id="ml"><button class="mx" onclick="closeM()">&times;</button><div id="mb"></div></div></div>
 
-<!-- Dragon Shield style Scan UI -->
+<!-- 모달 -->
+<div class="mo" id="mo" onclick="if(event.target===this)closeM()">
+  <div class="ml" id="ml">
+    <button class="mx" onclick="closeM()">&times;</button>
+    <div id="mb"></div>
+  </div>
+</div>
+
+<!-- 스캔 풀스크린 UI (Dragon Shield style — 보존) -->
 <div class="scan-fs" id="scanFs">
   <div class="scan-video-wrap">
     <video class="scan-video" id="scanVideo" playsinline autoplay muted></video>
     <div class="scan-tophud">
       <div style="display:flex;align-items:center;gap:8px">
-        <div class="ttl">📸</div>
-        <button class="scan-model-badge" id="scanModelBadge" onclick="toggleModelMenu()">🤖 모델</button>
+        <div class="ttl">📸 카드 스캔</div>
       </div>
       <button class="scan-close" onclick="stopScan()">×</button>
     </div>
-    <div class="scan-model-menu" id="scanModelMenu"></div>
     <div class="scan-overlay">
       <div class="scan-frame">
         <div class="corner tl"></div><div class="corner tr"></div>
         <div class="corner bl"></div><div class="corner br"></div>
         <div class="type-circle"></div>
-        <div class="art-box"></div>
       </div>
     </div>
     <div class="scan-guide-msg">프레임 안에 카드를 맞추고 셔터를 누르세요</div>
     <div class="scan-controls">
       <button class="scan-flip" onclick="flipCamera()" title="카메라 전환">🔄</button>
-      <button class="scan-shutter" id="scanShutter" onclick="captureCard()" aria-label="촬영"></button>
+      <button class="scan-shutter" onclick="captureCard()" aria-label="촬영"></button>
       <div class="scan-count" id="scanCount">0장</div>
-    </div>
-    <!-- Result panel -->
-    <div class="scan-result" id="scanResult">
-      <div class="sr-hdr">
-        <h3>카드 식별 결과</h3>
-        <button class="scan-close" onclick="retakeScan()">×</button>
-      </div>
-      <div class="sr-body" id="scanResultBody"></div>
-      <div class="sr-actions" id="scanResultActions" style="display:none">
-        <button class="btn btn-g" onclick="retakeScan()">다시 찍기</button>
-        <button class="btn btn-p" id="scanConfirmBtn" onclick="confirmScanCard()">카드함에 추가</button>
-      </div>
     </div>
   </div>
 </div>
-<canvas id="scanCanvas" style="display:none"></canvas>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="app.js"></script>
-<script>
-// Render preset deck buttons after app.js loads
-(function(){
-  var h='';
-  PRESET_DECKS.forEach(function(p,i){
-    var cnt=p.cards.reduce(function(a,c){return a+c.q;},0);
-    h+='<div class="preset-card" onclick="loadPresetDeck('+i+')"><div><div class="pn">'+p.type+' '+p.name+'</div><div class="pt">'+cnt+'장 구성</div></div><div class="btn btn-s btn-b">불러오기</div></div>';
-  });
-  document.getElementById('preset-list').innerHTML=h;
-})();
-</script>
 </body>
 </html>
