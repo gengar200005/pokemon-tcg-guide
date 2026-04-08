@@ -799,28 +799,39 @@ function setScanPreprocess(on){
 /* ─── 마지막 스캔의 전처리 메타 (디버그 박스 표시용) ─── */
 var _lastPreprocessMeta=null;  /* {on, sat, gamma, ms} */
 
-/* ─── 이미지 전처리 (프리즘/홀로 카드 무지개 노이즈 대응)
-   세션 10.1: 감마 제거 (어둡게 만드는 부작용 확인됨)
-   채도 감소만 적용 — 무지개 홀로 패턴 죽여서 OCR이 텍스트에 집중.
-   텍스트는 검정/흰색이라 채도와 무관, 거의 흑백화해도 손실 없음. */
+/* ─── 이미지 전처리 (프리즘/홀로 카드 무지개 노이즈 + 어두운 노출 대응)
+   세션 10.2: 밝기 + 대비 추가
+   처리 순서: 채도 감소 → 밝기 + → 대비 ×
+   채도를 먼저 죽여서 색 노이즈 제거 → 밝기/대비로 글자를 배경에서 분리. */
 function applyImagePreprocessing(ctx,w,h){
   var t0=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-  var SAT=0.2;       /* 0=완전 흑백, 1=원본 — 0.2면 거의 흑백 */
+  var SAT=0.2;       /* 0=완전 흑백, 1=원본 */
+  var BRI=45;        /* 밝기 오프셋 (-255~+255) — 세션 10.3: 25→45 */
+  var CON=1.6;       /* 대비 배율 (1=원본, >1=대비 강화) — 세션 10.3: 1.3→1.6 */
+  var CON_OFFSET=128*(1-CON);  /* 대비 공식: out = in*CON + 128*(1-CON) */
   var imageData=ctx.getImageData(0,0,w,h);
   var data=imageData.data;
   var len=data.length;
   for(var p=0;p<len;p+=4){
     var r=data[p],g=data[p+1],b=data[p+2];
-    /* 채도 감소 — luminance 기준 lerp */
+    /* 1) 채도 감소 — luminance 기준 lerp */
     var lum=0.299*r+0.587*g+0.114*b;
-    data[p]  =lum+(r-lum)*SAT;
-    data[p+1]=lum+(g-lum)*SAT;
-    data[p+2]=lum+(b-lum)*SAT;
+    r=lum+(r-lum)*SAT;
+    g=lum+(g-lum)*SAT;
+    b=lum+(b-lum)*SAT;
+    /* 2) 밝기 + 3) 대비 한 번에 (out = in*CON + CON_OFFSET + BRI) */
+    r=r*CON+CON_OFFSET+BRI;
+    g=g*CON+CON_OFFSET+BRI;
+    b=b*CON+CON_OFFSET+BRI;
+    /* clamp 0~255 (Uint8ClampedArray가 자동으로 해주지만 명시) */
+    data[p]  =r<0?0:(r>255?255:r);
+    data[p+1]=g<0?0:(g>255?255:g);
+    data[p+2]=b<0?0:(b>255?255:b);
     /* alpha (data[p+3]) 는 그대로 */
   }
   ctx.putImageData(imageData,0,0);
   var t1=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-  _lastPreprocessMeta={on:true,sat:SAT,ms:Math.round(t1-t0)};
+  _lastPreprocessMeta={on:true,sat:SAT,bri:BRI,con:CON,ms:Math.round(t1-t0)};
 }
 
 /* ─── 비디오 → scan-frame 영역 crop → JPEG base64 ─── */
@@ -1216,14 +1227,17 @@ function buildDebugBoxHtml(){
   if(dbg.totalMs!=null){
     html+='<div class="dbg-row"><div class="dbg-k">총 소요</div><div class="dbg-v">'+dbg.totalMs+'ms</div></div>';
   }
-  /* 전처리 정보 (세션 10.1) */
+  /* 전처리 정보 (세션 10.2) */
   if(_lastPreprocessMeta){
     var pm=_lastPreprocessMeta;
     var pv;
     if(pm.error){
       pv='ON (실패: '+esc(pm.error)+')';
     }else if(pm.on){
-      pv='ON / 채도 '+pm.sat+(pm.ms!=null?' / '+pm.ms+'ms':'');
+      pv='ON / 채도 '+pm.sat;
+      if(pm.bri!=null)pv+=' / 밝기 +'+pm.bri;
+      if(pm.con!=null)pv+=' / 대비 ×'+pm.con;
+      if(pm.ms!=null)pv+=' / '+pm.ms+'ms';
     }else{
       pv='OFF';
     }
