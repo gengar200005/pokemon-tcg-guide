@@ -648,7 +648,23 @@ function startScan(){
   updateScanCount();
   $('scanFs').className='scan-fs on';
   setScanModelBadge();
+  updateScanPreprocessBadge();
   openCamera();
+}
+
+/* ─── 빛번짐 보정 토글 (HUD 배지) ─── */
+function updateScanPreprocessBadge(){
+  var el=$('scanPreprocessBadge');
+  if(!el)return;
+  var on=getScanPreprocess();
+  el.textContent='🔆 빛번짐 '+(on?'ON':'OFF');
+  el.className='scan-preprocess-badge'+(on?' on':' off');
+}
+function toggleScanPreprocess(){
+  var next=!getScanPreprocess();
+  setScanPreprocess(next);
+  updateScanPreprocessBadge();
+  toast('빛번짐 보정 '+(next?'ON':'OFF'),next?'#27ae60':'#7f8c8d');
 }
 function openCamera(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
@@ -769,6 +785,58 @@ function captureCard(){
   });
 }
 
+/* ─── 빛번짐 보정 토글 (localStorage) ─── */
+var SCAN_PREPROCESS_KEY='ptcg-scan-preprocess';
+function getScanPreprocess(){
+  var v=localStorage.getItem(SCAN_PREPROCESS_KEY);
+  if(v===null)return true;  /* 기본 ON */
+  return v==='1';
+}
+function setScanPreprocess(on){
+  localStorage.setItem(SCAN_PREPROCESS_KEY,on?'1':'0');
+}
+
+/* ─── 마지막 스캔의 전처리 메타 (디버그 박스 표시용) ─── */
+var _lastPreprocessMeta=null;  /* {on, sat, gamma, ms} */
+
+/* ─── 이미지 전처리 (프리즘/홀로 카드 빛번짐 대응)
+   1) 채도 감소 (S=0.4)  — 무지개 홀로 패턴 죽여서 OCR이 텍스트에 집중
+   2) 감마 보정 (γ=0.75) — 빛번짐 영역의 텍스트 가시성 향상
+   픽셀 루프 한 번에 두 작업 함께 처리. */
+function applyImagePreprocessing(ctx,w,h){
+  var t0=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+  var SAT=0.4;       /* 0=완전 흑백, 1=원본 */
+  var GAMMA=0.75;    /* <1 = 어두운 부분을 더 어둡게(텍스트 강조) */
+  var invG=1/GAMMA;
+  /* 256-entry LUT 미리 계산 → 픽셀당 pow() 호출 제거 (모바일 성능) */
+  var lut=new Uint8ClampedArray(256);
+  for(var i=0;i<256;i++){
+    lut[i]=Math.round(Math.pow(i/255,invG)*255);
+  }
+  var imageData=ctx.getImageData(0,0,w,h);
+  var data=imageData.data;
+  var len=data.length;
+  for(var p=0;p<len;p+=4){
+    var r=data[p],g=data[p+1],b=data[p+2];
+    /* 1) 채도 감소 — luminance 기준 lerp */
+    var lum=0.299*r+0.587*g+0.114*b;
+    r=lum+(r-lum)*SAT;
+    g=lum+(g-lum)*SAT;
+    b=lum+(b-lum)*SAT;
+    /* 2) 감마 보정 — LUT lookup (clamp 0~255) */
+    var ri=r<0?0:(r>255?255:r|0);
+    var gi=g<0?0:(g>255?255:g|0);
+    var bi=b<0?0:(b>255?255:b|0);
+    data[p]=lut[ri];
+    data[p+1]=lut[gi];
+    data[p+2]=lut[bi];
+    /* alpha (data[p+3]) 는 그대로 */
+  }
+  ctx.putImageData(imageData,0,0);
+  var t1=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
+  _lastPreprocessMeta={on:true,sat:SAT,gamma:GAMMA,ms:Math.round(t1-t0)};
+}
+
 /* ─── 비디오 → scan-frame 영역 crop → JPEG base64 ─── */
 function cropVideoToCardFrame(video){
   var vw=video.videoWidth,vh=video.videoHeight;
@@ -802,7 +870,19 @@ function cropVideoToCardFrame(video){
   canvas.width=outW;canvas.height=outH;
   var ctx=canvas.getContext('2d');
   ctx.drawImage(video,cx,cy,cw,ch,0,0,outW,outH);
-  return canvas.toDataURL('image/jpeg',0.82);
+  /* ─── 전처리 (프리즘/홀로 카드 빛번짐 보정) — 토글 ON일 때만 ─── */
+  if(getScanPreprocess()){
+    try{
+      applyImagePreprocessing(ctx,outW,outH);
+    }catch(e){
+      console.warn('[Scan] preprocessing failed, using raw frame',e);
+      _lastPreprocessMeta={on:true,error:String(e&&e.message||e)};
+    }
+  }else{
+    _lastPreprocessMeta={on:false};
+  }
+  /* JPEG 품질: 전처리 효과 보존 위해 0.82 → 0.90 (세션 10) */
+  return canvas.toDataURL('image/jpeg',0.90);
 }
 
 /* ─── Worker 호출 (현재 선택된 모델 단독 — 모델 폴백 없음, 워커 폴백만 있음) ─── */
@@ -1149,6 +1229,19 @@ function buildDebugBoxHtml(){
   }
   if(dbg.totalMs!=null){
     html+='<div class="dbg-row"><div class="dbg-k">총 소요</div><div class="dbg-v">'+dbg.totalMs+'ms</div></div>';
+  }
+  /* 전처리 정보 (세션 10) */
+  if(_lastPreprocessMeta){
+    var pm=_lastPreprocessMeta;
+    var pv;
+    if(pm.error){
+      pv='ON (실패: '+esc(pm.error)+')';
+    }else if(pm.on){
+      pv='ON / 채도 '+pm.sat+' / γ '+pm.gamma+(pm.ms!=null?' / '+pm.ms+'ms':'');
+    }else{
+      pv='OFF';
+    }
+    html+='<div class="dbg-row"><div class="dbg-k">전처리</div><div class="dbg-v">'+pv+'</div></div>';
   }
 
   /* 시도들 (1회만) */
