@@ -797,12 +797,74 @@ function renderDeckTab(){
   }
   h+='</div>';
 
-  /* 시판 덱 카탈로그 (현재는 비어있음) */
+  /* 시판 덱 카탈로그 — 버튼 클릭 시 모달로 로드 */
   h+='<div class="deck-section"><div class="sh"><h4>📦 시판 덱 카탈로그</h4></div>';
-  h+='<div class="deck-empty">아직 등록된 시판 덱 자료가 없어요.<br><span style="font-size:.7rem">한국 정발 시판 덱 데이터는 추후 추가 예정입니다.</span></div>';
+  h+='<div style="text-align:center;padding:14px 12px"><button class="btn btn-b" onclick="loadCatalogModal()" style="width:100%;max-width:280px">📦 시판 덱 카탈로그 불러오기</button><div style="font-size:.68rem;color:var(--text3);margin-top:8px">한국 정발 시판 덱 제품 정보 (포켓몬코리아 공식)</div></div>';
   h+='</div>';
 
   $('deck-r').innerHTML=h;
+}
+
+/* ─── 시판 덱 카탈로그 모달 ─── */
+var _catalogCache=null;
+function loadCatalogModal(){
+  /* 캐시 있으면 즉시 렌더 */
+  if(_catalogCache){renderCatalogModal(_catalogCache);return;}
+  /* 로딩 모달 */
+  $('mb').innerHTML='<h3>📦 시판 덱 카탈로그</h3><div style="text-align:center;padding:30px 10px;color:var(--text3);font-size:.85rem">불러오는 중...</div>';
+  $('mo').className='mo show';
+  fetch('data/korean_decks_catalog.json',{cache:'no-cache'})
+    .then(function(r){
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.json();
+    })
+    .then(function(data){
+      _catalogCache=data;
+      renderCatalogModal(data);
+    })
+    .catch(function(e){
+      $('mb').innerHTML='<h3>📦 시판 덱 카탈로그</h3><div style="text-align:center;padding:24px 10px;color:var(--red);font-size:.82rem">불러오기 실패<br><span style="font-size:.7rem;color:var(--text3)">'+esc(e.message||e)+'</span></div><div class="acts" style="margin-top:14px"><button class="btn btn-g" onclick="closeM()">닫기</button></div>';
+    });
+}
+function renderCatalogModal(data){
+  var decks=data.decks||[];
+  var h='<h3>📦 시판 덱 카탈로그</h3>';
+  h+='<p style="font-size:.72rem;color:var(--text3);text-align:center;margin-bottom:10px">한국 정발 제품 '+decks.length+'종 · 출처: 포켓몬코리아 공식</p>';
+  /* 시리즈별 그룹핑 */
+  var groups={};
+  var order=['MEGA','스칼렛&바이올렛','소드&실드','썬&문','XY','BW','기타'];
+  for(var i=0;i<decks.length;i++){
+    var s=decks[i].series||'기타';
+    if(!groups[s])groups[s]=[];
+    groups[s].push(decks[i]);
+  }
+  h+='<div style="max-height:60vh;overflow-y:auto;background:var(--bg3);border-radius:10px;padding:8px 10px">';
+  for(var k=0;k<order.length;k++){
+    var key=order[k];
+    var arr=groups[key];
+    if(!arr||!arr.length)continue;
+    h+='<div style="font-family:var(--ft);color:var(--accent);font-size:.78rem;padding:8px 0 6px;border-bottom:2px solid var(--accent);margin-top:6px">'+esc(key)+' ('+arr.length+')</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px 0">';
+    for(var j=0;j<arr.length;j++){
+      var d=arr[j];
+      h+='<div style="background:var(--bg2);border-radius:8px;padding:6px;display:flex;flex-direction:column;align-items:center;text-align:center">';
+      if(d.image){
+        h+='<img src="'+esc(d.image)+'" style="width:100%;max-width:120px;height:auto;border-radius:6px;margin-bottom:6px" loading="lazy" onerror="this.style.display=\'none\'">';
+      }
+      h+='<div style="font-size:.7rem;line-height:1.3;min-height:2.6em;color:var(--text1);margin-bottom:6px">'+esc(d.name)+'</div>';
+      if(d.buy_url){
+        h+='<a href="'+esc(d.buy_url)+'" target="_blank" rel="noopener" style="display:inline-block;background:var(--accent);color:#fff;font-size:.66rem;padding:4px 10px;border-radius:14px;text-decoration:none;font-weight:600">🛒 구매</a>';
+      }else{
+        h+='<span style="font-size:.62rem;color:var(--text3)">단종</span>';
+      }
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<div class="acts" style="margin-top:14px"><button class="btn btn-g" onclick="closeM()">닫기</button></div>';
+  $('mb').innerHTML=h;
+  $('mo').className='mo show';
 }
 
 /* ─── 덱 상세 보기 모달 ─── */
