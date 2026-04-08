@@ -604,8 +604,9 @@ var PRESET_DECKS=[
 /* ─── Worker / Model 설정 ─── */
 var WORKER_URL='https://pokemon-tcg-proxy.sieun8475.workers.dev';
 var SCAN_MODELS={
-  primary:{id:'claude-sonnet-4-5',label:'Sonnet 4.5'},
-  fallback:{id:'claude-haiku-4-5',label:'Haiku 4.5'}
+  primary:{id:'claude-sonnet-4-5',label:'Sonnet 4.5'}
+  /* Haiku 자동 폴백 제거 (2026-04-08): 크레딧 의도치 않은 소모 방지.
+   * 실패 시 디버그 정보만 표시하고 마스터가 수동으로 재시도하거나 수동 검색 사용. */
 };
 
 /* ─── 스캔 상태 ─── */
@@ -618,6 +619,7 @@ var _scanSelectedQty=1;           /* 등록할 수량 */
 var _scanProvider=null;           /* 'sonnet' | 'haiku' — 마지막 응답 모델 */
 var _scanBusy=false;              /* 인식 진행 중 플래그 (중복 촬영 방지) */
 var _scanManualMode=false;        /* 수동 검색 모드 ON/OFF */
+var _scanLastError=null;          /* 마지막 에러 정보 (디버그 박스용) {message, debug} */
 
 /* ─── 진입/종료 ─── */
 function startScan(){
@@ -678,16 +680,11 @@ function updateScanCount(){
   if(el)el.textContent=_scanSessionCount+'장';
 }
 function setScanModelBadge(which){
-  /* which: 'primary' | 'fallback' */
+  /* fallback 모드 제거됨 — Sonnet 단독 */
   var el=$('scanModelBadge');
   if(!el)return;
-  if(which==='fallback'){
-    el.textContent=SCAN_MODELS.fallback.label;
-    el.className='scan-model-badge fallback';
-  }else{
-    el.textContent=SCAN_MODELS.primary.label;
-    el.className='scan-model-badge';
-  }
+  el.textContent=SCAN_MODELS.primary.label;
+  el.className='scan-model-badge';
 }
 function showScanLoading(msg){
   $('scanLoadingMsg').textContent=msg||'카드 인식 중...';
@@ -730,7 +727,8 @@ function captureCard(){
   recognizeCard(dataUrl).then(function(result){
     hideScanLoading();
     _scanProvider=result.provider;
-    setScanModelBadge(result.provider==='haiku'?'fallback':'primary');
+    setScanModelBadge('primary');
+    console.log('[Scan] success',result.provider,result.debug);
 
     /* 매칭 시도 */
     var matched=matchCandidatesToDB(result.candidates);
@@ -739,9 +737,10 @@ function captureCard(){
     hideScanLoading();
     _scanBusy=false;
     var msg=err&&err.message?err.message:String(err);
-    toast('❌ 인식 실패: '+msg,'#e74c3c');
-    /* 에러 시에도 결과 패널을 띄워 수동 검색 옵션 제공 */
-    showScanResult([],dataUrl,{candidates:[],provider:null,error:msg});
+    console.error('[Scan] FAILED',msg,err.debug);
+    toast('❌ 인식 실패','#e74c3c');
+    /* 에러 시에도 결과 패널을 띄워 디버그 정보 + 수동 검색 옵션 제공 */
+    showScanResult([],dataUrl,{candidates:[],provider:null,error:msg,debug:err.debug||null});
   });
 }
 
@@ -781,78 +780,109 @@ function cropVideoToCardFrame(video){
   return canvas.toDataURL('image/jpeg',0.82);
 }
 
-/* ─── Worker 호출 (Sonnet 1차 → Haiku 폴백 + 503 재시도) ─── */
+/* ─── Worker 호출 (Sonnet 단독 — 폴백 없음, 크레딧 절약) ─── */
 function recognizeCard(dataUrl){
   /* dataUrl에서 base64만 추출 */
   var b64=dataUrl.replace(/^data:image\/jpeg;base64,/,'');
   var prompt=buildScanPrompt();
+  /* 통합 디버그 */
+  var debugAll={sonnet:null,haiku:null,startedAt:Date.now()};
 
-  /* 1차: Sonnet 4.5 */
-  return callWorkerWithRetry(SCAN_MODELS.primary.id,b64,prompt,2).then(function(parsed){
-    return {candidates:parsed.candidates||[],provider:'sonnet',raw:parsed};
-  }).catch(function(err1){
-    console.warn('[Scan] Sonnet failed, falling back to Haiku:',err1);
-    /* Sonnet 실패 → Haiku 폴백 */
-    showScanLoading('⚠️ Haiku 4.5로 재시도 중...');
-    return callWorkerWithRetry(SCAN_MODELS.fallback.id,b64,prompt,2).then(function(parsed){
-      return {candidates:parsed.candidates||[],provider:'haiku',raw:parsed,fallbackReason:err1.message};
-    });
+  /* Sonnet 4.5 단독 호출 — 실패 시 폴백 없이 그대로 throw */
+  return callWorkerOnce(SCAN_MODELS.primary.id,b64,prompt).then(function(parsed){
+    debugAll.sonnet=parsed._debug;
+    debugAll.totalMs=Date.now()-debugAll.startedAt;
+    return {candidates:parsed.candidates||[],provider:'sonnet',raw:parsed,debug:debugAll};
+  }).catch(function(err){
+    debugAll.sonnet=err.debug||{attempts:[]};
+    debugAll.sonnetError=err.message;
+    debugAll.totalMs=Date.now()-debugAll.startedAt;
+    err.debug=debugAll;
+    throw err;
   });
 }
 
-/* ─── 단일 모델 호출 + 재시도 (503 blocked colo, 5xx) ─── */
-function callWorkerWithRetry(modelId,b64,prompt,maxRetry){
-  var attempt=0;
-  function tryOnce(){
-    attempt++;
-    var body={
-      model:modelId,
-      max_tokens:512,
-      messages:[{
-        role:'user',
-        content:[
-          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
-          {type:'text',text:prompt}
-        ]
-      }]
-    };
-    return fetch(WORKER_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    }).then(function(res){
-      var status=res.status;
-      return res.text().then(function(txt){
-        /* 503 blocked colo → 즉시 재시도 (Cloudflare가 다른 colo로 라우팅 기대) */
-        if(status===503){
-          if(attempt<=maxRetry){
-            return new Promise(function(r){setTimeout(r,400*attempt);}).then(tryOnce);
-          }
-          throw new Error('Worker 라우팅 실패 (HKG 차단). 잠시 후 다시 시도해주세요.');
-        }
-        /* 5xx → 백오프 후 재시도 */
-        if(status>=500){
-          if(attempt<=maxRetry){
-            return new Promise(function(r){setTimeout(r,500*attempt);}).then(tryOnce);
-          }
-          throw new Error('서버 오류 ('+status+')');
-        }
-        if(status===429){
-          throw new Error('요청 한도 초과 (1분 후 재시도)');
-        }
-        if(status>=400){
-          var errMsg='HTTP '+status;
-          try{var ej=JSON.parse(txt);if(ej.error){errMsg+=': '+(ej.error.message||ej.error);}}catch(e){}
-          throw new Error(errMsg);
-        }
-        /* 성공 — Anthropic 응답 파싱 */
-        var data;
-        try{data=JSON.parse(txt);}catch(e){throw new Error('응답 JSON 파싱 실패');}
-        return parseAnthropicResponse(data);
-      });
+/* ─── 단일 모델 단발 호출 (재시도 없음 — 크레딧 절약) ─── */
+function callWorkerOnce(modelId,b64,prompt){
+  /* 디버그 추적 정보 — 에러 시 사용자에게 표시 */
+  var debugLog={attempts:[]};
+  var attemptInfo={n:1,model:modelId,startedAt:Date.now()};
+  var body={
+    model:modelId,
+    max_tokens:512,
+    messages:[{
+      role:'user',
+      content:[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+        {type:'text',text:prompt}
+      ]
+    }]
+  };
+  return fetch(WORKER_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  }).then(function(res){
+    var status=res.status;
+    attemptInfo.status=status;
+    attemptInfo.colo=res.headers.get('X-Worker-Colo')||'?';
+    attemptInfo.upstreamMs=res.headers.get('X-Upstream-Elapsed-Ms')||null;
+    attemptInfo.elapsed=Date.now()-attemptInfo.startedAt;
+    return res.text().then(function(txt){
+      attemptInfo.bodySnippet=txt.length>500?txt.slice(0,500)+'...':txt;
+      debugLog.attempts.push(attemptInfo);
+      console.log('[Scan]',JSON.stringify(attemptInfo));
+      /* 모든 에러는 즉시 throw — 재시도 없음 */
+      if(status===503){
+        var err503=new Error('Worker 라우팅 실패 (colo='+attemptInfo.colo+'). HKG 차단 가능성');
+        err503.debug=debugLog;
+        throw err503;
+      }
+      if(status>=500){
+        var err5xx=new Error('서버 오류 ('+status+', colo='+attemptInfo.colo+')');
+        err5xx.debug=debugLog;
+        throw err5xx;
+      }
+      if(status===429){
+        var err429=new Error('요청 한도 초과 (1분 후 재시도)');
+        err429.debug=debugLog;
+        throw err429;
+      }
+      if(status>=400){
+        var errMsg='HTTP '+status;
+        try{var ej=JSON.parse(txt);if(ej.error){errMsg+=': '+(ej.error.message||ej.error.type||JSON.stringify(ej.error));}}catch(e){}
+        var err4xx=new Error(errMsg);
+        err4xx.debug=debugLog;
+        throw err4xx;
+      }
+      /* 성공 — Anthropic 응답 파싱 */
+      var data;
+      try{data=JSON.parse(txt);}catch(e){
+        var errParse=new Error('응답 JSON 파싱 실패');
+        errParse.debug=debugLog;
+        throw errParse;
+      }
+      try{
+        var parsed=parseAnthropicResponse(data);
+        parsed._debug=debugLog;
+        return parsed;
+      }catch(eParse){
+        eParse.debug=debugLog;
+        throw eParse;
+      }
     });
-  }
-  return tryOnce();
+  }).catch(function(netErr){
+    /* fetch 자체 실패 (네트워크 에러) */
+    if(!attemptInfo.status){
+      attemptInfo.status='fetch-fail';
+      attemptInfo.error=netErr.message||String(netErr);
+      attemptInfo.elapsed=Date.now()-attemptInfo.startedAt;
+      debugLog.attempts.push(attemptInfo);
+      console.log('[Scan]',JSON.stringify(attemptInfo));
+    }
+    if(!netErr.debug)netErr.debug=debugLog;
+    throw netErr;
+  });
 }
 
 /* ─── Anthropic content[] 에서 type='text' 추출 + JSON 파싱 ─── */
@@ -991,15 +1021,25 @@ function showScanResult(matched,shotDataUrl,recogResult){
   _scanSelectedIdx=0;
   _scanSelectedQty=1;
   _scanManualMode=false;
+  /* 에러/디버그 정보 캐시 */
+  if(recogResult&&(recogResult.error||recogResult.debug)){
+    _scanLastError={
+      message:recogResult.error||null,
+      debug:recogResult.debug||null,
+      provider:recogResult.provider||null
+    };
+  }else if(recogResult&&recogResult.debug){
+    /* 성공 시에도 디버그는 보관 (사용자가 콘솔에서 확인 가능) */
+    _scanLastError={message:null,debug:recogResult.debug,provider:recogResult.provider};
+  }else{
+    _scanLastError=null;
+  }
 
   /* provider 배지 */
   var provEl=$('srProv');
   if(recogResult&&recogResult.provider==='sonnet'){
     provEl.textContent='Sonnet 4.5';
     provEl.className='sr-prov';
-  }else if(recogResult&&recogResult.provider==='haiku'){
-    provEl.textContent='Haiku 4.5 (폴백)';
-    provEl.className='sr-prov fallback';
   }else{
     provEl.textContent='';
     provEl.className='sr-prov';
@@ -1007,6 +1047,74 @@ function showScanResult(matched,shotDataUrl,recogResult){
 
   renderScanResultBody();
   $('scanResult').className='scan-result on';
+}
+
+/* ─── 디버그 박스 HTML 빌드 ─── */
+function buildDebugBoxHtml(){
+  if(!_scanLastError||!_scanLastError.debug)return '';
+  var dbg=_scanLastError.debug;
+  var msg=_scanLastError.message;
+  var html='<details class="sr-debug"'+(msg?' open':'')+'>';
+  html+='<summary>'+(msg?'🔍 디버그 정보 (에러)':'🔍 디버그 정보')+'</summary>';
+  html+='<div class="dbg-body">';
+
+  if(msg){
+    html+='<div class="dbg-row"><div class="dbg-k">에러 메시지</div><div class="dbg-v bad">'+esc(msg)+'</div></div>';
+  }
+  if(dbg.totalMs!=null){
+    html+='<div class="dbg-row"><div class="dbg-k">총 소요</div><div class="dbg-v">'+dbg.totalMs+'ms</div></div>';
+  }
+
+  /* Sonnet 시도들 */
+  if(dbg.sonnet&&dbg.sonnet.attempts&&dbg.sonnet.attempts.length){
+    html+='<div class="dbg-row"><div class="dbg-k">━ Sonnet 4.5 ━</div><div class="dbg-v"></div></div>';
+    for(var i=0;i<dbg.sonnet.attempts.length;i++){
+      html+=renderAttemptRows(dbg.sonnet.attempts[i],i+1);
+    }
+    if(dbg.sonnetError){
+      html+='<div class="dbg-row"><div class="dbg-k">└ 결과</div><div class="dbg-v bad">'+esc(dbg.sonnetError)+'</div></div>';
+    }
+  }
+  /* Haiku 시도들 */
+  if(dbg.haiku&&dbg.haiku.attempts&&dbg.haiku.attempts.length){
+    html+='<div class="dbg-row"><div class="dbg-k">━ Haiku 4.5 ━</div><div class="dbg-v"></div></div>';
+    for(var j=0;j<dbg.haiku.attempts.length;j++){
+      html+=renderAttemptRows(dbg.haiku.attempts[j],j+1);
+    }
+    if(dbg.haikuError){
+      html+='<div class="dbg-row"><div class="dbg-k">└ 결과</div><div class="dbg-v bad">'+esc(dbg.haikuError)+'</div></div>';
+    }
+  }
+  /* 단일 단계 디버그 (recognizeCard 통과 안 한 경우) */
+  if(!dbg.sonnet&&!dbg.haiku&&dbg.attempts){
+    for(var k=0;k<dbg.attempts.length;k++){
+      html+=renderAttemptRows(dbg.attempts[k],k+1);
+    }
+  }
+
+  html+='<div class="dbg-row"><div class="dbg-k" style="color:rgba(255,255,255,.4);font-size:.65rem">DevTools Console에도 동일 정보 출력됨</div><div class="dbg-v"></div></div>';
+  html+='</div></details>';
+  return html;
+}
+
+function renderAttemptRows(att,idx){
+  var statusClass='';
+  if(typeof att.status==='number'){
+    if(att.status>=200&&att.status<300)statusClass='good';
+    else if(att.status>=400)statusClass='bad';
+  }else statusClass='bad';
+  var html='';
+  html+='<div class="dbg-row"><div class="dbg-k">  시도 #'+idx+'</div><div class="dbg-v '+statusClass+'">HTTP '+att.status+'</div></div>';
+  if(att.colo)html+='<div class="dbg-row"><div class="dbg-k">  colo</div><div class="dbg-v'+(att.colo==='HKG'?' bad':'')+'">'+esc(att.colo)+'</div></div>';
+  if(att.upstreamMs)html+='<div class="dbg-row"><div class="dbg-k">  upstream</div><div class="dbg-v">'+att.upstreamMs+'ms</div></div>';
+  if(att.elapsed!=null)html+='<div class="dbg-row"><div class="dbg-k">  total</div><div class="dbg-v">'+att.elapsed+'ms</div></div>';
+  if(att.bodySnippet){
+    html+='<div class="dbg-row"><div class="dbg-k">  body</div><div class="dbg-v"><pre>'+esc(att.bodySnippet)+'</pre></div></div>';
+  }
+  if(att.error){
+    html+='<div class="dbg-row"><div class="dbg-k">  fetch err</div><div class="dbg-v bad">'+esc(att.error)+'</div></div>';
+  }
+  return html;
 }
 
 function renderScanResultBody(){
@@ -1027,6 +1135,8 @@ function renderScanResultBody(){
     html+='<div class="sr-actions">'+
       '<button class="sr-btn secondary" onclick="retakeScan()">📸 재촬영</button>'+
       '</div>';
+    /* 디버그 박스 (에러 시 자동 펼침) */
+    html+=buildDebugBoxHtml();
     html+='<div class="sr-manual-link"><a onclick="showManualSearch()">🔍 수동으로 검색하기</a></div>';
     body.innerHTML=html;
     return;
@@ -1086,6 +1196,9 @@ function renderScanResultBody(){
       '<button class="sr-btn primary" onclick="confirmScanRegister()">✅ 등록</button>'+
       '</div>';
   }
+
+  /* 디버그 박스 (성공 시 접힘) */
+  html+=buildDebugBoxHtml();
 
   /* 수동 검색 링크 (항상 노출) */
   html+='<div class="sr-manual-link"><a onclick="showManualSearch()">🔍 다른 카드 수동 검색</a></div>';
@@ -1194,7 +1307,7 @@ function selectManualResult(bs_code){
 
 function toggleModelMenu(){
   /* 호환 유지: 더 이상 노출 안 됨 */
-  toast('Sonnet 4.5 → Haiku 4.5 자동 폴백 사용 중','#3dc0ec');
+  toast('Sonnet 4.5 단독 사용 (자동 폴백 없음)','#3dc0ec');
 }
 
 /* ═══════════════════════════════════════════════════════════════
