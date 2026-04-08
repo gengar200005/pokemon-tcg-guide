@@ -170,10 +170,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .scan-model-badge:active{transform:scale(.95)}
 .scan-model-badge.premium{background:rgba(187,134,252,.9);color:#fff}
 .scan-model-badge.fallback{background:rgba(243,156,18,.9);color:#fff}
-.scan-preprocess-badge{font-size:.62rem;padding:3px 9px;border-radius:9px;font-weight:700;letter-spacing:.2px;cursor:pointer;user-select:none;display:inline-flex;align-items:center;font-family:var(--ft)}
-.scan-preprocess-badge.on{background:rgba(46,204,113,.85);color:#0a1f12}
-.scan-preprocess-badge.off{background:rgba(127,140,141,.75);color:#fff}
-.scan-preprocess-badge:active{transform:scale(.95)}
 
 /* 모델 선택 드롭다운 */
 .scan-model-menu{position:absolute;top:54px;left:16px;right:16px;max-width:280px;background:rgba(20,30,40,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:6px;z-index:5;display:none;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
@@ -224,6 +220,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .sr-btn{flex:1;padding:13px;border-radius:10px;border:none;font-family:var(--ft);font-size:.92rem;cursor:pointer;font-weight:700}
 .sr-btn.primary{background:var(--accent2);color:#1a2a3a}
 .sr-btn.secondary{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.sr-btn.premium{background:rgba(187,134,252,.9);color:#fff}
 .sr-btn:active{transform:scale(.97)}
 .sr-btn:disabled{opacity:.4;cursor:not-allowed}
 .sr-empty{text-align:center;padding:24px 16px;color:rgba(255,255,255,.7)}
@@ -364,10 +361,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   <div class="scan-video-wrap">
     <video class="scan-video" id="scanVideo" playsinline autoplay muted></video>
     <div class="scan-tophud">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
         <div class="ttl">📸 카드 스캔</div>
         <div class="scan-model-badge" id="scanModelBadge" onclick="toggleModelMenu()">Haiku 4.5</div>
-        <div class="scan-preprocess-badge on" id="scanPreprocessBadge" onclick="toggleScanPreprocess()">🔆 빛번짐 ON</div>
       </div>
       <button class="scan-close" onclick="stopScan()">×</button>
     </div>

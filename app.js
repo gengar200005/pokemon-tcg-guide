@@ -641,6 +641,7 @@ var _scanProvider=null;           /* 'sonnet' | 'haiku' — 마지막 응답 모
 var _scanBusy=false;              /* 인식 진행 중 플래그 (중복 촬영 방지) */
 var _scanManualMode=false;        /* 수동 검색 모드 ON/OFF */
 var _scanLastError=null;          /* 마지막 에러 정보 (디버그 박스용) {message, debug} */
+var _sonnetRetryBusy=false;       /* Sonnet 재시도 진행 중 (세션 10.4) */
 
 /* ─── 진입/종료 ─── */
 function startScan(){
@@ -648,23 +649,7 @@ function startScan(){
   updateScanCount();
   $('scanFs').className='scan-fs on';
   setScanModelBadge();
-  updateScanPreprocessBadge();
   openCamera();
-}
-
-/* ─── 빛번짐 보정 토글 (HUD 배지) ─── */
-function updateScanPreprocessBadge(){
-  var el=$('scanPreprocessBadge');
-  if(!el)return;
-  var on=getScanPreprocess();
-  el.textContent='🔆 빛번짐 '+(on?'ON':'OFF');
-  el.className='scan-preprocess-badge'+(on?' on':' off');
-}
-function toggleScanPreprocess(){
-  var next=!getScanPreprocess();
-  setScanPreprocess(next);
-  updateScanPreprocessBadge();
-  toast('빛번짐 보정 '+(next?'ON':'OFF'),next?'#27ae60':'#7f8c8d');
 }
 function openCamera(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
@@ -712,6 +697,60 @@ function retakeScan(){
   _scanManualMode=false;
 }
 function closeScanResult(){retakeScan();}
+
+/* ─── Sonnet 재시도 (세션 10.4)
+   인식 실패 시, 같은 사진을 Sonnet 모델로 다시 호출.
+   결과 패널은 그대로 유지하면서 안의 내용만 갱신. */
+function retryWithSonnet(){
+  if(_sonnetRetryBusy)return;
+  if(!_scanShotDataUrl){toast('재시도할 사진이 없습니다','#e74c3c');return;}
+  /* Sonnet 모델 찾기 */
+  var sonnetModel=null;
+  for(var i=0;i<SCAN_MODELS_LIST.length;i++){
+    if(SCAN_MODELS_LIST[i].id==='claude-sonnet-4-5'){sonnetModel=SCAN_MODELS_LIST[i];break;}
+  }
+  if(!sonnetModel){toast('Sonnet 모델 정의 없음','#e74c3c');return;}
+
+  _sonnetRetryBusy=true;
+  /* 결과 패널 안의 버튼 즉시 비활성화 표시 */
+  renderScanResultBody();
+
+  var b64=_scanShotDataUrl.replace(/^data:image\/jpeg;base64,/,'');
+  var prompt=buildScanPrompt();
+  var debugAll={model:sonnetModel.label,startedAt:Date.now()};
+
+  callWorkerWithFallback(sonnetModel.id,b64,prompt).then(function(parsed){
+    debugAll.attempts=parsed._debug?parsed._debug.attempts:[];
+    debugAll.totalMs=Date.now()-debugAll.startedAt;
+    var result={
+      candidates:parsed.candidates||[],
+      provider:sonnetModel.id,
+      modelLabel:sonnetModel.label,
+      raw:parsed,
+      debug:debugAll
+    };
+    _sonnetRetryBusy=false;
+    _scanProvider=sonnetModel.id;
+    setScanModelBadge();
+    console.log('[Scan][Sonnet retry] success',result.modelLabel,result.debug);
+    var matched=matchCandidatesToDB(result.candidates);
+    showScanResult(matched,_scanShotDataUrl,result);
+    if(matched.length){
+      toast('✅ Sonnet 인식 성공','#27ae60');
+    }else{
+      toast('Sonnet도 인식 못함','#f39c12');
+    }
+  }).catch(function(err){
+    _sonnetRetryBusy=false;
+    debugAll.attempts=err.debug?err.debug.attempts:[];
+    debugAll.error=err.message;
+    debugAll.totalMs=Date.now()-debugAll.startedAt;
+    var msg=err&&err.message?err.message:String(err);
+    console.error('[Scan][Sonnet retry] FAILED',msg,debugAll);
+    toast('❌ Sonnet 재시도 실패','#e74c3c');
+    showScanResult([],_scanShotDataUrl,{candidates:[],provider:null,error:msg,debug:debugAll});
+  });
+}
 
 /* ─── UI 헬퍼 ─── */
 function updateScanCount(){
@@ -785,55 +824,6 @@ function captureCard(){
   });
 }
 
-/* ─── 빛번짐 보정 토글 (localStorage) ─── */
-var SCAN_PREPROCESS_KEY='ptcg-scan-preprocess';
-function getScanPreprocess(){
-  var v=localStorage.getItem(SCAN_PREPROCESS_KEY);
-  if(v===null)return true;  /* 기본 ON */
-  return v==='1';
-}
-function setScanPreprocess(on){
-  localStorage.setItem(SCAN_PREPROCESS_KEY,on?'1':'0');
-}
-
-/* ─── 마지막 스캔의 전처리 메타 (디버그 박스 표시용) ─── */
-var _lastPreprocessMeta=null;  /* {on, sat, gamma, ms} */
-
-/* ─── 이미지 전처리 (프리즘/홀로 카드 무지개 노이즈 + 어두운 노출 대응)
-   세션 10.2: 밝기 + 대비 추가
-   처리 순서: 채도 감소 → 밝기 + → 대비 ×
-   채도를 먼저 죽여서 색 노이즈 제거 → 밝기/대비로 글자를 배경에서 분리. */
-function applyImagePreprocessing(ctx,w,h){
-  var t0=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-  var SAT=0.2;       /* 0=완전 흑백, 1=원본 */
-  var BRI=45;        /* 밝기 오프셋 (-255~+255) — 세션 10.3: 25→45 */
-  var CON=1.6;       /* 대비 배율 (1=원본, >1=대비 강화) — 세션 10.3: 1.3→1.6 */
-  var CON_OFFSET=128*(1-CON);  /* 대비 공식: out = in*CON + 128*(1-CON) */
-  var imageData=ctx.getImageData(0,0,w,h);
-  var data=imageData.data;
-  var len=data.length;
-  for(var p=0;p<len;p+=4){
-    var r=data[p],g=data[p+1],b=data[p+2];
-    /* 1) 채도 감소 — luminance 기준 lerp */
-    var lum=0.299*r+0.587*g+0.114*b;
-    r=lum+(r-lum)*SAT;
-    g=lum+(g-lum)*SAT;
-    b=lum+(b-lum)*SAT;
-    /* 2) 밝기 + 3) 대비 한 번에 (out = in*CON + CON_OFFSET + BRI) */
-    r=r*CON+CON_OFFSET+BRI;
-    g=g*CON+CON_OFFSET+BRI;
-    b=b*CON+CON_OFFSET+BRI;
-    /* clamp 0~255 (Uint8ClampedArray가 자동으로 해주지만 명시) */
-    data[p]  =r<0?0:(r>255?255:r);
-    data[p+1]=g<0?0:(g>255?255:g);
-    data[p+2]=b<0?0:(b>255?255:b);
-    /* alpha (data[p+3]) 는 그대로 */
-  }
-  ctx.putImageData(imageData,0,0);
-  var t1=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
-  _lastPreprocessMeta={on:true,sat:SAT,bri:BRI,con:CON,ms:Math.round(t1-t0)};
-}
-
 /* ─── 비디오 → scan-frame 영역 crop → JPEG base64 ─── */
 function cropVideoToCardFrame(video){
   var vw=video.videoWidth,vh=video.videoHeight;
@@ -867,18 +857,7 @@ function cropVideoToCardFrame(video){
   canvas.width=outW;canvas.height=outH;
   var ctx=canvas.getContext('2d');
   ctx.drawImage(video,cx,cy,cw,ch,0,0,outW,outH);
-  /* ─── 전처리 (프리즘/홀로 카드 빛번짐 보정) — 토글 ON일 때만 ─── */
-  if(getScanPreprocess()){
-    try{
-      applyImagePreprocessing(ctx,outW,outH);
-    }catch(e){
-      console.warn('[Scan] preprocessing failed, using raw frame',e);
-      _lastPreprocessMeta={on:true,error:String(e&&e.message||e)};
-    }
-  }else{
-    _lastPreprocessMeta={on:false};
-  }
-  /* JPEG 품질: 전처리 효과 보존 위해 0.82 → 0.90 (세션 10) */
+  /* JPEG 품질 0.90 — 글자 디테일 보존을 위해 0.82에서 상향 (세션 10) */
   return canvas.toDataURL('image/jpeg',0.90);
 }
 
@@ -1078,21 +1057,23 @@ function buildScanPrompt(){
     '- 진화 단계 보조 텍스트("1단계 진화" 등)는 무시\n'+
     '- ex/V/VMAX/MEGA/테라스탈 같은 접미사는 포함\n'+
     '- hp: 포켓몬 카드만 우상단 HP 숫자 (정수), 트레이너/에너지는 null\n'+
-    '- pack: 카드 우하단의 팩 한글명 또는 팩 코드(예: "M3", "SV1A")\n'+
-    '- card_no: 우하단 "001/100" 형식 그대로\n'+
+    '- pack: 카드 우하단의 팩 한글명 또는 팩 코드(예: "M3", "SV1A", "S11a")\n'+
+    '- card_no: 카드 좌하단 또는 우하단의 "001/100" 형식 그대로. **이 필드가 가장 중요함** — 이름이 흐릿해도 번호는 또렷한 경우가 많음. 숫자 한 자리도 틀리지 말 것. 번호가 안 보이면 빈 문자열로.\n'+
     '- 최대 3개 후보를 confidence 높은 순으로 (high/medium/low)\n'+
     '- 카드가 안 보이거나 읽을 수 없으면 candidates를 빈 배열 []로\n'+
     '- 일본판/영문판이면 한글로 가장 가까운 이름으로 추정 + confidence를 low로';
 }
 
-/* ─── 후보 → 한글 DB 매칭 (3단계 fallback) ─── */
+/* ─── 후보 → 한글 DB 매칭 (4단계 fallback)
+   세션 10.4: 이름 없이 카드번호만 있는 후보도 허용 (프리즘 카드 폴백) */
 function matchCandidatesToDB(candidates){
   if(!candidates||!candidates.length)return [];
   var results=[];
   var seen={};
   for(var i=0;i<candidates.length;i++){
     var cand=candidates[i];
-    if(!cand||!cand.name_kr)continue;
+    if(!cand)continue;
+    if(!cand.name_kr&&!cand.card_no)continue;
     var matches=findCardsInDB(cand);
     for(var j=0;j<matches.length;j++){
       var m=matches[j];
@@ -1101,7 +1082,7 @@ function matchCandidatesToDB(candidates){
       results.push({
         card:m,
         confidence:cand.confidence||'medium',
-        candidateName:cand.name_kr
+        candidateName:cand.name_kr||('번호 '+cand.card_no)
       });
       if(results.length>=3)break;
     }
@@ -1110,34 +1091,84 @@ function matchCandidatesToDB(candidates){
   return results;
 }
 
+/* 카드번호 정규화 — "009/068" / "009" / "9" 등을 모두 비교 가능한 형태로
+   결과: {num: "9" (앞 0 제거), full: "009/068" (있으면)} */
+function normalizeCardNo(raw){
+  if(raw==null)return null;
+  var s=String(raw).trim();
+  if(!s)return null;
+  /* 슬래시 앞부분만 추출, 숫자만 남기고 앞 0 제거 */
+  var head=s.split('/')[0].replace(/[^0-9]/g,'').replace(/^0+/,'');
+  if(!head)return null;
+  return head;
+}
+
 function findCardsInDB(cand){
   if(!cardsDB||!cardsDB.length)return [];
   var name=String(cand.name_kr||'').trim();
-  if(!name)return [];
 
   /* 1단계: 정확 일치 */
-  var exact=cardsDB.filter(function(c){return c.name_kr===name;});
-  if(exact.length){
-    return narrowByMeta(exact,cand);
+  if(name){
+    var exact=cardsDB.filter(function(c){return c.name_kr===name;});
+    if(exact.length){
+      return narrowByMeta(exact,cand);
+    }
   }
 
   /* 2단계: 부분 일치 (양방향) */
-  var partial=cardsDB.filter(function(c){
-    if(!c.name_kr)return false;
-    return c.name_kr.indexOf(name)>=0||name.indexOf(c.name_kr)>=0;
-  });
-  if(partial.length){
-    return narrowByMeta(partial,cand).slice(0,5);
+  if(name){
+    var partial=cardsDB.filter(function(c){
+      if(!c.name_kr)return false;
+      return c.name_kr.indexOf(name)>=0||name.indexOf(c.name_kr)>=0;
+    });
+    if(partial.length){
+      return narrowByMeta(partial,cand).slice(0,5);
+    }
   }
 
   /* 3단계: 공백/특수문자 제거 후 부분 일치 */
-  var norm=name.replace(/[\s\-·.]/g,'');
-  var loose=cardsDB.filter(function(c){
-    if(!c.name_kr)return false;
-    var n=c.name_kr.replace(/[\s\-·.]/g,'');
-    return n.indexOf(norm)>=0||norm.indexOf(n)>=0;
-  });
-  return narrowByMeta(loose,cand).slice(0,3);
+  if(name){
+    var norm=name.replace(/[\s\-·.]/g,'');
+    var loose=cardsDB.filter(function(c){
+      if(!c.name_kr)return false;
+      var n=c.name_kr.replace(/[\s\-·.]/g,'');
+      return n.indexOf(norm)>=0||norm.indexOf(n)>=0;
+    });
+    if(loose.length){
+      return narrowByMeta(loose,cand).slice(0,3);
+    }
+  }
+
+  /* 4단계 (세션 10.4): 이름 매칭 완전 실패 → 카드번호 + 팩 코드로 직접 검색
+     프리즘/홀로 카드에서 이름 OCR이 깨져도 번호/팩만 정확하면 잡힘 */
+  var cnNorm=normalizeCardNo(cand.card_no);
+  if(cnNorm){
+    var byNo=cardsDB.filter(function(c){
+      var dbNo=normalizeCardNo(c.card_no);
+      return dbNo===cnNorm;
+    });
+    if(byNo.length){
+      /* 팩으로 좁히기 (있으면) */
+      if(cand.pack&&byNo.length>1){
+        var pk=String(cand.pack).toUpperCase();
+        var packNarrow=byNo.filter(function(c){
+          var code=(c.pack_code||'').toUpperCase();
+          var pname=(c.pack_name_kr||'');
+          return code===pk||code.indexOf(pk)>=0||pk.indexOf(code)>=0||pname.indexOf(cand.pack)>=0;
+        });
+        if(packNarrow.length)byNo=packNarrow;
+      }
+      /* HP로 추가 좁히기 (포켓몬) */
+      if(cand.hp!=null&&!isNaN(parseInt(cand.hp,10))&&byNo.length>1){
+        var hpVal=parseInt(cand.hp,10);
+        var hpNarrow=byNo.filter(function(c){return c.hp===hpVal;});
+        if(hpNarrow.length)byNo=hpNarrow;
+      }
+      return byNo.slice(0,3);
+    }
+  }
+
+  return [];
 }
 
 function narrowByMeta(list,cand){
@@ -1165,11 +1196,13 @@ function narrowByMeta(list,cand){
 
   /* card_no 일치 */
   if(cand.card_no&&filtered.length>1){
-    var cn=String(cand.card_no).split('/')[0].replace(/^0+/,'');
-    var noMatch=filtered.filter(function(c){
-      return String(c.card_no||'').replace(/^0+/,'')===cn;
-    });
-    if(noMatch.length)filtered=noMatch;
+    var cn=normalizeCardNo(cand.card_no);
+    if(cn){
+      var noMatch=filtered.filter(function(c){
+        return normalizeCardNo(c.card_no)===cn;
+      });
+      if(noMatch.length)filtered=noMatch;
+    }
   }
 
   return filtered;
@@ -1227,22 +1260,6 @@ function buildDebugBoxHtml(){
   if(dbg.totalMs!=null){
     html+='<div class="dbg-row"><div class="dbg-k">총 소요</div><div class="dbg-v">'+dbg.totalMs+'ms</div></div>';
   }
-  /* 전처리 정보 (세션 10.2) */
-  if(_lastPreprocessMeta){
-    var pm=_lastPreprocessMeta;
-    var pv;
-    if(pm.error){
-      pv='ON (실패: '+esc(pm.error)+')';
-    }else if(pm.on){
-      pv='ON / 채도 '+pm.sat;
-      if(pm.bri!=null)pv+=' / 밝기 +'+pm.bri;
-      if(pm.con!=null)pv+=' / 대비 ×'+pm.con;
-      if(pm.ms!=null)pv+=' / '+pm.ms+'ms';
-    }else{
-      pv='OFF';
-    }
-    html+='<div class="dbg-row"><div class="dbg-k">전처리</div><div class="dbg-v">'+pv+'</div></div>';
-  }
 
   /* 시도들 (1회만) */
   if(dbg.attempts&&dbg.attempts.length){
@@ -1298,8 +1315,18 @@ function renderScanResultBody(){
       '<div class="et">카드를 인식하지 못했어요</div>'+
       '<div class="es">밝은 곳에서 카드를 프레임에 가득 차게 맞추고<br>다시 촬영해보세요.</div>'+
       '</div>';
-    html+='<div class="sr-actions">'+
-      '<button class="sr-btn secondary" onclick="retakeScan()">📸 재촬영</button>'+
+    /* 세션 10.4: 마지막 시도가 Haiku였으면 Sonnet 재시도 버튼 노출
+       같은 사진(_scanShotDataUrl)을 Sonnet으로 다시 호출 → 비용 최소, 정확도 확보 */
+    var lastModel=(_scanLastError&&_scanLastError.debug&&_scanLastError.debug.model)||'';
+    var canRetrySonnet=_scanShotDataUrl&&lastModel.indexOf('Haiku')>=0&&!_sonnetRetryBusy;
+    html+='<div class="sr-actions">';
+    if(canRetrySonnet){
+      html+='<button class="sr-btn premium" onclick="retryWithSonnet()">🔄 Sonnet 4.5로 재시도</button>';
+    }
+    if(_sonnetRetryBusy){
+      html+='<button class="sr-btn premium" disabled>⏳ Sonnet 인식 중...</button>';
+    }
+    html+='<button class="sr-btn secondary" onclick="retakeScan()">📸 재촬영</button>'+
       '</div>';
     /* 디버그 박스 (에러 시 자동 펼침) */
     html+=buildDebugBoxHtml();
