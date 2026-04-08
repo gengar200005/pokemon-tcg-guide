@@ -154,6 +154,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .dbm-hdr .progress-bar{height:100%;background:#fff;transition:width .3s;border-radius:4px}
 .dbm-hdr .progress-bar.over{background:#ffcb05}
 .dbm-hdr .count-txt{font-family:var(--ft);font-size:.85rem;flex-shrink:0}
+.dbm-hdr .dbm-strict-btn{flex-shrink:0;background:rgba(255,255,255,.25);border:none;border-radius:14px;padding:3px 9px;font-size:.85rem;cursor:pointer;color:#fff;font-family:var(--ft)}
+.dbm-hdr .dbm-strict-btn.free{background:#ffcb05;color:#1a2a3a}
 
 .dbm-counters{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--cb);border-bottom:1px solid var(--cb)}
 .dbm-counters .cnt{background:var(--bg2);text-align:center;padding:7px 2px;font-size:.66rem;color:var(--text3)}
@@ -469,6 +471,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
       <span class="fmt-pill" id="dbmFmt">풀덱 60</span>
       <div class="progress-wrap"><div class="progress-bar" id="dbmProg" style="width:0%"></div></div>
       <span class="count-txt" id="dbmCount">0/60</span>
+      <button class="dbm-strict-btn" id="dbmStrictBtn" onclick="toggleStrictMode()" style="display:none">🔒</button>
     </div>
   </div>
   <div class="dbm-counters">
