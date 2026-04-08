@@ -602,7 +602,14 @@ var PRESET_DECKS=[
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── Worker / Model 설정 ─── */
-var WORKER_URL='https://pokemon-tcg-proxy.sieun8475.workers.dev';
+/* 두 개의 워커:
+   1차 (PRIMARY): Cloudflare Worker — 빠르지만 가끔 HKG colo로 빠지면 Anthropic에서 차단됨
+   2차 (FALLBACK): Vercel Edge Function (hnd1 도쿄 region 고정) — Cloudflare 실패 시 자동 전환
+   세션 9에서 Vercel 백업 추가. 모델 폴백은 여전히 없음 (같은 모델로 다른 워커 시도). */
+var WORKER_URL_PRIMARY='https://pokemon-tcg-proxy.sieun8475.workers.dev';
+var WORKER_URL_FALLBACK='https://pokemon-tcg-proxy-vercel.vercel.app/api/proxy';
+/* 호환성: 옛 이름 alias (혹시 다른 곳에서 참조할 경우) */
+var WORKER_URL=WORKER_URL_PRIMARY;
 var SCAN_MODELS_LIST=[
   {id:'claude-haiku-4-5',label:'Haiku 4.5',sub:'빠르고 저렴 (기본)'},
   {id:'claude-sonnet-4-5',label:'Sonnet 4.5',sub:'정확·약 5배 비용'}
@@ -798,7 +805,7 @@ function cropVideoToCardFrame(video){
   return canvas.toDataURL('image/jpeg',0.82);
 }
 
-/* ─── Worker 호출 (현재 선택된 모델 단독 — 폴백 없음) ─── */
+/* ─── Worker 호출 (현재 선택된 모델 단독 — 모델 폴백 없음, 워커 폴백만 있음) ─── */
 function recognizeCard(dataUrl){
   /* dataUrl에서 base64만 추출 */
   var b64=dataUrl.replace(/^data:image\/jpeg;base64,/,'');
@@ -807,8 +814,10 @@ function recognizeCard(dataUrl){
   var model=getCurrentScanModel();
   var debugAll={model:model.label,startedAt:Date.now()};
 
-  /* 선택된 모델로 단발 호출 — 실패 시 폴백 없이 그대로 throw */
-  return callWorkerOnce(model.id,b64,prompt).then(function(parsed){
+  /* 선택된 모델로 워커 폴백 호출:
+     1차 Cloudflare → 503/4xx/네트워크 에러 시 → 2차 Vercel.
+     모델은 절대 자동 변경 안 함 (크레딧 절약 — 마스터 확정 사양). */
+  return callWorkerWithFallback(model.id,b64,prompt).then(function(parsed){
     debugAll.attempts=parsed._debug?parsed._debug.attempts:[];
     debugAll.totalMs=Date.now()-debugAll.startedAt;
     return {candidates:parsed.candidates||[],provider:model.id,modelLabel:model.label,raw:parsed,debug:debugAll};
@@ -821,11 +830,59 @@ function recognizeCard(dataUrl){
   });
 }
 
-/* ─── 단일 모델 단발 호출 (재시도 없음 — 크레딧 절약) ─── */
-function callWorkerOnce(modelId,b64,prompt){
+/* ─── 워커 폴백 호출 (1차 Cloudflare → 2차 Vercel) ─── */
+/* 세션 9에서 추가. 1차 워커가 실패하면 자동으로 2차 시도.
+   - 모델 폴백은 없음 (같은 모델로 다른 워커만 시도)
+   - 재시도는 1회 (1차 실패 → 2차 1회만)
+   - attempts[]에 두 번 모두 기록 → 디버그 패널에서 둘 다 보임
+   - 폴백 트리거: 503, 5xx, 4xx (Anthropic 차단 포함), 네트워크 에러
+     → 사실상 "1차 200 아니면 폴백". 모든 비-200 케이스에서 2차 시도.
+   - 폴백도 실패하면 마지막(2차) 에러를 사용자에게 표시 (양쪽 attempts 모두 포함) */
+function callWorkerWithFallback(modelId,b64,prompt){
+  var combinedDebug={attempts:[]};
+  /* 1차: Cloudflare */
+  return callWorkerOnce(WORKER_URL_PRIMARY,'cloudflare',modelId,b64,prompt).then(function(parsed){
+    /* 1차 성공 */
+    if(parsed._debug&&parsed._debug.attempts){
+      for(var i=0;i<parsed._debug.attempts.length;i++)combinedDebug.attempts.push(parsed._debug.attempts[i]);
+    }
+    parsed._debug=combinedDebug;
+    return parsed;
+  }).catch(function(err1){
+    /* 1차 실패 → attempts 보존하고 2차 시도 */
+    if(err1.debug&&err1.debug.attempts){
+      for(var i=0;i<err1.debug.attempts.length;i++)combinedDebug.attempts.push(err1.debug.attempts[i]);
+    }
+    console.log('[Scan] primary failed, trying fallback Vercel:',err1.message);
+    return callWorkerOnce(WORKER_URL_FALLBACK,'vercel',modelId,b64,prompt).then(function(parsed){
+      /* 2차 성공 */
+      if(parsed._debug&&parsed._debug.attempts){
+        for(var j=0;j<parsed._debug.attempts.length;j++)combinedDebug.attempts.push(parsed._debug.attempts[j]);
+      }
+      parsed._debug=combinedDebug;
+      return parsed;
+    }).catch(function(err2){
+      /* 2차도 실패 → 양쪽 attempts 합친 후 마지막 에러 throw */
+      if(err2.debug&&err2.debug.attempts){
+        for(var k=0;k<err2.debug.attempts.length;k++)combinedDebug.attempts.push(err2.debug.attempts[k]);
+      }
+      err2.debug=combinedDebug;
+      /* 에러 메시지에 두 워커 모두 실패했음을 명시 */
+      var combinedMsg='두 워커 모두 실패. 1차(Cloudflare): '+(err1.message||'?')+' / 2차(Vercel): '+(err2.message||'?');
+      var combinedErr=new Error(combinedMsg);
+      combinedErr.debug=combinedDebug;
+      throw combinedErr;
+    });
+  });
+}
+
+/* ─── 단일 워커 단발 호출 (재시도 없음 — 크레딧 절약) ─── */
+/* 세션 9에서 일반화: 워커 URL과 provider 라벨을 매개변수로 받음.
+   각 attempt에 provider 정보가 포함되어 디버그 패널에서 어느 워커인지 표시 가능. */
+function callWorkerOnce(workerUrl,provider,modelId,b64,prompt){
   /* 디버그 추적 정보 — 에러 시 사용자에게 표시 */
   var debugLog={attempts:[]};
-  var attemptInfo={n:1,model:modelId,startedAt:Date.now()};
+  var attemptInfo={n:1,provider:provider,model:modelId,startedAt:Date.now()};
   var body={
     model:modelId,
     max_tokens:512,
@@ -837,28 +894,35 @@ function callWorkerOnce(modelId,b64,prompt){
       ]
     }]
   };
-  return fetch(WORKER_URL,{
+  return fetch(workerUrl,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(body)
   }).then(function(res){
     var status=res.status;
     attemptInfo.status=status;
-    attemptInfo.colo=res.headers.get('X-Worker-Colo')||'?';
+    /* Cloudflare는 X-Worker-Colo, Vercel은 X-Vercel-Region 사용 */
+    if(provider==='cloudflare'){
+      attemptInfo.colo=res.headers.get('X-Worker-Colo')||'?';
+    }else{
+      attemptInfo.region=res.headers.get('X-Vercel-Region')||'?';
+    }
     attemptInfo.upstreamMs=res.headers.get('X-Upstream-Elapsed-Ms')||null;
     attemptInfo.elapsed=Date.now()-attemptInfo.startedAt;
     return res.text().then(function(txt){
       attemptInfo.bodySnippet=txt.length>500?txt.slice(0,500)+'...':txt;
       debugLog.attempts.push(attemptInfo);
       console.log('[Scan]',JSON.stringify(attemptInfo));
-      /* 모든 에러는 즉시 throw — 재시도 없음 */
+      /* 모든 에러는 즉시 throw — 재시도 없음 (워커 폴백은 상위에서 처리) */
       if(status===503){
-        var err503=new Error('Worker 라우팅 실패 (colo='+attemptInfo.colo+'). HKG 차단 가능성');
+        var locStr=provider==='cloudflare'?('colo='+attemptInfo.colo):('region='+attemptInfo.region);
+        var err503=new Error('Worker 라우팅 실패 ('+locStr+'). HKG 차단 가능성');
         err503.debug=debugLog;
         throw err503;
       }
       if(status>=500){
-        var err5xx=new Error('서버 오류 ('+status+', colo='+attemptInfo.colo+')');
+        var locStr2=provider==='cloudflare'?('colo='+attemptInfo.colo):('region='+attemptInfo.region);
+        var err5xx=new Error('서버 오류 ('+status+', '+locStr2+')');
         err5xx.debug=debugLog;
         throw err5xx;
       }
@@ -1105,9 +1169,16 @@ function renderAttemptRows(att,idx){
     if(att.status>=200&&att.status<300)statusClass='good';
     else if(att.status>=400)statusClass='bad';
   }else statusClass='bad';
+  /* provider 라벨 (세션 9): 어느 워커였는지 표시
+     - cloudflare → "CF" + colo
+     - vercel → "Vercel" + region */
+  var providerLabel='';
+  if(att.provider==='cloudflare')providerLabel='Cloudflare';
+  else if(att.provider==='vercel')providerLabel='Vercel (백업)';
   var html='';
-  html+='<div class="dbg-row"><div class="dbg-k">  시도 #'+idx+'</div><div class="dbg-v '+statusClass+'">HTTP '+att.status+'</div></div>';
+  html+='<div class="dbg-row"><div class="dbg-k">  시도 #'+idx+(providerLabel?' ('+providerLabel+')':'')+'</div><div class="dbg-v '+statusClass+'">HTTP '+att.status+'</div></div>';
   if(att.colo)html+='<div class="dbg-row"><div class="dbg-k">  colo</div><div class="dbg-v'+(att.colo==='HKG'?' bad':'')+'">'+esc(att.colo)+'</div></div>';
+  if(att.region)html+='<div class="dbg-row"><div class="dbg-k">  region</div><div class="dbg-v">'+esc(att.region)+'</div></div>';
   if(att.upstreamMs)html+='<div class="dbg-row"><div class="dbg-k">  upstream</div><div class="dbg-v">'+att.upstreamMs+'ms</div></div>';
   if(att.elapsed!=null)html+='<div class="dbg-row"><div class="dbg-k">  total</div><div class="dbg-v">'+att.elapsed+'ms</div></div>';
   if(att.bodySnippet){
