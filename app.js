@@ -548,12 +548,24 @@ function fchip(key,val,label){
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── 덱 빌더 상태 ─── */
-var _deckBuilder=null; /* { id, name, format, pool, cards:{bs_code:qty}, isNew } */
+var _deckBuilder=null; /* { id, name, format, pool, strict, cards:{bs_code:qty}, isNew } */
 var _deckPool='dex';
 var _deckQuery='';
 var _deckClassFilter='all'; /* all|pokemon|trainer|energy|stadium */
 var _deckStageFilter='all'; /* all|basic|stage1|stage2 (포켓몬 한정) */
+var _deckTypeFilter='all'; /* all|불꽃|물|... (포켓몬 타입 한정) */
+var _deckTrainerFilter='all'; /* all|supporter|item|tool|stadium (트레이너 한정) */
 var _deckBuilderRendering=false;
+
+/* 포켓몬 타입 11종 — DB의 pokemon_type 필드 값 */
+var POKEMON_TYPES=['불꽃','물','풀','번개','초','격투','악','강철','페어리','드래곤','노말'];
+/* 트레이너 세부 — DB의 trainer_subtype 필드 값 */
+var TRAINER_SUBTYPES=[
+  {key:'supporter',label:'서포트'},
+  {key:'item',label:'아이템'},
+  {key:'tool',label:'도구'},
+  {key:'stadium',label:'스타디움'}
+];
 
 /* ─── 카드 분류 헬퍼 (DB 필드 기반) ─── */
 function cardStage(c){
@@ -611,9 +623,11 @@ function validateDeck(deck){
   var errors=[],warnings=[],info=[];
   var counts=deckCounts(deck);
   var target=deck.format==='half'?30:60;
-  var maxPerName=deck.format==='half'?2:4;
+  /* 자유 모드: 하프덱이지만 strict=false. 풀덱은 항상 정식 룰 */
+  var strict=deck.format!=='half'||deck.strict!==false;
+  var maxPerName=(deck.format==='half'&&strict)?2:4;
 
-  /* 1) 총 매수 */
+  /* 1) 총 매수 — 자유 모드여도 30/60 매수는 유지 */
   if(counts.total===target){
     info.push({lvl:'ok',msg:'카드 수: '+counts.total+'/'+target+' ✓'});
   }else if(counts.total<target){
@@ -657,11 +671,13 @@ function validateDeck(deck){
     warnings.push({lvl:'warn',msg:'2진화 포켓몬이 있는데 1진화 포켓몬이 0장이에요'});
   }
 
-  /* 4) 하프덱 전용: 2진화 금지 */
-  if(deck.format==='half'){
+  /* 4) 하프덱 전용: 2진화 금지 (정식 룰일 때만 ❌, 자유 모드면 ⚠️ 경고만) */
+  if(deck.format==='half'&&strict){
     if(stageCount.stage2>0){
       errors.push({lvl:'bad',msg:'하프덱은 2진화 포켓몬을 사용할 수 없어요 ('+stageCount.stage2+'장 발견)'});
     }
+  }else if(deck.format==='half'&&!strict&&stageCount.stage2>0){
+    warnings.push({lvl:'warn',msg:'🎈 자유 모드: 2진화 '+stageCount.stage2+'장 사용 중 (정식 룰에선 ❌)'});
   }
 
   /* 5) 풀덱 전용: ACE SPEC / 프리즘스타 / 빛나는 1장 제한 */
@@ -688,6 +704,9 @@ function validateDeck(deck){
 
   /* 6) 정보: 카드 종류 분포 */
   if(counts.total>0){
+    if(deck.format==='half'){
+      info.push({lvl:'info',msg:'모드: '+(strict?'🔒 정식 룰':'🎈 자유 모드 (아이용)')});
+    }
     info.push({lvl:'info',msg:'분포: 포켓몬 '+counts.pok+' · 트레이너 '+counts.trn+' · 에너지 '+counts.ene+(counts.std?' · 스타디움 '+counts.std:'')});
     /* 에너지 비율 권장 (기본 에너지만 카운트하지 않고 전체 에너지) */
     var eneRatio=counts.total>0?counts.ene/counts.total:0;
@@ -757,6 +776,7 @@ function newDeck(format){
     name:defName,
     format:format,
     pool:'dex',
+    strict:true, /* 하프덱 기본=정식 룰. 풀덱은 사용 안 함 */
     cards:{},
     isNew:true,
     createdAt:Date.now(),
@@ -766,6 +786,8 @@ function newDeck(format){
   _deckQuery='';
   _deckClassFilter='all';
   _deckStageFilter='all';
+  _deckTypeFilter='all';
+  _deckTrainerFilter='all';
   openDeckBuilder();
 }
 
@@ -783,6 +805,7 @@ function editDeck(id){
     name:found.name||'',
     format:found.format||'full',
     pool:found.pool||'dex',
+    strict:found.strict!==false, /* 기본 true (옛 덱 호환) */
     cards:{},
     isNew:false,
     createdAt:found.createdAt||Date.now(),
@@ -805,6 +828,8 @@ function editDeck(id){
   _deckQuery='';
   _deckClassFilter='all';
   _deckStageFilter='all';
+  _deckTypeFilter='all';
+  _deckTrainerFilter='all';
   openDeckBuilder();
 }
 
@@ -831,11 +856,44 @@ function openDeckBuilder(){
   /* 풀 토글 */
   $('poolBtnDex').className='pool-btn'+(_deckPool==='dex'?' on':'');
   $('poolBtnColl').className='pool-btn'+(_deckPool==='collection'?' on':'');
+  /* strict 모드 토글 버튼 (하프덱일 때만 표시) */
+  updateStrictBtn();
   /* 필터칩 렌더 */
   renderDbmFilters();
   /* 검색 초기화 */
   $('dbmQuery').value='';
   /* 카드 그리드 + 카운터 */
+  refreshDeckBuilder();
+}
+function updateStrictBtn(){
+  var btn=$('dbmStrictBtn');
+  if(!btn||!_deckBuilder)return;
+  if(_deckBuilder.format!=='half'){
+    btn.style.display='none';
+    return;
+  }
+  btn.style.display='';
+  if(_deckBuilder.strict===false){
+    btn.textContent='🎈';
+    btn.title='자유 모드 (아이용) — 탭하면 정식 룰로';
+    btn.className='dbm-strict-btn free';
+  }else{
+    btn.textContent='🔒';
+    btn.title='정식 룰 — 탭하면 자유 모드로';
+    btn.className='dbm-strict-btn';
+  }
+}
+function toggleStrictMode(){
+  if(!_deckBuilder||_deckBuilder.format!=='half')return;
+  _deckBuilder.strict=_deckBuilder.strict===false; /* 토글 */
+  updateStrictBtn();
+  if(_deckBuilder.strict){
+    toast('🔒 정식 룰 모드 — 2진화 금지, 같은 카드 2장까지');
+  }else{
+    toast('🎈 자유 모드 — 2진화 OK, 같은 카드 4장까지');
+  }
+  /* 필터칩 재렌더 (자유 모드면 2진화 칩 다시 표시) */
+  renderDbmFilters();
   refreshDeckBuilder();
 }
 function closeDeckBuilder(){
@@ -858,6 +916,12 @@ function hasUnsavedChanges(){
     if(decks[i].id===_deckBuilder.id){
       var orig=decks[i];
       if((orig.name||'')!==($('dbmName').value||''))return true;
+      /* strict 모드 변경 감지 (하프덱만) */
+      if(_deckBuilder.format==='half'){
+        var origStrict=orig.strict!==false;
+        var curStrict=_deckBuilder.strict!==false;
+        if(origStrict!==curStrict)return true;
+      }
       var origMap={};
       if(Array.isArray(orig.cards)){
         for(var j=0;j<orig.cards.length;j++){
@@ -894,17 +958,35 @@ function onDbmSearch(){
 /* ─── 필터 칩 렌더 ─── */
 function renderDbmFilters(){
   var h='';
+  /* 1행: 카드 클래스 */
   h+='<button class="fchip'+(_deckClassFilter==='all'?' active':'')+'" onclick="setDeckFilter(\'class\',\'all\')">전체</button>';
   h+='<button class="fchip'+(_deckClassFilter==='pokemon'?' active':'')+'" onclick="setDeckFilter(\'class\',\'pokemon\')">🐉포켓몬</button>';
   h+='<button class="fchip'+(_deckClassFilter==='trainer'?' active':'')+'" onclick="setDeckFilter(\'class\',\'trainer\')">🛠️트레이너</button>';
   h+='<button class="fchip'+(_deckClassFilter==='energy'?' active':'')+'" onclick="setDeckFilter(\'class\',\'energy\')">⚡에너지</button>';
   h+='<button class="fchip'+(_deckClassFilter==='stadium'?' active':'')+'" onclick="setDeckFilter(\'class\',\'stadium\')">🏟️스타디움</button>';
+  /* 2행: 포켓몬 선택 시 → 진화 단계 */
   if(_deckClassFilter==='pokemon'){
-    h+='<span style="width:1px;background:var(--cb);margin:0 2px"></span>';
+    h+='<span style="width:1px;background:var(--cb);margin:0 2px;align-self:stretch"></span>';
     h+='<button class="fchip'+(_deckStageFilter==='basic'?' active':'')+'" onclick="setDeckFilter(\'stage\',\'basic\')">기본</button>';
     h+='<button class="fchip'+(_deckStageFilter==='stage1'?' active':'')+'" onclick="setDeckFilter(\'stage\',\'stage1\')">1진화</button>';
-    if(_deckBuilder&&_deckBuilder.format!=='half'){
+    /* 2진화 칩: 풀덱 또는 하프덱 자유 모드일 때만 표시 */
+    var hideStage2=_deckBuilder&&_deckBuilder.format==='half'&&_deckBuilder.strict!==false;
+    if(!hideStage2){
       h+='<button class="fchip'+(_deckStageFilter==='stage2'?' active':'')+'" onclick="setDeckFilter(\'stage\',\'stage2\')">2진화</button>';
+    }
+    /* 3행: 포켓몬 타입 */
+    h+='<span style="width:1px;background:var(--cb);margin:0 2px;align-self:stretch"></span>';
+    for(var ti=0;ti<POKEMON_TYPES.length;ti++){
+      var t=POKEMON_TYPES[ti];
+      h+='<button class="fchip'+(_deckTypeFilter===t?' active':'')+'" onclick="setDeckFilter(\'type\',\''+esc(t)+'\')">'+esc(t)+'</button>';
+    }
+  }
+  /* 트레이너 선택 시 → 세부 분류 */
+  if(_deckClassFilter==='trainer'){
+    h+='<span style="width:1px;background:var(--cb);margin:0 2px;align-self:stretch"></span>';
+    for(var si=0;si<TRAINER_SUBTYPES.length;si++){
+      var ts=TRAINER_SUBTYPES[si];
+      h+='<button class="fchip'+(_deckTrainerFilter===ts.key?' active':'')+'" onclick="setDeckFilter(\'subtype\',\''+ts.key+'\')">'+esc(ts.label)+'</button>';
     }
   }
   $('dbmFilters').innerHTML=h;
@@ -912,9 +994,15 @@ function renderDbmFilters(){
 function setDeckFilter(key,val){
   if(key==='class'){
     _deckClassFilter=val;
-    if(val!=='pokemon')_deckStageFilter='all';
+    /* 클래스 바뀌면 종속 필터 리셋 */
+    if(val!=='pokemon'){_deckStageFilter='all';_deckTypeFilter='all';}
+    if(val!=='trainer')_deckTrainerFilter='all';
   }else if(key==='stage'){
     _deckStageFilter=_deckStageFilter===val?'all':val;
+  }else if(key==='type'){
+    _deckTypeFilter=_deckTypeFilter===val?'all':val;
+  }else if(key==='subtype'){
+    _deckTrainerFilter=_deckTrainerFilter===val?'all':val;
   }
   renderDbmFilters();
   refreshDeckBuilder();
@@ -938,8 +1026,12 @@ function getDeckBuilderCards(){
     var c=pool[i];
     if(!c)continue;
     if(_deckClassFilter!=='all'&&c.card_class!==_deckClassFilter)continue;
-    if(_deckClassFilter==='pokemon'&&_deckStageFilter!=='all'){
-      if(cardStage(c)!==_deckStageFilter)continue;
+    if(_deckClassFilter==='pokemon'){
+      if(_deckStageFilter!=='all'&&cardStage(c)!==_deckStageFilter)continue;
+      if(_deckTypeFilter!=='all'&&c.pokemon_type!==_deckTypeFilter)continue;
+    }
+    if(_deckClassFilter==='trainer'){
+      if(_deckTrainerFilter!=='all'&&c.trainer_subtype!==_deckTrainerFilter)continue;
     }
     if(_deckQuery){
       var nm=c.name_kr||'';
@@ -986,7 +1078,9 @@ function refreshDeckBuilder(){
       var bc=c.bs_code;
       var qty=_deckBuilder.cards[bc]||0;
       var hasIt=qty>0;
-      var maxPerName=_deckBuilder.format==='half'?2:4;
+      var isHalf2=_deckBuilder.format==='half';
+      var strict2=!isHalf2||_deckBuilder.strict!==false;
+      var maxPerName=(isHalf2&&strict2)?2:4;
       var basicEne=isBasicEnergy(c);
       /* 같은 이름 누적 (제한 표시용) */
       var sameNameTotal=0;
@@ -1021,13 +1115,15 @@ function addToDeck(bs_code){
   if(!_deckBuilder)return;
   var c=dbByCode[bs_code];
   if(!c){toast('카드 정보를 찾을 수 없어요','#e74c3c');return;}
-  var maxPerName=_deckBuilder.format==='half'?2:4;
+  var isHalf=_deckBuilder.format==='half';
+  var strict=!isHalf||_deckBuilder.strict!==false;
+  var maxPerName=(isHalf&&strict)?2:4;
   var basicEne=isBasicEnergy(c);
-  /* 하프덱 2진화 차단 */
-  if(_deckBuilder.format==='half'&&cardStage(c)==='stage2'){
-    toast('하프덱은 2진화 포켓몬을 못 넣어요','#f39c12');return;
+  /* 하프덱 정식 룰: 2진화 차단 / 자유 모드: 허용 */
+  if(isHalf&&strict&&cardStage(c)==='stage2'){
+    toast('🔒 정식 룰: 하프덱은 2진화 못 넣어요. 🎈로 전환하면 가능','#f39c12');return;
   }
-  /* 4장(2장) 제한 — 기본 에너지는 예외 */
+  /* 같은 이름 N장 제한 — 기본 에너지는 예외 */
   if(!basicEne){
     var sameNameTotal=0;
     for(var bc in _deckBuilder.cards){
@@ -1038,11 +1134,10 @@ function addToDeck(bs_code){
       toast('"'+c.name_kr+'"는 '+maxPerName+'장까지만 가능해요','#f39c12');return;
     }
   }
-  /* 총 매수 초과 경고 (차단은 안 함 — 사용자 자유) */
+  /* 총 매수 차단 — 자유 모드여도 30/60 매수는 유지 */
   var counts=deckCounts(_deckBuilder);
-  var target=_deckBuilder.format==='half'?30:60;
+  var target=isHalf?30:60;
   if(counts.total>=target){
-    /* 부드럽게 알림만, 추가는 허용 안 함 */
     toast('덱이 이미 '+target+'장이에요','#f39c12');return;
   }
   _deckBuilder.cards[bs_code]=(_deckBuilder.cards[bs_code]||0)+1;
@@ -1172,6 +1267,7 @@ function saveCurrentDeck(){
     name:_deckBuilder.name,
     format:_deckBuilder.format,
     pool:_deckBuilder.pool,
+    strict:_deckBuilder.format==='half'?(_deckBuilder.strict!==false):true,
     cards:cardsArr,
     createdAt:_deckBuilder.createdAt,
     updatedAt:_deckBuilder.updatedAt
