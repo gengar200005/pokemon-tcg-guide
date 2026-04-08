@@ -162,6 +162,65 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .scan-shutter:active{transform:scale(.9)}
 .scan-flip{width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:1.3rem;cursor:pointer;backdrop-filter:blur(6px)}
 .scan-count{font-family:var(--ft);color:#fff;font-size:.9rem;min-width:48px;text-align:right}
+.scan-model-badge{font-size:.6rem;background:rgba(255,203,5,.85);color:#1a2a3a;padding:2px 7px;border-radius:8px;font-weight:700;letter-spacing:.2px}
+.scan-model-badge.fallback{background:rgba(243,156,18,.9);color:#fff}
+
+/* 스캔 로딩 오버레이 */
+.scan-loading{position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:8;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.scan-loading.on{display:flex}
+.sl-box{background:rgba(20,30,40,.92);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:22px 28px;text-align:center;color:#fff;min-width:200px}
+.sl-spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--accent2);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+.sl-msg{font-size:.85rem;font-family:var(--ft)}
+
+/* 스캔 결과 패널 */
+.scan-result{position:absolute;inset:0;background:#0d1117;z-index:10;display:none;flex-direction:column;color:#fff;overflow:hidden}
+.scan-result.on{display:flex}
+.sr-hdr{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:rgba(0,0,0,.3)}
+.sr-prov{font-size:.62rem;background:rgba(61,192,236,.25);color:#7dd3fc;padding:2px 7px;border-radius:8px;font-weight:700;letter-spacing:.2px}
+.sr-prov.fallback{background:rgba(243,156,18,.25);color:#fbbf24}
+.sr-body{flex:1;padding:14px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sr-shot{width:100%;max-width:160px;margin:0 auto 12px;display:block;border-radius:10px;border:1.5px solid rgba(255,255,255,.15)}
+.sr-section-label{font-size:.72rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px;font-weight:600}
+.sr-cands{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sr-cand{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:6px;cursor:pointer;transition:.15s;text-align:center}
+.sr-cand:active{transform:scale(.97)}
+.sr-cand.sel{border-color:var(--accent2);background:rgba(255,203,5,.12);box-shadow:0 0 0 1px var(--accent2)}
+.sr-cand img{width:100%;aspect-ratio:2.5/3.5;object-fit:contain;border-radius:6px;background:rgba(255,255,255,.04)}
+.sr-cand .cn{font-size:.7rem;margin-top:5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.sr-cand .cs{font-size:.58rem;color:rgba(255,255,255,.5);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-detail{background:rgba(255,255,255,.04);border-radius:10px;padding:12px;margin-bottom:14px;font-size:.78rem;line-height:1.5}
+.sr-detail .dl{color:rgba(255,255,255,.5);font-size:.7rem;margin-bottom:2px}
+.sr-detail .dv{color:#fff;margin-bottom:6px}
+.sr-detail .dv:last-child{margin-bottom:0}
+.sr-qty{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0;font-family:var(--ft);font-size:1.2rem;color:#fff}
+.sr-qty button{width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
+.sr-qty button:active{transform:scale(.92)}
+.sr-qty .qv{min-width:34px;text-align:center}
+.sr-actions{display:flex;gap:8px;margin-top:8px}
+.sr-btn{flex:1;padding:13px;border-radius:10px;border:none;font-family:var(--ft);font-size:.92rem;cursor:pointer;font-weight:700}
+.sr-btn.primary{background:var(--accent2);color:#1a2a3a}
+.sr-btn.secondary{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.sr-btn:active{transform:scale(.97)}
+.sr-btn:disabled{opacity:.4;cursor:not-allowed}
+.sr-empty{text-align:center;padding:24px 16px;color:rgba(255,255,255,.7)}
+.sr-empty .em{font-size:2.2rem;display:block;margin-bottom:10px}
+.sr-empty .et{font-size:.9rem;font-family:var(--ft);margin-bottom:4px;color:#fff}
+.sr-empty .es{font-size:.75rem;color:rgba(255,255,255,.55);line-height:1.5}
+.sr-low-warn{background:rgba(255,203,5,.12);border:1px solid rgba(255,203,5,.35);color:#ffcb05;padding:8px 12px;border-radius:10px;font-size:.74rem;text-align:center;margin:10px 0}
+.sr-manual-link{margin-top:18px;text-align:center;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
+.sr-manual-link a{color:rgba(255,255,255,.6);font-size:.78rem;text-decoration:underline;cursor:pointer}
+
+/* 수동 검색 UI (결과 패널 안) */
+.sr-search-input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:.9rem;font-family:var(--fb);outline:none;box-sizing:border-box}
+.sr-search-input:focus{border-color:var(--accent2)}
+.sr-search-input::placeholder{color:rgba(255,255,255,.4)}
+.sr-search-results{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
+.sr-search-item{display:flex;align-items:center;gap:10px;padding:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer}
+.sr-search-item:active{transform:scale(.98)}
+.sr-search-item img{width:40px;height:56px;object-fit:contain;border-radius:4px;flex-shrink:0;background:rgba(255,255,255,.04)}
+.sr-search-item .si-info{flex:1;min-width:0}
+.sr-search-item .si-name{font-size:.82rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.sr-search-item .si-meta{font-size:.66rem;color:rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 
 @media(max-width:480px){
   .hdr h1{font-size:1.3rem}
@@ -235,12 +294,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   <div class="st">📸 카드 스캔</div>
   <button class="scan-launch" onclick="startScan()">
     <span class="ic">📸</span>
-    <span class="tx"><span class="tt">카메라로 스캔하기</span><span class="st2">실물 카드를 찍어 자동 등록 (Gemini AI)</span></span>
+    <span class="tx"><span class="tt">카메라로 스캔하기</span><span class="st2">실물 카드를 찍어 자동 등록 (Claude Vision)</span></span>
     <span style="font-size:1.4rem">›</span>
   </button>
   <div class="deck-notice" style="margin-top:12px">
-    <div style="font-family:var(--ft);font-size:.95rem;color:var(--accent);margin-bottom:6px">🚧 본구현은 세션 8 예정</div>
-    <p style="font-size:.78rem;color:var(--text2);line-height:1.6">Dragon Shield 스타일 라이브 프리뷰 + Gemini Vision API로 카드를 자동 인식해 수집함에 한 번에 등록할 수 있게 됩니다.</p>
+    <div style="font-family:var(--ft);font-size:.95rem;color:var(--accent);margin-bottom:6px">💡 사용 팁</div>
+    <p style="font-size:.78rem;color:var(--text2);line-height:1.6">밝은 곳에서 카드를 프레임에 맞춰 촬영하세요. Sonnet 4.5(메인) → Haiku 4.5(폴백) 자동 전환. 인식 실패 시 수동 검색도 가능합니다.</p>
   </div>
 </div>
 
@@ -268,6 +327,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <div class="scan-tophud">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="ttl">📸 카드 스캔</div>
+        <div class="scan-model-badge" id="scanModelBadge">Sonnet 4.5</div>
       </div>
       <button class="scan-close" onclick="stopScan()">×</button>
     </div>
@@ -278,11 +338,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
         <div class="type-circle"></div>
       </div>
     </div>
-    <div class="scan-guide-msg">프레임 안에 카드를 맞추고 셔터를 누르세요</div>
+    <div class="scan-guide-msg" id="scanGuideMsg">프레임 안에 카드를 맞추고 셔터를 누르세요</div>
     <div class="scan-controls">
       <button class="scan-flip" onclick="flipCamera()" title="카메라 전환">🔄</button>
-      <button class="scan-shutter" onclick="captureCard()" aria-label="촬영"></button>
+      <button class="scan-shutter" id="scanShutter" onclick="captureCard()" aria-label="촬영"></button>
       <div class="scan-count" id="scanCount">0장</div>
+    </div>
+
+    <!-- 인식 중 오버레이 -->
+    <div class="scan-loading" id="scanLoading">
+      <div class="sl-box">
+        <div class="sl-spin"></div>
+        <div class="sl-msg" id="scanLoadingMsg">카드 인식 중...</div>
+      </div>
+    </div>
+
+    <!-- 결과 패널 -->
+    <div class="scan-result" id="scanResult">
+      <div class="sr-hdr">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:var(--ft);font-size:1rem">🎯 카드 식별 결과</span>
+          <span class="sr-prov" id="srProv"></span>
+        </div>
+        <button class="scan-close" onclick="closeScanResult()">×</button>
+      </div>
+      <div class="sr-body" id="srBody">
+        <!-- 동적 렌더 -->
+      </div>
     </div>
   </div>
 </div>

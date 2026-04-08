@@ -598,12 +598,33 @@ var PRESET_DECKS=[
 ];
 
 /* ═══════════════════════════════════════════════════════════════
-   📸 스캔 탭 (UI 보존, 세션 8 본구현 대기)
+   📸 스캔 탭 — 카메라 + Claude Vision 본구현 (세션 8)
    ═══════════════════════════════════════════════════════════════ */
-var _scanStream=null,_scanFacing='environment';
 
+/* ─── Worker / Model 설정 ─── */
+var WORKER_URL='https://pokemon-tcg-proxy.sieun8475.workers.dev';
+var SCAN_MODELS={
+  primary:{id:'claude-sonnet-4-5',label:'Sonnet 4.5'},
+  fallback:{id:'claude-haiku-4-5',label:'Haiku 4.5'}
+};
+
+/* ─── 스캔 상태 ─── */
+var _scanStream=null,_scanFacing='environment';
+var _scanSessionCount=0;          /* 이번 세션에서 등록한 카드 수 */
+var _scanShotDataUrl=null;        /* 마지막 촬영 base64 (data:image/jpeg;base64,...) */
+var _scanCandidates=[];           /* 매칭된 DB 카드 객체 배열 */
+var _scanSelectedIdx=0;           /* 선택된 후보 index */
+var _scanSelectedQty=1;           /* 등록할 수량 */
+var _scanProvider=null;           /* 'sonnet' | 'haiku' — 마지막 응답 모델 */
+var _scanBusy=false;              /* 인식 진행 중 플래그 (중복 촬영 방지) */
+var _scanManualMode=false;        /* 수동 검색 모드 ON/OFF */
+
+/* ─── 진입/종료 ─── */
 function startScan(){
+  _scanSessionCount=0;
+  updateScanCount();
   $('scanFs').className='scan-fs on';
+  setScanModelBadge('primary');
   openCamera();
 }
 function openCamera(){
@@ -633,12 +654,548 @@ function flipCamera(){
 function stopScan(){
   if(_scanStream){_scanStream.getTracks().forEach(function(t){t.stop();});_scanStream=null;}
   $('scanFs').className='scan-fs';
+  $('scanResult').className='scan-result';
+  $('scanLoading').className='scan-loading';
+  _scanBusy=false;
+  _scanManualMode=false;
+  /* 종료 시 활성 탭 갱신 */
+  if(_scanSessionCount>0){
+    if(_currentTab==='coll')renderColl();
+    if(_currentTab==='dex')renderDex();
+  }
 }
+function retakeScan(){
+  /* 결과 패널 닫고 카메라로 복귀 (스트림은 그대로) */
+  $('scanResult').className='scan-result';
+  _scanBusy=false;
+  _scanManualMode=false;
+}
+function closeScanResult(){retakeScan();}
+
+/* ─── UI 헬퍼 ─── */
+function updateScanCount(){
+  var el=$('scanCount');
+  if(el)el.textContent=_scanSessionCount+'장';
+}
+function setScanModelBadge(which){
+  /* which: 'primary' | 'fallback' */
+  var el=$('scanModelBadge');
+  if(!el)return;
+  if(which==='fallback'){
+    el.textContent=SCAN_MODELS.fallback.label;
+    el.className='scan-model-badge fallback';
+  }else{
+    el.textContent=SCAN_MODELS.primary.label;
+    el.className='scan-model-badge';
+  }
+}
+function showScanLoading(msg){
+  $('scanLoadingMsg').textContent=msg||'카드 인식 중...';
+  $('scanLoading').className='scan-loading on';
+}
+function hideScanLoading(){
+  $('scanLoading').className='scan-loading';
+}
+
+/* ─── 핵심: 촬영 → 인식 → 결과 표시 ─── */
 function captureCard(){
-  toast('📸 스캔 기능은 세션 8에서 구현 예정','#f39c12');
+  if(_scanBusy){return;}
+  if(!_scanStream){toast('카메라가 활성화되지 않았습니다','#e74c3c');return;}
+  _scanBusy=true;
+
+  var v=$('scanVideo');
+  if(!v.videoWidth||!v.videoHeight){
+    toast('카메라 준비 중입니다. 잠시 후 다시','#f39c12');
+    _scanBusy=false;
+    return;
+  }
+
+  /* 비디오 → canvas (scan-frame 영역만 crop) */
+  var dataUrl;
+  try{
+    dataUrl=cropVideoToCardFrame(v);
+  }catch(e){
+    toast('촬영 실패: '+(e.message||e),'#e74c3c');
+    _scanBusy=false;
+    return;
+  }
+  _scanShotDataUrl=dataUrl;
+
+  /* 셔터 피드백 */
+  var sh=$('scanShutter');
+  if(sh){sh.style.opacity='.5';setTimeout(function(){sh.style.opacity='1';},150);}
+
+  /* 인식 시작 */
+  showScanLoading('Sonnet 4.5로 카드 인식 중...');
+  recognizeCard(dataUrl).then(function(result){
+    hideScanLoading();
+    _scanProvider=result.provider;
+    setScanModelBadge(result.provider==='haiku'?'fallback':'primary');
+
+    /* 매칭 시도 */
+    var matched=matchCandidatesToDB(result.candidates);
+    showScanResult(matched,dataUrl,result);
+  }).catch(function(err){
+    hideScanLoading();
+    _scanBusy=false;
+    var msg=err&&err.message?err.message:String(err);
+    toast('❌ 인식 실패: '+msg,'#e74c3c');
+    /* 에러 시에도 결과 패널을 띄워 수동 검색 옵션 제공 */
+    showScanResult([],dataUrl,{candidates:[],provider:null,error:msg});
+  });
 }
-function retakeScan(){stopScan();}
-function toggleModelMenu(){toast('모델 선택은 세션 8에서 구현 예정','#f39c12');}
+
+/* ─── 비디오 → scan-frame 영역 crop → JPEG base64 ─── */
+function cropVideoToCardFrame(video){
+  var vw=video.videoWidth,vh=video.videoHeight;
+  /* video DOM 표시 영역 (object-fit:cover 기준) */
+  var rect=video.getBoundingClientRect();
+  var dispW=rect.width,dispH=rect.height;
+  /* object-fit:cover scale 계산 */
+  var scale=Math.max(dispW/vw,dispH/vh);
+  var srcW=dispW/scale,srcH=dispH/scale;
+  var srcX=(vw-srcW)/2,srcY=(vh-srcH)/2;
+  /* scan-frame DOM 위치 → 비디오 표시 좌표계 */
+  var frameEl=document.querySelector('.scan-frame');
+  if(!frameEl)throw new Error('scan-frame 요소 없음');
+  var fr=frameEl.getBoundingClientRect();
+  var fx=(fr.left-rect.left)/dispW;  /* 0~1 */
+  var fy=(fr.top-rect.top)/dispH;
+  var fw=fr.width/dispW;
+  var fh=fr.height/dispH;
+  /* 비디오 원본 좌표로 변환 */
+  var cx=srcX+fx*srcW,cy=srcY+fy*srcH;
+  var cw=fw*srcW,ch=fh*srcH;
+  /* 약간의 패딩 (5%) 추가해서 잘림 방지 */
+  var padX=cw*0.05,padY=ch*0.05;
+  cx=Math.max(0,cx-padX);cy=Math.max(0,cy-padY);
+  cw=Math.min(vw-cx,cw+2*padX);ch=Math.min(vh-cy,ch+2*padY);
+  /* canvas 출력 — 긴 변 1024px 제한 (토큰 절약) */
+  var maxSide=1024;
+  var ratio=Math.min(1,maxSide/Math.max(cw,ch));
+  var outW=Math.round(cw*ratio),outH=Math.round(ch*ratio);
+  var canvas=document.createElement('canvas');
+  canvas.width=outW;canvas.height=outH;
+  var ctx=canvas.getContext('2d');
+  ctx.drawImage(video,cx,cy,cw,ch,0,0,outW,outH);
+  return canvas.toDataURL('image/jpeg',0.82);
+}
+
+/* ─── Worker 호출 (Sonnet 1차 → Haiku 폴백 + 503 재시도) ─── */
+function recognizeCard(dataUrl){
+  /* dataUrl에서 base64만 추출 */
+  var b64=dataUrl.replace(/^data:image\/jpeg;base64,/,'');
+  var prompt=buildScanPrompt();
+
+  /* 1차: Sonnet 4.5 */
+  return callWorkerWithRetry(SCAN_MODELS.primary.id,b64,prompt,2).then(function(parsed){
+    return {candidates:parsed.candidates||[],provider:'sonnet',raw:parsed};
+  }).catch(function(err1){
+    console.warn('[Scan] Sonnet failed, falling back to Haiku:',err1);
+    /* Sonnet 실패 → Haiku 폴백 */
+    showScanLoading('⚠️ Haiku 4.5로 재시도 중...');
+    return callWorkerWithRetry(SCAN_MODELS.fallback.id,b64,prompt,2).then(function(parsed){
+      return {candidates:parsed.candidates||[],provider:'haiku',raw:parsed,fallbackReason:err1.message};
+    });
+  });
+}
+
+/* ─── 단일 모델 호출 + 재시도 (503 blocked colo, 5xx) ─── */
+function callWorkerWithRetry(modelId,b64,prompt,maxRetry){
+  var attempt=0;
+  function tryOnce(){
+    attempt++;
+    var body={
+      model:modelId,
+      max_tokens:512,
+      messages:[{
+        role:'user',
+        content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+          {type:'text',text:prompt}
+        ]
+      }]
+    };
+    return fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    }).then(function(res){
+      var status=res.status;
+      return res.text().then(function(txt){
+        /* 503 blocked colo → 즉시 재시도 (Cloudflare가 다른 colo로 라우팅 기대) */
+        if(status===503){
+          if(attempt<=maxRetry){
+            return new Promise(function(r){setTimeout(r,400*attempt);}).then(tryOnce);
+          }
+          throw new Error('Worker 라우팅 실패 (HKG 차단). 잠시 후 다시 시도해주세요.');
+        }
+        /* 5xx → 백오프 후 재시도 */
+        if(status>=500){
+          if(attempt<=maxRetry){
+            return new Promise(function(r){setTimeout(r,500*attempt);}).then(tryOnce);
+          }
+          throw new Error('서버 오류 ('+status+')');
+        }
+        if(status===429){
+          throw new Error('요청 한도 초과 (1분 후 재시도)');
+        }
+        if(status>=400){
+          var errMsg='HTTP '+status;
+          try{var ej=JSON.parse(txt);if(ej.error){errMsg+=': '+(ej.error.message||ej.error);}}catch(e){}
+          throw new Error(errMsg);
+        }
+        /* 성공 — Anthropic 응답 파싱 */
+        var data;
+        try{data=JSON.parse(txt);}catch(e){throw new Error('응답 JSON 파싱 실패');}
+        return parseAnthropicResponse(data);
+      });
+    });
+  }
+  return tryOnce();
+}
+
+/* ─── Anthropic content[] 에서 type='text' 추출 + JSON 파싱 ─── */
+function parseAnthropicResponse(data){
+  var txt='';
+  if(data.content&&data.content.length){
+    for(var i=0;i<data.content.length;i++){
+      if(data.content[i].type==='text'){txt=data.content[i].text;break;}
+    }
+  }
+  if(!txt)throw new Error('응답에 텍스트가 없습니다');
+  /* 코드펜스 제거 */
+  txt=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+  /* 첫 { 부터 마지막 } 까지만 추출 (앞뒤 잡설 방어) */
+  var s=txt.indexOf('{'),e=txt.lastIndexOf('}');
+  if(s>=0&&e>s)txt=txt.slice(s,e+1);
+  var parsed;
+  try{parsed=JSON.parse(txt);}catch(err){throw new Error('카드 정보 파싱 실패: '+err.message);}
+  if(!parsed||typeof parsed!=='object'||!Array.isArray(parsed.candidates)){
+    throw new Error('응답 형식이 올바르지 않습니다');
+  }
+  return parsed;
+}
+
+/* ─── Claude용 한글 카드 식별 프롬프트 ─── */
+function buildScanPrompt(){
+  return '이 포켓몬 TCG 카드(한국판)를 식별해서 JSON으로만 답해주세요. 마크다운/코드펜스/설명 금지.\n\n'+
+    '{"candidates":[\n'+
+    '  {"name_kr":"한글 카드명","hp":null,"pack":"팩명 또는 코드","card_no":"카드번호","confidence":"high"}\n'+
+    ']}\n\n'+
+    '규칙:\n'+
+    '- name_kr: 카드 상단의 한글 이름 그대로 (예: "리자몽 ex", "페이검", "박사의 연구")\n'+
+    '- 진화 단계 보조 텍스트("1단계 진화" 등)는 무시\n'+
+    '- ex/V/VMAX/MEGA/테라스탈 같은 접미사는 포함\n'+
+    '- hp: 포켓몬 카드만 우상단 HP 숫자 (정수), 트레이너/에너지는 null\n'+
+    '- pack: 카드 우하단의 팩 한글명 또는 팩 코드(예: "M3", "SV1A")\n'+
+    '- card_no: 우하단 "001/100" 형식 그대로\n'+
+    '- 최대 3개 후보를 confidence 높은 순으로 (high/medium/low)\n'+
+    '- 카드가 안 보이거나 읽을 수 없으면 candidates를 빈 배열 []로\n'+
+    '- 일본판/영문판이면 한글로 가장 가까운 이름으로 추정 + confidence를 low로';
+}
+
+/* ─── 후보 → 한글 DB 매칭 (3단계 fallback) ─── */
+function matchCandidatesToDB(candidates){
+  if(!candidates||!candidates.length)return [];
+  var results=[];
+  var seen={};
+  for(var i=0;i<candidates.length;i++){
+    var cand=candidates[i];
+    if(!cand||!cand.name_kr)continue;
+    var matches=findCardsInDB(cand);
+    for(var j=0;j<matches.length;j++){
+      var m=matches[j];
+      if(seen[m.bs_code])continue;
+      seen[m.bs_code]=true;
+      results.push({
+        card:m,
+        confidence:cand.confidence||'medium',
+        candidateName:cand.name_kr
+      });
+      if(results.length>=3)break;
+    }
+    if(results.length>=3)break;
+  }
+  return results;
+}
+
+function findCardsInDB(cand){
+  if(!cardsDB||!cardsDB.length)return [];
+  var name=String(cand.name_kr||'').trim();
+  if(!name)return [];
+
+  /* 1단계: 정확 일치 */
+  var exact=cardsDB.filter(function(c){return c.name_kr===name;});
+  if(exact.length){
+    return narrowByMeta(exact,cand);
+  }
+
+  /* 2단계: 부분 일치 (양방향) */
+  var partial=cardsDB.filter(function(c){
+    if(!c.name_kr)return false;
+    return c.name_kr.indexOf(name)>=0||name.indexOf(c.name_kr)>=0;
+  });
+  if(partial.length){
+    return narrowByMeta(partial,cand).slice(0,5);
+  }
+
+  /* 3단계: 공백/특수문자 제거 후 부분 일치 */
+  var norm=name.replace(/[\s\-·.]/g,'');
+  var loose=cardsDB.filter(function(c){
+    if(!c.name_kr)return false;
+    var n=c.name_kr.replace(/[\s\-·.]/g,'');
+    return n.indexOf(norm)>=0||norm.indexOf(n)>=0;
+  });
+  return narrowByMeta(loose,cand).slice(0,3);
+}
+
+function narrowByMeta(list,cand){
+  /* HP / pack_code / card_no 로 좁히기 */
+  if(list.length<=1)return list;
+  var filtered=list;
+
+  /* HP 일치 우선 (포켓몬만) */
+  if(cand.hp!=null&&!isNaN(parseInt(cand.hp,10))){
+    var hpVal=parseInt(cand.hp,10);
+    var hpMatch=filtered.filter(function(c){return c.hp===hpVal;});
+    if(hpMatch.length)filtered=hpMatch;
+  }
+
+  /* pack_code 부분 일치 */
+  if(cand.pack&&filtered.length>1){
+    var pk=String(cand.pack).toUpperCase();
+    var packMatch=filtered.filter(function(c){
+      var code=(c.pack_code||'').toUpperCase();
+      var name=(c.pack_name_kr||'');
+      return code===pk||code.indexOf(pk)>=0||pk.indexOf(code)>=0||name.indexOf(cand.pack)>=0;
+    });
+    if(packMatch.length)filtered=packMatch;
+  }
+
+  /* card_no 일치 */
+  if(cand.card_no&&filtered.length>1){
+    var cn=String(cand.card_no).split('/')[0].replace(/^0+/,'');
+    var noMatch=filtered.filter(function(c){
+      return String(c.card_no||'').replace(/^0+/,'')===cn;
+    });
+    if(noMatch.length)filtered=noMatch;
+  }
+
+  return filtered;
+}
+
+/* ─── 결과 패널 렌더 ─── */
+function showScanResult(matched,shotDataUrl,recogResult){
+  _scanCandidates=matched;
+  _scanSelectedIdx=0;
+  _scanSelectedQty=1;
+  _scanManualMode=false;
+
+  /* provider 배지 */
+  var provEl=$('srProv');
+  if(recogResult&&recogResult.provider==='sonnet'){
+    provEl.textContent='Sonnet 4.5';
+    provEl.className='sr-prov';
+  }else if(recogResult&&recogResult.provider==='haiku'){
+    provEl.textContent='Haiku 4.5 (폴백)';
+    provEl.className='sr-prov fallback';
+  }else{
+    provEl.textContent='';
+    provEl.className='sr-prov';
+  }
+
+  renderScanResultBody();
+  $('scanResult').className='scan-result on';
+}
+
+function renderScanResultBody(){
+  var body=$('srBody');
+  var html='';
+
+  if(_scanShotDataUrl){
+    html+='<img class="sr-shot" src="'+_scanShotDataUrl+'" alt="촬영 사진">';
+  }
+
+  if(_scanCandidates.length===0){
+    /* 인식 실패 */
+    html+='<div class="sr-empty">'+
+      '<span class="em">🤔</span>'+
+      '<div class="et">카드를 인식하지 못했어요</div>'+
+      '<div class="es">밝은 곳에서 카드를 프레임에 가득 차게 맞추고<br>다시 촬영해보세요.</div>'+
+      '</div>';
+    html+='<div class="sr-actions">'+
+      '<button class="sr-btn secondary" onclick="retakeScan()">📸 재촬영</button>'+
+      '</div>';
+    html+='<div class="sr-manual-link"><a onclick="showManualSearch()">🔍 수동으로 검색하기</a></div>';
+    body.innerHTML=html;
+    return;
+  }
+
+  /* 후보 카드들 */
+  html+='<div class="sr-section-label">후보 카드 (탭하여 선택)</div>';
+  html+='<div class="sr-cands">';
+  for(var i=0;i<_scanCandidates.length;i++){
+    var m=_scanCandidates[i];
+    var c=m.card;
+    var img=c.image_url||placeholderImg(c.name_kr);
+    var sel=(i===_scanSelectedIdx)?' sel':'';
+    html+='<div class="sr-cand'+sel+'" onclick="selectScanCandidate('+i+')">'+
+      '<img src="'+esc(img)+'" alt="'+esc(c.name_kr)+'" onerror="this.src=\''+placeholderImg(c.name_kr).replace(/'/g,'%27')+'\'">'+
+      '<div class="cn">'+esc(c.name_kr)+'</div>'+
+      '<div class="cs">'+esc(c.pack_code||'')+'</div>'+
+      '</div>';
+  }
+  html+='</div>';
+
+  /* 모든 후보가 low confidence면 경고 */
+  var allLow=_scanCandidates.every(function(m){return m.confidence==='low';});
+  if(allLow){
+    html+='<div class="sr-low-warn">⚠️ 자신 없음 — 카드가 맞는지 확인해주세요</div>';
+  }
+
+  /* 선택된 카드 상세 */
+  var sel=_scanCandidates[_scanSelectedIdx];
+  if(sel){
+    var c=sel.card;
+    html+='<div class="sr-detail">';
+    html+='<div class="dl">카드명</div><div class="dv">'+esc(c.name_kr)+(c.hp?' · HP '+c.hp:'')+'</div>';
+    if(c.pack_full_kr||c.pack_name_kr){
+      html+='<div class="dl">팩</div><div class="dv">📦 '+esc(c.pack_full_kr||c.pack_name_kr)+'</div>';
+    }
+    if(c.card_no){
+      html+='<div class="dl">번호</div><div class="dv">'+esc(c.card_no)+'</div>';
+    }
+    /* 이미 수집한 카드인지 표시 */
+    var existing=D.collected[c.bs_code];
+    if(existing){
+      html+='<div class="dl">현재 보유</div><div class="dv" style="color:#7dd3fc">✓ 이미 '+(existing.qty||1)+'장 수집됨</div>';
+    }
+    html+='</div>';
+
+    /* 수량 */
+    html+='<div class="sr-qty">'+
+      '<button onclick="changeScanQty(-1)">−</button>'+
+      '<span class="qv" id="srQtyVal">'+_scanSelectedQty+'</span>'+
+      '<button onclick="changeScanQty(1)">+</button>'+
+      '</div>';
+
+    /* 액션 */
+    html+='<div class="sr-actions">'+
+      '<button class="sr-btn secondary" onclick="retakeScan()">↻ 재촬영</button>'+
+      '<button class="sr-btn primary" onclick="confirmScanRegister()">✅ 등록</button>'+
+      '</div>';
+  }
+
+  /* 수동 검색 링크 (항상 노출) */
+  html+='<div class="sr-manual-link"><a onclick="showManualSearch()">🔍 다른 카드 수동 검색</a></div>';
+
+  body.innerHTML=html;
+}
+
+function selectScanCandidate(idx){
+  _scanSelectedIdx=idx;
+  renderScanResultBody();
+}
+
+function changeScanQty(delta){
+  var existing=0;
+  var sel=_scanCandidates[_scanSelectedIdx];
+  if(sel&&D.collected[sel.card.bs_code])existing=D.collected[sel.card.bs_code].qty||0;
+  var newQty=_scanSelectedQty+delta;
+  if(newQty<1){newQty=1;}
+  if(existing+newQty>4){
+    toast('한 덱에 최대 4장입니다','#f39c12');
+    return;
+  }
+  _scanSelectedQty=newQty;
+  $('srQtyVal').textContent=newQty;
+}
+
+function confirmScanRegister(){
+  var sel=_scanCandidates[_scanSelectedIdx];
+  if(!sel){toast('선택된 카드가 없습니다','#e74c3c');return;}
+  var c=sel.card;
+  var existing=D.collected[c.bs_code];
+  var currentQty=existing?(existing.qty||0):0;
+  var newQty=Math.min(4,currentQty+_scanSelectedQty);
+  D.collected[c.bs_code]={
+    qty:newQty,
+    collectedAt:existing?existing.collectedAt:Date.now()
+  };
+  sv();
+  _scanSessionCount++;
+  updateScanCount();
+  toast('✅ '+c.name_kr+' 추가됨 ('+newQty+'장)');
+  /* 결과 패널 닫고 카메라 복귀 — 연속 스캔 */
+  retakeScan();
+}
+
+/* ─── 수동 검색 모드 ─── */
+function showManualSearch(){
+  _scanManualMode=true;
+  var body=$('srBody');
+  var html='<div class="sr-section-label">🔍 수동 카드 검색</div>'+
+    '<input type="text" class="sr-search-input" id="srSearchInput" placeholder="한글 카드명 입력 (예: 리자몽)" oninput="onManualSearchInput()">'+
+    '<div class="sr-search-results" id="srSearchResults"></div>'+
+    '<div class="sr-actions" style="margin-top:14px">'+
+    '<button class="sr-btn secondary" onclick="retakeScan()">← 카메라로 돌아가기</button>'+
+    '</div>';
+  body.innerHTML=html;
+  setTimeout(function(){var inp=$('srSearchInput');if(inp)inp.focus();},100);
+}
+
+var _manualSearchTimer=null;
+function onManualSearchInput(){
+  if(_manualSearchTimer)clearTimeout(_manualSearchTimer);
+  _manualSearchTimer=setTimeout(runManualSearch,200);
+}
+
+function runManualSearch(){
+  var inp=$('srSearchInput');
+  if(!inp)return;
+  var q=inp.value.trim();
+  var resBox=$('srSearchResults');
+  if(!q||q.length<1){resBox.innerHTML='';return;}
+  var results=cardsDB.filter(function(c){
+    return c.name_kr&&c.name_kr.indexOf(q)>=0;
+  }).slice(0,30);
+  if(results.length===0){
+    resBox.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.5);padding:20px;font-size:.8rem">검색 결과 없음</div>';
+    return;
+  }
+  var html='';
+  for(var i=0;i<results.length;i++){
+    var c=results[i];
+    var img=c.image_url||placeholderImg(c.name_kr);
+    var meta=(c.pack_code||'')+(c.card_no?' · '+c.card_no:'')+(c.hp?' · HP '+c.hp:'');
+    var existing=D.collected[c.bs_code];
+    var existMark=existing?' ✓'+(existing.qty||1):'';
+    html+='<div class="sr-search-item" onclick="selectManualResult(\''+esc(c.bs_code)+'\')">'+
+      '<img src="'+esc(img)+'" alt="" onerror="this.style.opacity=0.3">'+
+      '<div class="si-info">'+
+      '<div class="si-name">'+esc(c.name_kr)+existMark+'</div>'+
+      '<div class="si-meta">'+esc(meta)+'</div>'+
+      '</div></div>';
+  }
+  resBox.innerHTML=html;
+}
+
+function selectManualResult(bs_code){
+  var c=dbByCode[bs_code];
+  if(!c){toast('카드를 찾을 수 없습니다','#e74c3c');return;}
+  /* 선택된 카드를 후보 1개짜리 리스트로 만들어 일반 결과 흐름 재사용 */
+  _scanCandidates=[{card:c,confidence:'manual',candidateName:c.name_kr}];
+  _scanSelectedIdx=0;
+  _scanSelectedQty=1;
+  _scanManualMode=false;
+  renderScanResultBody();
+}
+
+function toggleModelMenu(){
+  /* 호환 유지: 더 이상 노출 안 됨 */
+  toast('Sonnet 4.5 → Haiku 4.5 자동 폴백 사용 중','#3dc0ec');
+}
 
 /* ═══════════════════════════════════════════════════════════════
    🚀 Init
