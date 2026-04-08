@@ -600,16 +600,36 @@ function isAceSpec(c){
   return t.indexOf('ACE SPEC')>=0||t.indexOf('에이스 스펙')>=0;
 }
 
+/* ─── 덱 카드 정규화 헬퍼 ─── 
+   deck.cards가 객체({bc:qty})든 배열([{bs_code,qty},...])이든 
+   항상 {bc:qty} 형태 객체로 변환. 모든 deck 입력 함수의 입구에서 호출. */
+function normalizeDeckCards(deck){
+  var out={};
+  if(!deck||!deck.cards)return out;
+  if(Array.isArray(deck.cards)){
+    for(var i=0;i<deck.cards.length;i++){
+      var it=deck.cards[i];
+      if(it&&it.bs_code&&typeof it.qty==='number'&&it.qty>0)out[it.bs_code]=it.qty;
+    }
+  }else if(typeof deck.cards==='object'){
+    for(var bc in deck.cards){
+      var v=deck.cards[bc];
+      if(typeof v==='number'&&v>0)out[bc]=v;
+      else if(v&&typeof v==='object'&&typeof v.qty==='number'&&v.qty>0)out[bc]=v.qty;
+    }
+  }
+  return out;
+}
+
 /* ─── 덱 카드 누적 카운터 ─── */
 function deckCounts(deck){
   var pok=0,trn=0,ene=0,std=0,total=0;
-  if(!deck||!deck.cards)return {pok:0,trn:0,ene:0,std:0,total:0};
-  for(var bc in deck.cards){
-    var qty=deck.cards[bc]||0;
-    if(qty<=0)continue;
+  var cards=normalizeDeckCards(deck);
+  for(var bc in cards){
+    var qty=cards[bc];
     total+=qty;
     var c=dbByCode[bc];
-    if(!c){pok+=0;continue;}
+    if(!c)continue;
     if(c.card_class==='pokemon')pok+=qty;
     else if(c.card_class==='trainer')trn+=qty;
     else if(c.card_class==='energy')ene+=qty;
@@ -621,6 +641,7 @@ function deckCounts(deck){
 /* ─── 덱 검증 (룰 체크) ─── */
 function validateDeck(deck){
   var errors=[],warnings=[],info=[];
+  var cards=normalizeDeckCards(deck);
   var counts=deckCounts(deck);
   var target=deck.format==='half'?30:60;
   /* 자유 모드: 하프덱이지만 strict=false. 풀덱은 항상 정식 룰 */
@@ -639,9 +660,8 @@ function validateDeck(deck){
   /* 2) 같은 이름 4장(2장) 제한 — 기본 에너지 예외 */
   var byName={}; /* {name_kr: qty} */
   var basics=0;
-  for(var bc in deck.cards){
-    var qty=deck.cards[bc]||0;
-    if(qty<=0)continue;
+  for(var bc in cards){
+    var qty=cards[bc];
     var c=dbByCode[bc];
     if(!c)continue;
     if(isBasicEnergy(c)){basics+=qty;continue;}
@@ -656,9 +676,8 @@ function validateDeck(deck){
 
   /* 3) 진화 라인 약식 검증 */
   var stageCount={basic:0,stage1:0,stage2:0};
-  for(var bc2 in deck.cards){
-    var qty2=deck.cards[bc2]||0;
-    if(qty2<=0)continue;
+  for(var bc2 in cards){
+    var qty2=cards[bc2];
     var c2=dbByCode[bc2];
     if(!c2)continue;
     var st=cardStage(c2);
@@ -683,9 +702,8 @@ function validateDeck(deck){
   /* 5) 풀덱 전용: ACE SPEC / 프리즘스타 / 빛나는 1장 제한 */
   if(deck.format==='full'){
     var aceTotal=0,prismMap={},radTotal=0;
-    for(var bc3 in deck.cards){
-      var qty3=deck.cards[bc3]||0;
-      if(qty3<=0)continue;
+    for(var bc3 in cards){
+      var qty3=cards[bc3];
       var c3=dbByCode[bc3];
       if(!c3)continue;
       if(isAceSpec(c3))aceTotal+=qty3;
@@ -751,10 +769,13 @@ function renderDeckTab(){
       var fmtCls=d.format==='half'?'half':'full';
       var fmtLbl=d.format==='half'?'하프덱':'풀덱';
       var statusPill=v.ok?'<span class="pill '+fmtCls+'">'+fmtLbl+'</span>':'<span class="pill bad">⚠️ 미완성</span>';
-      h+='<div class="my-deck-card" onclick="editDeck(\''+esc(d.id)+'\')">';
+      h+='<div class="my-deck-card" onclick="viewDeckDetail(\''+esc(d.id)+'\')">';
       h+='<div style="flex:1;min-width:0"><div class="dn">'+esc(d.name||'(이름 없음)')+'</div>';
       h+='<div class="dm">'+statusPill+'<span class="pill">'+v.counts.total+'/'+(d.format==='half'?30:60)+'</span><span class="pill">🐉'+v.counts.pok+'</span><span class="pill">🛠️'+v.counts.trn+'</span><span class="pill">⚡'+v.counts.ene+'</span></div></div>';
-      h+='<div class="da"><button class="btn btn-d" onclick="event.stopPropagation();confirmDeleteDeck(\''+esc(d.id)+'\')">삭제</button></div>';
+      h+='<div class="da">';
+      h+='<button class="btn btn-b" onclick="event.stopPropagation();editDeck(\''+esc(d.id)+'\')">편집</button>';
+      h+='<button class="btn btn-d" onclick="event.stopPropagation();confirmDeleteDeck(\''+esc(d.id)+'\')">삭제</button>';
+      h+='</div>';
       h+='</div>';
     }
   }
@@ -766,6 +787,74 @@ function renderDeckTab(){
   h+='</div>';
 
   $('deck-r').innerHTML=h;
+}
+
+/* ─── 덱 상세 보기 모달 ─── */
+function viewDeckDetail(id){
+  var decks=D.customDecksV1||[];
+  var d=null;
+  for(var i=0;i<decks.length;i++)if(decks[i].id===id){d=decks[i];break;}
+  if(!d){toast('덱을 찾을 수 없어요','#e74c3c');return;}
+  /* 정규화 */
+  var cards=normalizeDeckCards(d);
+  var v=validateDeck(d);
+  var target=d.format==='half'?30:60;
+  var fmtLbl=d.format==='half'?'하프덱':'풀덱';
+  var modeLbl='';
+  if(d.format==='half')modeLbl=(d.strict===false)?' · 🎈 자유 모드':' · 🔒 정식 룰';
+
+  var h='<h3>'+esc(d.name||'(이름 없음)')+'</h3>';
+  h+='<p style="font-size:.75rem;color:var(--text3);text-align:center;margin-bottom:8px">'+fmtLbl+modeLbl+' · '+v.counts.total+'/'+target+'장</p>';
+
+  /* 검증 요약 (간단히 한 줄) */
+  if(v.errors.length>0){
+    h+='<div style="background:#ffe8e8;border-radius:8px;padding:6px 10px;font-size:.72rem;color:var(--red);text-align:center;margin-bottom:10px">⚠️ '+v.errors.length+'개 룰 위반 — 미완성</div>';
+  }else if(v.warnings.length>0){
+    h+='<div style="background:#fff7e0;border-radius:8px;padding:6px 10px;font-size:.72rem;color:var(--orange);text-align:center;margin-bottom:10px">💡 '+v.warnings.length+'개 안내</div>';
+  }else if(v.counts.total>0){
+    h+='<div style="background:#e8f7f0;border-radius:8px;padding:6px 10px;font-size:.72rem;color:var(--green);text-align:center;margin-bottom:10px">✅ 완성된 덱</div>';
+  }
+
+  /* 카드 종류별 그룹핑 */
+  var groups={pokemon:[],trainer:[],energy:[],stadium:[]};
+  var labels={pokemon:'🐉 포켓몬',trainer:'🛠️ 트레이너',energy:'⚡ 에너지',stadium:'🏟️ 스타디움'};
+  for(var bc in cards){
+    var c=dbByCode[bc];
+    if(!c)continue;
+    var grp=c.card_class;
+    if(!groups[grp])grp='trainer';
+    groups[grp].push({card:c,qty:cards[bc]});
+  }
+  /* 각 그룹 안에서 이름순 */
+  for(var g in groups){
+    groups[g].sort(function(a,b){return (a.card.name_kr||'').localeCompare(b.card.name_kr||'');});
+  }
+
+  if(v.counts.total===0){
+    h+='<div style="text-align:center;padding:16px;color:var(--text3);font-size:.78rem">덱이 비어있어요</div>';
+  }else{
+    h+='<div style="background:var(--bg3);border-radius:10px;padding:8px 10px;font-size:.78rem;max-height:50vh;overflow-y:auto">';
+    var order=['pokemon','trainer','energy','stadium'];
+    for(var k=0;k<order.length;k++){
+      var key=order[k];
+      var arr=groups[key];
+      if(!arr.length)continue;
+      var sub=0;for(var x=0;x<arr.length;x++)sub+=arr[x].qty;
+      h+='<div style="font-family:var(--ft);color:var(--accent);font-size:.78rem;padding:6px 0 4px;border-bottom:2px solid var(--accent);margin-top:4px">'+labels[key]+' ('+sub+')</div>';
+      for(var y=0;y<arr.length;y++){
+        var item=arr[y];
+        var c2=item.card;
+        h+='<div style="display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--cb)"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c2.name_kr||'')+'</span><span style="color:var(--text3);flex-shrink:0;margin-left:8px">×'+item.qty+'</span></div>';
+      }
+    }
+    h+='</div>';
+  }
+
+  /* 액션 버튼 */
+  h+='<div class="acts" style="margin-top:14px"><button class="btn btn-b" onclick="closeM();editDeck(\''+esc(d.id)+'\')">✏️ 편집</button></div>';
+
+  $('mb').innerHTML=h;
+  $('mo').className='mo show';
 }
 
 /* ─── 새 덱 만들기 ─── */
@@ -806,24 +895,11 @@ function editDeck(id){
     format:found.format||'full',
     pool:found.pool||'dex',
     strict:found.strict!==false, /* 기본 true (옛 덱 호환) */
-    cards:{},
+    cards:normalizeDeckCards(found),
     isNew:false,
     createdAt:found.createdAt||Date.now(),
     updatedAt:found.updatedAt||Date.now()
   };
-  /* cards 배열/객체 양쪽 호환 */
-  if(Array.isArray(found.cards)){
-    for(var j=0;j<found.cards.length;j++){
-      var item=found.cards[j];
-      if(item&&item.bs_code)_deckBuilder.cards[item.bs_code]=item.qty||1;
-    }
-  }else if(found.cards&&typeof found.cards==='object'){
-    for(var bc in found.cards){
-      var v=found.cards[bc];
-      if(typeof v==='number')_deckBuilder.cards[bc]=v;
-      else if(v&&v.qty)_deckBuilder.cards[bc]=v.qty;
-    }
-  }
   _deckPool=_deckBuilder.pool;
   _deckQuery='';
   _deckClassFilter='all';
