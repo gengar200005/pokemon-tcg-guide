@@ -165,8 +165,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .scan-shutter:active{transform:scale(.9)}
 .scan-flip{width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:1.3rem;cursor:pointer;backdrop-filter:blur(6px)}
 .scan-count{font-family:var(--ft);color:#fff;font-size:.9rem;min-width:48px;text-align:right}
-.scan-model-badge{font-size:.6rem;background:rgba(255,203,5,.85);color:#1a2a3a;padding:2px 7px;border-radius:8px;font-weight:700;letter-spacing:.2px}
+.scan-model-badge{font-size:.62rem;background:rgba(255,203,5,.85);color:#1a2a3a;padding:3px 9px 3px 9px;border-radius:9px;font-weight:700;letter-spacing:.2px;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:3px}
+.scan-model-badge::after{content:'▾';font-size:.7rem;opacity:.7}
+.scan-model-badge:active{transform:scale(.95)}
+.scan-model-badge.premium{background:rgba(187,134,252,.9);color:#fff}
 .scan-model-badge.fallback{background:rgba(243,156,18,.9);color:#fff}
+
+/* 모델 선택 드롭다운 */
+.scan-model-menu{position:absolute;top:54px;left:16px;right:16px;max-width:280px;background:rgba(20,30,40,.96);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:6px;z-index:5;display:none;backdrop-filter:blur(10px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.scan-model-menu.on{display:block;animation:smmIn .15s ease-out}
+@keyframes smmIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.smm-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;color:#fff}
+.smm-item:active{background:rgba(255,255,255,.08)}
+.smm-item.sel{background:rgba(61,192,236,.15)}
+.smm-radio{font-size:1.1rem;color:var(--accent2);width:18px;text-align:center;flex-shrink:0}
+.smm-item:not(.sel) .smm-radio{color:rgba(255,255,255,.4)}
+.smm-info{flex:1;min-width:0}
+.smm-label{font-size:.86rem;font-family:var(--ft);font-weight:700}
+.smm-sub{font-size:.66rem;color:rgba(255,255,255,.55);margin-top:2px}
 
 /* 스캔 로딩 오버레이 */
 .scan-loading{position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:8;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
@@ -180,6 +196,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .scan-result.on{display:flex}
 .sr-hdr{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:rgba(0,0,0,.3)}
 .sr-prov{font-size:.62rem;background:rgba(61,192,236,.25);color:#7dd3fc;padding:2px 7px;border-radius:8px;font-weight:700;letter-spacing:.2px}
+.sr-prov.premium{background:rgba(187,134,252,.25);color:#d8b4fe}
 .sr-prov.fallback{background:rgba(243,156,18,.25);color:#fbbf24}
 .sr-body{flex:1;padding:14px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .sr-shot{width:100%;max-width:160px;margin:0 auto 12px;display:block;border-radius:10px;border:1.5px solid rgba(255,255,255,.15)}
@@ -317,7 +334,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   </button>
   <div class="deck-notice" style="margin-top:12px">
     <div style="font-family:var(--ft);font-size:.95rem;color:var(--accent);margin-bottom:6px">💡 사용 팁</div>
-    <p style="font-size:.78rem;color:var(--text2);line-height:1.6">밝은 곳에서 카드를 프레임에 맞춰 촬영하세요. <b>Sonnet 4.5 단독 사용</b> (자동 폴백 없음 — 크레딧 절약). 인식 실패 시 수동 검색을 사용하세요.</p>
+    <p style="font-size:.78rem;color:var(--text2);line-height:1.6">밝은 곳에서 카드를 프레임에 맞춰 촬영하세요. <b>기본 Haiku 4.5</b> (저렴) — 카메라 화면 상단의 모델 배지를 탭하면 <b>Sonnet 4.5</b>(정확·약 5배 비용)로 전환할 수 있습니다.</p>
   </div>
 </div>
 
@@ -345,10 +362,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <div class="scan-tophud">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="ttl">📸 카드 스캔</div>
-        <div class="scan-model-badge" id="scanModelBadge">Sonnet 4.5</div>
+        <div class="scan-model-badge" id="scanModelBadge" onclick="toggleModelMenu()">Haiku 4.5</div>
       </div>
       <button class="scan-close" onclick="stopScan()">×</button>
     </div>
+
+    <!-- 모델 선택 드롭다운 메뉴 -->
+    <div class="scan-model-menu" id="scanModelMenu"></div>
     <div class="scan-overlay">
       <div class="scan-frame">
         <div class="corner tl"></div><div class="corner tr"></div>

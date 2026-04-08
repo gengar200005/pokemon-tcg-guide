@@ -603,11 +603,25 @@ var PRESET_DECKS=[
 
 /* ─── Worker / Model 설정 ─── */
 var WORKER_URL='https://pokemon-tcg-proxy.sieun8475.workers.dev';
-var SCAN_MODELS={
-  primary:{id:'claude-sonnet-4-5',label:'Sonnet 4.5'}
-  /* Haiku 자동 폴백 제거 (2026-04-08): 크레딧 의도치 않은 소모 방지.
-   * 실패 시 디버그 정보만 표시하고 마스터가 수동으로 재시도하거나 수동 검색 사용. */
-};
+var SCAN_MODELS_LIST=[
+  {id:'claude-haiku-4-5',label:'Haiku 4.5',sub:'빠르고 저렴 (기본)'},
+  {id:'claude-sonnet-4-5',label:'Sonnet 4.5',sub:'정확·약 5배 비용'}
+];
+var SCAN_MODEL_KEY='ptcg-scan-model';
+function getCurrentScanModel(){
+  try{
+    var saved=localStorage.getItem(SCAN_MODEL_KEY);
+    if(saved){
+      for(var i=0;i<SCAN_MODELS_LIST.length;i++){
+        if(SCAN_MODELS_LIST[i].id===saved)return SCAN_MODELS_LIST[i];
+      }
+    }
+  }catch(e){}
+  return SCAN_MODELS_LIST[0]; /* 기본 Haiku */
+}
+function setCurrentScanModel(id){
+  try{localStorage.setItem(SCAN_MODEL_KEY,id);}catch(e){}
+}
 
 /* ─── 스캔 상태 ─── */
 var _scanStream=null,_scanFacing='environment';
@@ -626,7 +640,7 @@ function startScan(){
   _scanSessionCount=0;
   updateScanCount();
   $('scanFs').className='scan-fs on';
-  setScanModelBadge('primary');
+  setScanModelBadge();
   openCamera();
 }
 function openCamera(){
@@ -658,6 +672,8 @@ function stopScan(){
   $('scanFs').className='scan-fs';
   $('scanResult').className='scan-result';
   $('scanLoading').className='scan-loading';
+  var menu=$('scanModelMenu');
+  if(menu)menu.className='scan-model-menu';
   _scanBusy=false;
   _scanManualMode=false;
   /* 종료 시 활성 탭 갱신 */
@@ -679,12 +695,13 @@ function updateScanCount(){
   var el=$('scanCount');
   if(el)el.textContent=_scanSessionCount+'장';
 }
-function setScanModelBadge(which){
-  /* fallback 모드 제거됨 — Sonnet 단독 */
+function setScanModelBadge(){
+  /* 현재 선택된 모델로 배지 표시 */
   var el=$('scanModelBadge');
   if(!el)return;
-  el.textContent=SCAN_MODELS.primary.label;
-  el.className='scan-model-badge';
+  var m=getCurrentScanModel();
+  el.textContent=m.label;
+  el.className='scan-model-badge'+(m.id==='claude-sonnet-4-5'?' premium':'');
 }
 function showScanLoading(msg){
   $('scanLoadingMsg').textContent=msg||'카드 인식 중...';
@@ -723,12 +740,13 @@ function captureCard(){
   if(sh){sh.style.opacity='.5';setTimeout(function(){sh.style.opacity='1';},150);}
 
   /* 인식 시작 */
-  showScanLoading('Sonnet 4.5로 카드 인식 중...');
+  var curModel=getCurrentScanModel();
+  showScanLoading(curModel.label+'(으)로 카드 인식 중...');
   recognizeCard(dataUrl).then(function(result){
     hideScanLoading();
     _scanProvider=result.provider;
-    setScanModelBadge('primary');
-    console.log('[Scan] success',result.provider,result.debug);
+    setScanModelBadge();
+    console.log('[Scan] success',result.modelLabel,result.debug);
 
     /* 매칭 시도 */
     var matched=matchCandidatesToDB(result.candidates);
@@ -780,22 +798,23 @@ function cropVideoToCardFrame(video){
   return canvas.toDataURL('image/jpeg',0.82);
 }
 
-/* ─── Worker 호출 (Sonnet 단독 — 폴백 없음, 크레딧 절약) ─── */
+/* ─── Worker 호출 (현재 선택된 모델 단독 — 폴백 없음) ─── */
 function recognizeCard(dataUrl){
   /* dataUrl에서 base64만 추출 */
   var b64=dataUrl.replace(/^data:image\/jpeg;base64,/,'');
   var prompt=buildScanPrompt();
   /* 통합 디버그 */
-  var debugAll={sonnet:null,haiku:null,startedAt:Date.now()};
+  var model=getCurrentScanModel();
+  var debugAll={model:model.label,startedAt:Date.now()};
 
-  /* Sonnet 4.5 단독 호출 — 실패 시 폴백 없이 그대로 throw */
-  return callWorkerOnce(SCAN_MODELS.primary.id,b64,prompt).then(function(parsed){
-    debugAll.sonnet=parsed._debug;
+  /* 선택된 모델로 단발 호출 — 실패 시 폴백 없이 그대로 throw */
+  return callWorkerOnce(model.id,b64,prompt).then(function(parsed){
+    debugAll.attempts=parsed._debug?parsed._debug.attempts:[];
     debugAll.totalMs=Date.now()-debugAll.startedAt;
-    return {candidates:parsed.candidates||[],provider:'sonnet',raw:parsed,debug:debugAll};
+    return {candidates:parsed.candidates||[],provider:model.id,modelLabel:model.label,raw:parsed,debug:debugAll};
   }).catch(function(err){
-    debugAll.sonnet=err.debug||{attempts:[]};
-    debugAll.sonnetError=err.message;
+    debugAll.attempts=err.debug?err.debug.attempts:[];
+    debugAll.error=err.message;
     debugAll.totalMs=Date.now()-debugAll.startedAt;
     err.debug=debugAll;
     throw err;
@@ -1035,11 +1054,11 @@ function showScanResult(matched,shotDataUrl,recogResult){
     _scanLastError=null;
   }
 
-  /* provider 배지 */
+  /* provider 배지 — 사용된 모델 표시 */
   var provEl=$('srProv');
-  if(recogResult&&recogResult.provider==='sonnet'){
-    provEl.textContent='Sonnet 4.5';
-    provEl.className='sr-prov';
+  if(recogResult&&recogResult.modelLabel){
+    provEl.textContent=recogResult.modelLabel;
+    provEl.className='sr-prov'+(recogResult.provider==='claude-sonnet-4-5'?' premium':'');
   }else{
     provEl.textContent='';
     provEl.className='sr-prov';
@@ -1061,34 +1080,17 @@ function buildDebugBoxHtml(){
   if(msg){
     html+='<div class="dbg-row"><div class="dbg-k">에러 메시지</div><div class="dbg-v bad">'+esc(msg)+'</div></div>';
   }
+  if(dbg.model){
+    html+='<div class="dbg-row"><div class="dbg-k">사용 모델</div><div class="dbg-v">'+esc(dbg.model)+'</div></div>';
+  }
   if(dbg.totalMs!=null){
     html+='<div class="dbg-row"><div class="dbg-k">총 소요</div><div class="dbg-v">'+dbg.totalMs+'ms</div></div>';
   }
 
-  /* Sonnet 시도들 */
-  if(dbg.sonnet&&dbg.sonnet.attempts&&dbg.sonnet.attempts.length){
-    html+='<div class="dbg-row"><div class="dbg-k">━ Sonnet 4.5 ━</div><div class="dbg-v"></div></div>';
-    for(var i=0;i<dbg.sonnet.attempts.length;i++){
-      html+=renderAttemptRows(dbg.sonnet.attempts[i],i+1);
-    }
-    if(dbg.sonnetError){
-      html+='<div class="dbg-row"><div class="dbg-k">└ 결과</div><div class="dbg-v bad">'+esc(dbg.sonnetError)+'</div></div>';
-    }
-  }
-  /* Haiku 시도들 */
-  if(dbg.haiku&&dbg.haiku.attempts&&dbg.haiku.attempts.length){
-    html+='<div class="dbg-row"><div class="dbg-k">━ Haiku 4.5 ━</div><div class="dbg-v"></div></div>';
-    for(var j=0;j<dbg.haiku.attempts.length;j++){
-      html+=renderAttemptRows(dbg.haiku.attempts[j],j+1);
-    }
-    if(dbg.haikuError){
-      html+='<div class="dbg-row"><div class="dbg-k">└ 결과</div><div class="dbg-v bad">'+esc(dbg.haikuError)+'</div></div>';
-    }
-  }
-  /* 단일 단계 디버그 (recognizeCard 통과 안 한 경우) */
-  if(!dbg.sonnet&&!dbg.haiku&&dbg.attempts){
-    for(var k=0;k<dbg.attempts.length;k++){
-      html+=renderAttemptRows(dbg.attempts[k],k+1);
+  /* 시도들 (1회만) */
+  if(dbg.attempts&&dbg.attempts.length){
+    for(var i=0;i<dbg.attempts.length;i++){
+      html+=renderAttemptRows(dbg.attempts[i],i+1);
     }
   }
 
@@ -1305,9 +1307,36 @@ function selectManualResult(bs_code){
   renderScanResultBody();
 }
 
+/* ─── 모델 선택 메뉴 ─── */
 function toggleModelMenu(){
-  /* 호환 유지: 더 이상 노출 안 됨 */
-  toast('Sonnet 4.5 단독 사용 (자동 폴백 없음)','#3dc0ec');
+  var menu=$('scanModelMenu');
+  if(!menu)return;
+  if(menu.className.indexOf('on')>=0){
+    menu.className='scan-model-menu';
+    return;
+  }
+  /* 메뉴 동적 빌드 */
+  var cur=getCurrentScanModel();
+  var html='';
+  for(var i=0;i<SCAN_MODELS_LIST.length;i++){
+    var m=SCAN_MODELS_LIST[i];
+    var sel=(m.id===cur.id)?' sel':'';
+    html+='<div class="smm-item'+sel+'" onclick="selectScanModel(\''+m.id+'\')">'+
+      '<div class="smm-radio">'+(m.id===cur.id?'●':'○')+'</div>'+
+      '<div class="smm-info">'+
+      '<div class="smm-label">'+esc(m.label)+'</div>'+
+      '<div class="smm-sub">'+esc(m.sub||'')+'</div>'+
+      '</div></div>';
+  }
+  menu.innerHTML=html;
+  menu.className='scan-model-menu on';
+}
+function selectScanModel(id){
+  setCurrentScanModel(id);
+  setScanModelBadge();
+  $('scanModelMenu').className='scan-model-menu';
+  var m=getCurrentScanModel();
+  toast('🤖 '+m.label+' 선택됨','#3dc0ec');
 }
 
 /* ═══════════════════════════════════════════════════════════════
