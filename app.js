@@ -1047,30 +1047,37 @@ function resetDexFilters(){
 }
 function matchDexFilter(c){
   var f=_dexFilters;
-  if(f.type!=='all'&&c.pokemon_type!==f.type)return false;
-  if(f.stage!=='all'){
-    var ct=c.card_type||'';
-    if(f.stage==='basic'&&ct.indexOf('기본')<0)return false;
-    if(f.stage==='stage1'&&ct.indexOf('1진화')<0)return false;
-    if(f.stage==='stage2'&&ct.indexOf('2진화')<0)return false;
+  /* 세션 16 fix: 현재 서브탭 기준으로 적용 가능한 필터만 평가
+     (포켓몬 전용 필터가 트레이너/에너지/스타디움에 적용되면 전부 탈락하는 버그 방지) */
+  var isPokemonTab=(_dexClass==='pokemon');
+  var isTrainerTab=(_dexClass==='trainer');
+  if(isPokemonTab){
+    if(f.type!=='all'&&c.pokemon_type!==f.type)return false;
+    if(f.stage!=='all'){
+      var ct=c.card_type||'';
+      if(f.stage==='basic'&&ct.indexOf('기본')<0)return false;
+      if(f.stage==='stage1'&&ct.indexOf('1진화')<0)return false;
+      if(f.stage==='stage2'&&ct.indexOf('2진화')<0)return false;
+    }
+    if(f.ex!=='all'){
+      var nm=c.name_kr||'';
+      var isEx=/ex$/i.test(nm)||nm.indexOf(' ex')>=0;
+      var isMega=nm.indexOf('메가')===0||nm.indexOf('M ')===0;
+      if(f.ex==='normal'&&(isEx||isMega))return false;
+      if(f.ex==='ex'&&(!isEx||isMega))return false;
+      if(f.ex==='mega'&&!isMega)return false;
+    }
+    if(f.retreat!=='all'){
+      var r=c.retreat;
+      if(f.retreat==='3'&&!(r>=3))return false;
+      else if(f.retreat!=='3'&&r!==parseInt(f.retreat,10))return false;
+    }
+  }else if(isTrainerTab){
+    if(f.trainerSub!=='all'){
+      if(trainerGroup(c)!==f.trainerSub)return false;
+    }
   }
-  if(f.ex!=='all'){
-    var nm=c.name_kr||'';
-    var isEx=/ex$/i.test(nm)||nm.indexOf(' ex')>=0;
-    var isMega=nm.indexOf('메가')===0||nm.indexOf('M ')===0;
-    if(f.ex==='normal'&&(isEx||isMega))return false;
-    if(f.ex==='ex'&&(!isEx||isMega))return false;
-    if(f.ex==='mega'&&!isMega)return false;
-  }
-  if(f.trainerSub!=='all'){
-    if(c.card_class!=='trainer')return false;
-    if(trainerGroup(c)!==f.trainerSub)return false;
-  }
-  if(f.retreat!=='all'){
-    var r=c.retreat;
-    if(f.retreat==='3'&&!(r>=3))return false;
-    else if(f.retreat!=='3'&&r!==parseInt(f.retreat,10))return false;
-  }
+  /* energy, stadium 서브탭: 적용 가능한 필터 없음 → 통과 */
   return true;
 }
 /* 세션 16: 도감 필터 칩 헬퍼 (fchip/fchipRaw와 동일 구조, setDexFilter 호출) */
@@ -1101,6 +1108,8 @@ function renderDex(){
     $('dex-r').innerHTML='<div class="loading"><div class="spinner"></div><p>카드 DB 로딩 중...</p></div>';
     return;
   }
+  /* 세션 16 fix: 필터 details open 상태 보존 */
+  var _prevFiltOpen=(function(){var el=$('dex-filt');return el?el.open:false;})();
   /* 1차 필터링: 서브탭(card_class) + 이름 검색 */
   var q=_dexQuery;
   var preFiltered=[];
@@ -1180,6 +1189,8 @@ function renderDex(){
     }
   }
   $('dex-r').innerHTML=h;
+  /* 세션 16 fix: 필터 details open 상태 복원 */
+  if(_prevFiltOpen){var _filtEl=$('dex-filt');if(_filtEl)_filtEl.open=true;}
   /* 클릭 핸들러 */
   var els=$('dex-r').querySelectorAll('.dc');
   for(var m=0;m<els.length;m++){
