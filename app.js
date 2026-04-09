@@ -721,6 +721,11 @@ function runAutoBuild(basicCard,targetPath){
   /* 에이스 타입 추출 (트레이너/에너지 분배용) */
   var energyType=basicCard.pokemon_type||'무';
 
+  /* Step 2.5 (세션 17b): 포켓몬 수가 부족하면 같은 타입의 다른 Basic으로 보강.
+     시나리오: 진화 라인이 없거나, 컬렉션에 카드가 1장씩만 있을 때 "포켓몬 1장
+     + 에너지 59장" 같은 쓸모없는 덱이 나오는 걸 방지. */
+  var fillerStats=fillBasicFiller(basicCard,maxCopy,isHalf);
+
   /* Step 4: 트레이너 자동 채우기 */
   var trainerStats=fillTrainers(lineStats.hasStage2,maxCopy,isHalf,energyType);
 
@@ -752,7 +757,10 @@ function runAutoBuild(basicCard,targetPath){
     drawQty:(trainerStats.firstDraw&&trainerStats.firstDraw.qty)||0,
     energyName:(energyStats&&energyStats.name)||'',
     energyQty:counts.ene||0,
-    energyType:energyType
+    energyType:energyType,
+    pokQty:counts.pok||0,    /* 세션 17b: 포켓몬 합계 */
+    trnQty:counts.trn||0,    /* 세션 17b: 트레이너 합계 (0이면 경고 행 노출) */
+    fillerAdded:(fillerStats&&fillerStats.added)||0
   };
   _lastAutoBuild={
     basicBsCode:basicCard.bs_code,
@@ -899,6 +907,49 @@ function fillPokemonLine(basicCard,targetPath,maxCopy){
     stages:stages,
     missing:missing
   };
+}
+
+/* 🌱 세션 17b: 포켓몬 보강 — 같은 타입의 다른 Basic으로 포켓몬 칸을 채움.
+   진화 라인이 없거나 sparse한 컬렉션에서 "포켓몬 1장 + 에너지 59장" 문제를 방지.
+   - 목표: 풀덱 12장, 하프덱 6장까지 포켓몬 확보
+   - 선정: 같은 pokemon_type의 Basic, 주인공/이미 덱에 있는 카드 제외
+   - 정렬: 에이스 점수 내림차순 + 동률 셔플 (다시 뽑기 시 다양성)
+*/
+function fillBasicFiller(basicCard,maxCopy,isHalf){
+  var pokeTarget=isHalf?6:12;
+  var counts=deckCounts(_deckBuilder);
+  if(counts.pok>=pokeTarget)return {added:0};
+
+  var myType=basicCard.pokemon_type||'';
+  if(!myType)return {added:0};
+
+  var basics=getCollectionBasics();
+  var candidates=[];
+  for(var i=0;i<basics.length;i++){
+    var b=basics[i];
+    if(b.card.bs_code===basicCard.bs_code)continue; /* 주인공 제외 */
+    if(_deckBuilder.cards[b.card.bs_code]>0)continue; /* 이미 덱에 있음 */
+    if(b.card.pokemon_type!==myType)continue; /* 타입 일치 필수 */
+    candidates.push(b);
+  }
+  if(candidates.length===0)return {added:0};
+
+  /* 에이스 점수 내림차순 + 동률 셔플 */
+  shuffleArray(candidates);
+  candidates.sort(function(a,b){return getAceScore(b.card)-getAceScore(a.card);});
+
+  var added=0;
+  for(var j=0;j<candidates.length;j++){
+    counts=deckCounts(_deckBuilder);
+    if(counts.pok>=pokeTarget)break;
+    var s=candidates[j];
+    var put=Math.min(maxCopy,s.owned,pokeTarget-counts.pok);
+    if(put>0){
+      _deckBuilder.cards[s.card.bs_code]=(_deckBuilder.cards[s.card.bs_code]||0)+put;
+      added+=put;
+    }
+  }
+  return {added:added};
 }
 
 /* 재귀 판정: baseName에서 출발해 depth 내에 targetPath에 도달 가능한가? */
@@ -1070,6 +1121,13 @@ function showAutoBuildResult(stats){
         toast('💪 '+stats.targetPath+'은 아직이지만, '+(stats.basicName||'기본 포켓몬')+'만으로도 멋진 덱이야!','#3dc0ec');
       },1500);
     }
+  }
+
+  /* 세션 17b: 트레이너 0장 안내 — 핵심적으로 놓치는 부분이라 명확히 알려줌 */
+  if(stats.trn===0){
+    setTimeout(function(){
+      toast('🛠️ 트레이너 카드가 없어요! 카드 뽑기 도우미부터 등록해봐요','#f39c12');
+    },stats.evolutionStages&&stats.evolutionStages.basic>0&&stats.evolutionStages.stage1===0&&stats.targetPath?3000:1500);
   }
 
   /* 현재 덱 시트 자동 펼치기 (사용자가 바로 검토) */
@@ -2333,6 +2391,9 @@ function renderDeckSheet(){
     h+='<div class="rc-row"><span class="rc-ic">🌟</span><span class="rc-lbl">주인공</span><span class="rc-val">'+esc(r.protagonist)+'</span><span class="rc-qty">×'+r.protagonistQty+'</span></div>';
     if(r.drawName){
       h+='<div class="rc-row"><span class="rc-ic">🎴</span><span class="rc-lbl">카드 뽑기 도우미</span><span class="rc-val">'+esc(r.drawName)+'</span><span class="rc-qty">×'+r.drawQty+'</span></div>';
+    }else if(typeof r.trnQty==='number'&&r.trnQty===0){
+      /* 세션 17b: 트레이너 0장 경고 행 — 가장 흔한 사각지대 */
+      h+='<div class="rc-row rc-warn"><span class="rc-ic">⚠️</span><span class="rc-lbl">트레이너</span><span class="rc-val">카드가 없어요 — 먼저 등록해 봐요!</span></div>';
     }
     if(r.energyName){
       h+='<div class="rc-row"><span class="rc-ic">⚡</span><span class="rc-lbl">에너지</span><span class="rc-val">'+esc(r.energyName)+'</span><span class="rc-qty">×'+r.energyQty+'</span></div>';
