@@ -1024,6 +1024,65 @@ var _dexQuery='';
 var _dexLimit=120; /* 초기 표시 개수 */
 var _dexCurFiltered=[];
 
+/* 세션 16: 도감 탭 필터 (수집 탭과 동일 구조, 독립 상태) */
+var _dexFilters={
+  type:'all',
+  stage:'all',
+  ex:'all',
+  trainerSub:'all',
+  retreat:'all'
+};
+function setDexFilter(key,val,btn){
+  _dexFilters[key]=val;
+  var grp=btn.parentNode.querySelectorAll('.fchip');
+  for(var i=0;i<grp.length;i++)grp[i].classList.remove('active');
+  btn.classList.add('active');
+  _dexLimit=120; /* 필터 변경 시 페이지네이션 리셋 */
+  renderDex();
+}
+function resetDexFilters(){
+  _dexFilters={type:'all',stage:'all',ex:'all',trainerSub:'all',retreat:'all'};
+  _dexLimit=120;
+  renderDex();
+}
+function matchDexFilter(c){
+  var f=_dexFilters;
+  if(f.type!=='all'&&c.pokemon_type!==f.type)return false;
+  if(f.stage!=='all'){
+    var ct=c.card_type||'';
+    if(f.stage==='basic'&&ct.indexOf('기본')<0)return false;
+    if(f.stage==='stage1'&&ct.indexOf('1진화')<0)return false;
+    if(f.stage==='stage2'&&ct.indexOf('2진화')<0)return false;
+  }
+  if(f.ex!=='all'){
+    var nm=c.name_kr||'';
+    var isEx=/ex$/i.test(nm)||nm.indexOf(' ex')>=0;
+    var isMega=nm.indexOf('메가')===0||nm.indexOf('M ')===0;
+    if(f.ex==='normal'&&(isEx||isMega))return false;
+    if(f.ex==='ex'&&(!isEx||isMega))return false;
+    if(f.ex==='mega'&&!isMega)return false;
+  }
+  if(f.trainerSub!=='all'){
+    if(c.card_class!=='trainer')return false;
+    if(trainerGroup(c)!==f.trainerSub)return false;
+  }
+  if(f.retreat!=='all'){
+    var r=c.retreat;
+    if(f.retreat==='3'&&!(r>=3))return false;
+    else if(f.retreat!=='3'&&r!==parseInt(f.retreat,10))return false;
+  }
+  return true;
+}
+/* 세션 16: 도감 필터 칩 헬퍼 (fchip/fchipRaw와 동일 구조, setDexFilter 호출) */
+function dchip(key,val,label){
+  var active=_dexFilters[key]===val;
+  return'<button class="fchip'+(active?' active':'')+'" onclick="setDexFilter(\''+key+'\',\''+esc(val)+'\',this)">'+esc(label)+'</button>';
+}
+function dchipRaw(key,val,labelHtml){
+  var active=_dexFilters[key]===val;
+  return'<button class="fchip'+(active?' active':'')+'" onclick="setDexFilter(\''+key+'\',\''+esc(val)+'\',this)">'+labelHtml+'</button>';
+}
+
 function setDexClass(cls,btn){
   _dexClass=cls;
   _dexLimit=120;
@@ -1042,40 +1101,83 @@ function renderDex(){
     $('dex-r').innerHTML='<div class="loading"><div class="spinner"></div><p>카드 DB 로딩 중...</p></div>';
     return;
   }
-  /* 필터링 */
+  /* 1차 필터링: 서브탭(card_class) + 이름 검색 */
   var q=_dexQuery;
-  var filtered=[];
+  var preFiltered=[];
   for(var i=0;i<cardsDB.length;i++){
     var c=cardsDB[i];
     if(!c||c.card_class!==_dexClass)continue;
     if(q&&c.name_kr&&c.name_kr.indexOf(q)<0)continue;
     if(q&&!c.name_kr)continue;
-    filtered.push(c);
+    preFiltered.push(c);
   }
+  /* 2차 필터링: 세션 16 도감 필터 */
+  var filtered=preFiltered.filter(matchDexFilter);
   _dexCurFiltered=filtered;
   var total=filtered.length;
+  var preTotal=preFiltered.length;
   var shown=filtered.slice(0,_dexLimit);
   var ownedCount=0;
   for(var k=0;k<filtered.length;k++)if(D.collected[filtered[k].bs_code])ownedCount++;
 
   var h='<div class="dex-meta">총 <b>'+total.toLocaleString()+'</b>장 · 수집 <b style="color:var(--green)">'+ownedCount.toLocaleString()+'</b>장 ('+(total?Math.round(ownedCount/total*100):0)+'%)</div>';
-  h+='<div class="dgrid">';
-  for(var j=0;j<shown.length;j++){
-    var card=shown[j];
-    var owned=!!D.collected[card.bs_code];
-    var img=card.image_url||placeholderImg(card.name_kr);
-    h+='<div class="dc '+(owned?'owned':'unowned')+'" data-idx="'+j+'">'
-      +'<div class="ob">'+(owned?'✓':'＋')+'</div>'
-      +'<img src="'+esc(img)+'" alt="'+esc(card.name_kr||'')+'" loading="lazy" onerror="this.src=\''+placeholderImg(card.name_kr)+'\'">'
-      +'<div class="nm">'+esc(card.name_kr||'(이름 없음)')+'</div>'
-      +'</div>';
+
+  /* 세션 16: 도감 필터 칩 — 서브탭별로 의미 있는 필터만 표시 */
+  var hasPokemonFilters=(_dexClass==='pokemon');
+  var hasTrainerFilters=(_dexClass==='trainer');
+  if(hasPokemonFilters||hasTrainerFilters){
+    h+='<details class="coll-filters" id="dex-filt"><summary>🔍 필터 ('+total.toLocaleString()+'/'+preTotal.toLocaleString()+'장 표시)</summary>';
+    if(hasPokemonFilters){
+      h+='<div class="fgroup"><div class="fl">속성</div><div class="frow">';
+      h+=dchip('type','all','전체');
+      ['풀','불꽃','물','번개','초','격투','악','강철','페어리','드래곤','무색'].forEach(function(t){
+        h+=dchipRaw('type',t,typeIcon(t)+' '+esc(t));
+      });
+      h+='</div></div>';
+      h+='<div class="fgroup"><div class="fl">진화</div><div class="frow">';
+      h+=dchip('stage','all','전체')+dchip('stage','basic','기본')+dchip('stage','stage1','1진화')+dchip('stage','stage2','2진화');
+      h+='</div></div>';
+      h+='<div class="fgroup"><div class="fl">ex</div><div class="frow">';
+      h+=dchip('ex','all','전체')+dchip('ex','normal','일반')+dchip('ex','ex','ex')+dchip('ex','mega','메가 ex');
+      h+='</div></div>';
+      h+='<div class="fgroup"><div class="fl">후퇴</div><div class="frow">';
+      h+=dchip('retreat','all','전체')+dchip('retreat','0','0')+dchip('retreat','1','1')+dchip('retreat','2','2')+dchip('retreat','3','3+');
+      h+='</div></div>';
+    }
+    if(hasTrainerFilters){
+      h+='<div class="fgroup"><div class="fl">트레이너</div><div class="frow">';
+      h+=dchip('trainerSub','all','전체')+dchip('trainerSub','item','아이템')+dchip('trainerSub','supporter','서포터')+dchip('trainerSub','tool','도구');
+      h+='</div></div>';
+    }
+    h+='<button class="btn btn-g" style="margin-top:8px;width:100%" onclick="resetDexFilters()">필터 초기화</button>';
+    h+='</details>';
   }
-  h+='</div>';
-  if(shown.length<total){
-    h+='<div style="text-align:center;margin-top:14px"><button class="btn btn-p" onclick="_dexLimit+=120;renderDex()">더 보기 (+120)</button></div>';
-  }
+
   if(total===0){
-    h='<div class="empty"><div class="ei">🔍</div><p>검색 결과 없음<br><span style="font-size:.72rem">"'+esc(q)+'"</span></p></div>';
+    /* 세션 16: 빈 결과 — 필터 UI는 보존하고 그리드 자리만 empty 메시지로 대체 */
+    if(preTotal===0){
+      /* 검색어 때문에 0개 */
+      h+='<div class="empty"><div class="ei">🔍</div><p>검색 결과 없음<br><span style="font-size:.72rem">"'+esc(q)+'"</span></p></div>';
+    }else{
+      /* 필터 때문에 0개 (검색 결과는 있음) */
+      h+='<div class="empty"><div class="ei">🔍</div><p>필터 조건에 맞는 카드 없음<br><span style="font-size:.72rem">필터를 초기화하거나 조건을 바꿔보세요</span></p></div>';
+    }
+  }else{
+    h+='<div class="dgrid">';
+    for(var j=0;j<shown.length;j++){
+      var card=shown[j];
+      var owned=!!D.collected[card.bs_code];
+      var img=card.image_url||placeholderImg(card.name_kr);
+      h+='<div class="dc '+(owned?'owned':'unowned')+'" data-idx="'+j+'">'
+        +'<div class="ob">'+(owned?'✓':'＋')+'</div>'
+        +'<img src="'+esc(img)+'" alt="'+esc(card.name_kr||'')+'" loading="lazy" onerror="this.src=\''+placeholderImg(card.name_kr)+'\'">'
+        +'<div class="nm">'+esc(card.name_kr||'(이름 없음)')+'</div>'
+        +'</div>';
+    }
+    h+='</div>';
+    if(shown.length<total){
+      h+='<div style="text-align:center;margin-top:14px"><button class="btn btn-p" onclick="_dexLimit+=120;renderDex()">더 보기 (+120)</button></div>';
+    }
   }
   $('dex-r').innerHTML=h;
   /* 클릭 핸들러 */
