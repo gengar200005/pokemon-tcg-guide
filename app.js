@@ -6,6 +6,11 @@
 /* ═══ Constants ═══ */
 var DB_URL='https://gengar200005.github.io/pokemon-tcg-guide/data/korean_cards_db.json';
 var DB_VERSION='v4-1'; /* 캐시 무효화 키 */
+/* 세션 14: 자동 빌드용 데이터 */
+var EVOLUTION_URL='https://gengar200005.github.io/pokemon-tcg-guide/data/evolution_lines.json';
+var TRAINER_CAT_URL='https://gengar200005.github.io/pokemon-tcg-guide/data/trainer_categories.json';
+var EVOLUTION_VERSION='s14-1'; /* 세션 14 데이터 버전 */
+var TRAINER_CAT_VERSION='s14-1';
 var IDB_NAME='ptcg-cards';
 var IDB_STORE='db';
 var SK='ptcg-v4';
@@ -29,6 +34,13 @@ var currentUser=null;
 /* ═══ Local State ═══ */
 var cardsDB=[]; /* 전체 카드 DB (메모리 캐시) */
 var dbByCode={}; /* bs_code → card 빠른 lookup */
+/* 세션 14: 자동 빌드용 상태 */
+var evolutionLines=[]; /* evolution_lines.json 원본 */
+var evolutionByCode={}; /* bs_code → {stage, evolvesFrom_kr, base_kr, ...} */
+var evolutionForwardIndex={}; /* parent_name_kr → [자식카드 배열] — 정방향 진화 추적 */
+var trainerCategories=[]; /* trainer_categories.json 원본 */
+var trainerByCode={}; /* bs_code → {tags:[], subtype, ...} */
+var trainerTagIndex={}; /* tag → [bs_code 배열] */
 var D={collected:{},customDecksV1:[]}; /* { bs_code: {qty:1, collectedAt:ts} }, customDecksV1: 사용자 커스텀 덱 */
 try{
   var _raw=localStorage.getItem(SK);
@@ -241,6 +253,103 @@ function buildIndexes(){
   for(var i=0;i<cardsDB.length;i++){
     var c=cardsDB[i];
     if(c&&c.bs_code)dbByCode[c.bs_code]=c;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   🪄 세션 14: 자동 빌드 데이터 로딩 + 인덱스
+   ═══════════════════════════════════════════════════════════════ */
+
+/* evolution_lines.json 로딩 (IndexedDB 캐시) */
+function loadEvolutionData(){
+  return idbGet('evolution-'+EVOLUTION_VERSION).then(function(cached){
+    if(cached&&cached.length){
+      evolutionLines=cached;
+      buildEvolutionIndexes();
+      console.log('[AutoBuild] evolution_lines 캐시 로드: '+evolutionLines.length+'장');
+      return;
+    }
+    return fetch(EVOLUTION_URL).then(function(r){
+      if(!r.ok)throw new Error('evolution HTTP '+r.status);
+      return r.json();
+    }).then(function(data){
+      evolutionLines=Array.isArray(data)?data:[];
+      buildEvolutionIndexes();
+      idbSet('evolution-'+EVOLUTION_VERSION,evolutionLines).catch(function(){});
+      console.log('[AutoBuild] evolution_lines 다운로드: '+evolutionLines.length+'장');
+    });
+  }).catch(function(e){
+    console.warn('[AutoBuild] evolution 로드 실패:',e.message||e);
+    evolutionLines=[];
+    evolutionByCode={};
+    evolutionForwardIndex={};
+  });
+}
+
+/* trainer_categories.json 로딩 (IndexedDB 캐시) */
+function loadTrainerCategories(){
+  return idbGet('trainerCat-'+TRAINER_CAT_VERSION).then(function(cached){
+    if(cached&&cached.length){
+      trainerCategories=cached;
+      buildTrainerIndexes();
+      console.log('[AutoBuild] trainer_categories 캐시 로드: '+trainerCategories.length+'장');
+      return;
+    }
+    return fetch(TRAINER_CAT_URL).then(function(r){
+      if(!r.ok)throw new Error('trainerCat HTTP '+r.status);
+      return r.json();
+    }).then(function(data){
+      trainerCategories=Array.isArray(data)?data:[];
+      buildTrainerIndexes();
+      idbSet('trainerCat-'+TRAINER_CAT_VERSION,trainerCategories).catch(function(){});
+      console.log('[AutoBuild] trainer_categories 다운로드: '+trainerCategories.length+'장');
+    });
+  }).catch(function(e){
+    console.warn('[AutoBuild] trainerCat 로드 실패:',e.message||e);
+    trainerCategories=[];
+    trainerByCode={};
+    trainerTagIndex={};
+  });
+}
+
+/* 진화 인덱스 빌드:
+   - evolutionByCode: bs_code → 진화 정보 (O(1) 조회)
+   - evolutionForwardIndex: parent_name_kr → 자식 카드 배열 (정방향 추적)
+     예) evolutionForwardIndex['파이리'] = [리자드 카드들..., BREAK 등]
+   base_kr 정규화로 같은 이름 카드(여러 시리즈)도 다 들어감 */
+function buildEvolutionIndexes(){
+  evolutionByCode={};
+  evolutionForwardIndex={};
+  for(var i=0;i<evolutionLines.length;i++){
+    var e=evolutionLines[i];
+    if(!e||!e.bs_code)continue;
+    evolutionByCode[e.bs_code]=e;
+    /* 부모 이름이 있으면 정방향 인덱스에 등록 */
+    var parent=e.evolvesFrom_kr;
+    if(parent){
+      if(!evolutionForwardIndex[parent])evolutionForwardIndex[parent]=[];
+      evolutionForwardIndex[parent].push(e);
+    }
+  }
+}
+
+/* 트레이너 인덱스 빌드:
+   - trainerByCode: bs_code → 트레이너 정보
+   - trainerTagIndex: tag → bs_code 배열 (우선순위 채우기용) */
+function buildTrainerIndexes(){
+  trainerByCode={};
+  trainerTagIndex={};
+  for(var i=0;i<trainerCategories.length;i++){
+    var t=trainerCategories[i];
+    if(!t||!t.bs_code)continue;
+    trainerByCode[t.bs_code]=t;
+    if(t.tags&&t.tags.length){
+      for(var j=0;j<t.tags.length;j++){
+        var tag=t.tags[j];
+        if(!trainerTagIndex[tag])trainerTagIndex[tag]=[];
+        trainerTagIndex[tag].push(t.bs_code);
+      }
+    }
   }
 }
 
@@ -2384,5 +2493,8 @@ document.addEventListener('DOMContentLoaded',function(){
     /* DB 로드 후 현재 활성 탭이 도감/수집이면 다시 렌더 */
     if(_currentTab==='dex')renderDex();
     if(_currentTab==='coll')renderColl();
+    /* 세션 14: 자동 빌드 데이터 로딩 (병렬, DB 로드 후 백그라운드) */
+    loadEvolutionData();
+    loadTrainerCategories();
   });
 });
