@@ -509,8 +509,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   </div>
   <div class="db-status" id="db-status">💾 카드 DB 준비 중...</div>
   <div class="tabs" id="tabbar">
-    <button class="tab on" onclick="switchTab('rules',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="">규칙</button>
-    <button class="tab" onclick="switchTab('dex',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="">도감</button>
+    <button class="tab" onclick="switchTab('rules',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="">규칙</button>
+    <button class="tab on" onclick="switchTab('dex',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="">도감</button>
     <button class="tab" onclick="switchTab('coll',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png" alt="">수집</button>
     <button class="tab" onclick="switchTab('scan',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png" alt="">스캔</button>
     <button class="tab" onclick="switchTab('deck',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png" alt="">덱</button>
@@ -518,7 +518,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   <div class="cnt">
 
 <!-- 📖 규칙 탭 (보존) -->
-<div class="pnl on" id="p-rules">
+<div class="pnl" id="p-rules">
 <div class="st">📖 포켓몬 TCG 공식 규칙</div>
 <p style="font-size:.78rem;color:var(--text3);margin-bottom:12px">공식 룰북 기반 · 아이가 이해하기 쉽게!</p>
 <div class="acc"><div class="acc-h" onclick="togAcc(this)">🎯 게임의 목표 <span class="arrow">▼</span></div><div class="acc-b"><ul><li><strong>프라이즈 6장</strong> 먼저 가져오기</li><li><strong>상대 필드</strong>에 포켓몬 없애기</li><li><strong>상대 덱</strong> 카드 소진</li></ul><div class="tip">💡 동시에 이기면 "서든 데스" — 프라이즈 1장으로 재대결!</div></div></div>
@@ -530,7 +530,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 </div>
 
 <!-- 📚 도감 탭 -->
-<div class="pnl" id="p-dex">
+<div class="pnl on" id="p-dex">
   <div class="st">📚 카드 도감</div>
   <div class="subtabs" id="dex-subtabs">
     <button class="subtab on" onclick="setDexClass('pokemon',this)">🐾 포켓몬</button>

@@ -81,7 +81,7 @@ function placeholderImg(name){
 }
 
 /* ═══ Tab Switch ═══ */
-var _currentTab='rules';
+var _currentTab='dex';
 function switchTab(id,btn){
   _currentTab=id;
   var tabs=$('tabbar').getElementsByTagName('button');
