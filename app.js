@@ -354,6 +354,187 @@ function buildTrainerIndexes(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   🪄 세션 14: 자동 빌드 — 단계 2 (Basic 선택 모달)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 자동 빌드 상태 (모달 내 검색/필터) */
+var _abQuery='';
+var _abTypeFilter='all';
+
+/* 카드가 "자동 빌드 후보 Basic"인지 판정:
+   - card_class === 'pokemon'
+   - evolution_lines의 stage가 'basic' (진짜 기본 + Basic ex 포함, 예: 미라이돈 ex, 코라이돈 ex)
+   - 단, "M"으로 시작하는 메가 ex는 이름상 basic이어도 실제론 진화 카드 → 제외
+     (evolution_lines에서 stage='mega'로 분류됨, basic 필터에서 자동 배제)
+*/
+function isAutoBuildBasic(card){
+  if(!card||card.card_class!=='pokemon')return false;
+  var ev=evolutionByCode[card.bs_code];
+  if(!ev)return false; /* evolution 데이터에 없으면 스킵 (안전) */
+  return ev.stage==='basic';
+}
+
+/* 에이스성 점수 계산:
+   진화체/ex/V/VMAX 카드가 상위에 오도록 정렬.
+   Basic만 대상이지만 "기라티나 EX" 같은 Basic ex는 점수가 높아야 함.
+   점수 기준:
+     - 이름에 "ex": +20
+     - 이름에 "EX" (옛 대문자): +15
+     - 이름에 "V" 단독: +15 (VMAX/VSTAR는 basic이 아니라 제외되지만 안전망)
+     - HP 값 / 10 (250HP → +25)
+*/
+function getAceScore(card){
+  var s=0;
+  var nm=card.name_kr||'';
+  if(/\sex$/i.test(nm)||nm.indexOf(' ex ')>=0||/ ex$/.test(nm))s+=20;
+  else if(/\sEX$/.test(nm)||nm.indexOf(' EX')>=0)s+=15;
+  else if(/\sV$/.test(nm))s+=15;
+  if(card.hp){
+    var hp=parseInt(card.hp,10);
+    if(!isNaN(hp))s+=Math.floor(hp/10);
+  }
+  return s;
+}
+
+/* 컬렉션의 Basic 포켓몬 카드 목록 (중복 제거, bs_code 유니크)
+   반환: [{card, owned}, ...] — owned는 컬렉션 수량 */
+function getCollectionBasics(){
+  var result=[];
+  var seen={};
+  var collected=D.collected||{};
+  for(var bsCode in collected){
+    if(seen[bsCode])continue;
+    var entry=collected[bsCode];
+    if(!entry)continue;
+    var owned=entry.qty||1;
+    var card=dbByCode[bsCode];
+    if(!card)continue;
+    if(!isAutoBuildBasic(card))continue;
+    seen[bsCode]=true;
+    result.push({card:card,owned:owned});
+  }
+  return result;
+}
+
+/* 🪄 버튼 핸들러 — 자동 빌드 모달 열기 */
+function openAutoBuildModal(){
+  if(!_deckBuilder){toast('빌더가 열려있지 않아요','#e74c3c');return;}
+  /* 데이터 로딩 체크 */
+  if(!evolutionLines.length){
+    toast('⏳ 진화 데이터 로딩 중입니다. 잠시 후 다시 시도하세요','#f39c12');
+    /* 혹시 로딩 시작이 안 됐으면 시동 */
+    loadEvolutionData();
+    return;
+  }
+  if(!trainerCategories.length){
+    toast('⏳ 트레이너 데이터 로딩 중입니다. 잠시 후 다시 시도하세요','#f39c12');
+    loadTrainerCategories();
+    return;
+  }
+  /* 컬렉션에 Basic 포켓몬이 있는지 확인 */
+  var basics=getCollectionBasics();
+  if(!basics.length){
+    toast('⚠️ 컬렉션에 기본 포켓몬이 없어요. 먼저 카드를 등록하세요','#f39c12');
+    return;
+  }
+  /* 상태 초기화 + 모달 열기 */
+  _abQuery='';
+  _abTypeFilter='all';
+  var q=$('abQuery');if(q)q.value='';
+  $('abFs').className='ab-fs on';
+  renderAutoBuildFilters();
+  renderBasicPokemonList();
+}
+
+/* 자동 빌드 모달 닫기 */
+function closeAutoBuildModal(){
+  $('abFs').className='ab-fs';
+}
+
+/* 모달 내 검색 입력 핸들러 */
+function onAutoBuildSearch(){
+  var q=$('abQuery');
+  _abQuery=q?q.value.trim():'';
+  renderBasicPokemonList();
+}
+
+/* 타입 필터 칩 렌더 */
+function renderAutoBuildFilters(){
+  var types=['all','풀','불','물','번개','초','격투','악','강철','페어리','드래곤','무'];
+  var labels={all:'🌟 전체','풀':'🌿 풀','불':'🔥 불','물':'💧 물','번개':'⚡ 번개','초':'🔮 초','격투':'👊 격투','악':'🌙 악','강철':'⚙️ 강철','페어리':'🧚 페어리','드래곤':'🐉 드래곤','무':'⭐ 무'};
+  var h='';
+  for(var i=0;i<types.length;i++){
+    var t=types[i];
+    var active=(_abTypeFilter===t)?' active':'';
+    h+='<button class="fchip'+active+'" onclick="setAutoBuildType(\''+t+'\')">'+esc(labels[t]||t)+'</button>';
+  }
+  $('abFilters').innerHTML=h;
+}
+
+function setAutoBuildType(t){
+  _abTypeFilter=t;
+  renderAutoBuildFilters();
+  renderBasicPokemonList();
+}
+
+/* Basic 포켓몬 그리드 렌더 — 에이스성 점수 내림차순 */
+function renderBasicPokemonList(){
+  var basics=getCollectionBasics();
+  /* 필터 적용 */
+  var filtered=basics.filter(function(b){
+    if(_abTypeFilter!=='all'&&b.card.pokemon_type!==_abTypeFilter)return false;
+    if(_abQuery&&b.card.name_kr&&b.card.name_kr.indexOf(_abQuery)<0)return false;
+    return true;
+  });
+  /* 정렬: 에이스성 점수 내림 → HP 내림 → 이름 가나다 */
+  filtered.sort(function(a,b){
+    var sa=getAceScore(a.card),sb=getAceScore(b.card);
+    if(sa!==sb)return sb-sa;
+    var ha=parseInt(a.card.hp,10)||0,hb=parseInt(b.card.hp,10)||0;
+    if(ha!==hb)return hb-ha;
+    return (a.card.name_kr||'').localeCompare(b.card.name_kr||'');
+  });
+  /* 렌더 */
+  var grid=$('abGrid');
+  if(!filtered.length){
+    grid.innerHTML='<div class="ab-empty"><div class="ei">🔍</div><p>조건에 맞는 기본 포켓몬이<br>없어요.</p></div>';
+    return;
+  }
+  var h='';
+  for(var i=0;i<filtered.length;i++){
+    var b=filtered[i];
+    var c=b.card;
+    var img=c.image_url||placeholderImg(c.name_kr);
+    var nm=c.name_kr||'(이름 없음)';
+    /* ex 배지: Basic ex 카드 강조 */
+    var isEx=/\sex$/i.test(nm)||nm.indexOf(' ex ')>=0;
+    var exBadge=isEx?'<div class="exbadge">ex</div>':'';
+    h+='<div class="ab-card" onclick="selectBasicPokemon(\''+esc(c.bs_code)+'\')">'
+      +exBadge
+      +'<div class="qty">×'+b.owned+'</div>'
+      +'<img src="'+esc(img)+'" alt="'+esc(nm)+'" loading="lazy" onerror="this.src=\''+placeholderImg(nm)+'\'">'
+      +'<div class="nm">'+esc(nm)+'</div>'
+      +'</div>';
+  }
+  grid.innerHTML=h;
+}
+
+/* Basic 선택 핸들러 — 단계 3에서 실제 자동 빌드 연결.
+   현재는 선택 확인용 플레이스홀더. */
+function selectBasicPokemon(bsCode){
+  var card=dbByCode[bsCode];
+  if(!card){toast('카드를 찾을 수 없어요','#e74c3c');return;}
+  /* TODO 단계 3: 단일/다중 진화 경로 판정 → 자동 빌드 실행 */
+  console.log('[AutoBuild] Basic 선택:',card.name_kr,bsCode);
+  toast('✅ 선택: '+card.name_kr+' (단계 3에서 자동 빌드 연결 예정)','#27ae60');
+}
+
+/* 진화 경로 선택 모달 닫기 (단계 3 준비) */
+function closeEvolutionPathModal(){
+  $('epFs').className='ab-fs';
+}
+
+/* ═══════════════════════════════════════════════════════════════
    📚 도감 탭 (Dex)
    ═══════════════════════════════════════════════════════════════ */
 var _dexClass='pokemon';

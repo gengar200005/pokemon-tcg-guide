@@ -165,6 +165,46 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .dbm-pool-toggle .lb{font-size:.7rem;color:var(--text3)}
 .dbm-pool-toggle .pool-btn{flex:1;padding:7px 4px;border:1.5px solid var(--cb);background:var(--bg2);border-radius:8px;font-family:var(--fb);font-size:.72rem;color:var(--text2);cursor:pointer}
 .dbm-pool-toggle .pool-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* 세션 14: 자동 빌드 버튼 + 모달 */
+.dbm-pool-toggle .auto-btn{flex-shrink:0;width:34px;height:34px;border-radius:50%;border:none;background:linear-gradient(135deg,#ffcb05,#ffd54f);color:#333;font-size:1rem;cursor:pointer;box-shadow:0 2px 6px rgba(255,203,5,.4);display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.dbm-pool-toggle .auto-btn:active{transform:scale(.92)}
+.ab-fs{display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:14px}
+.ab-fs.on{display:flex}
+.ab-box{background:var(--bg);border-radius:var(--r);max-width:480px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.35);overflow:hidden}
+.ab-hdr{padding:14px 16px;background:linear-gradient(135deg,#ffcb05,#ffd54f);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.ab-hdr h3{font-family:var(--ft);font-size:1.05rem;color:#333}
+.ab-hdr .x{background:rgba(255,255,255,.3);border:none;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;color:#333;display:flex;align-items:center;justify-content:center;line-height:1}
+.ab-desc{padding:10px 16px;background:var(--bg3);font-size:.76rem;color:var(--text2);line-height:1.6;border-bottom:1px solid var(--cb);flex-shrink:0}
+.ab-srch{padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--cb);flex-shrink:0}
+.ab-srch input{width:100%;padding:8px 12px;border:1.5px solid var(--cb);border-radius:16px;font-family:var(--fb);font-size:.78rem;background:var(--bg3);outline:none}
+.ab-srch input:focus{border-color:var(--accent)}
+.ab-filters{display:flex;gap:4px;margin-top:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.ab-filters::-webkit-scrollbar{display:none}
+.ab-filters .fchip{flex-shrink:0;padding:4px 10px;border-radius:12px;border:1.5px solid var(--cb);background:var(--bg2);color:var(--text2);font-size:.68rem;cursor:pointer;white-space:nowrap}
+.ab-filters .fchip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ab-grid{flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;-webkit-overflow-scrolling:touch}
+.ab-card{background:var(--card);border:2px solid var(--cb);border-radius:var(--rs);overflow:hidden;cursor:pointer;position:relative;box-shadow:var(--shadow);transition:.15s}
+.ab-card:active{transform:scale(.95);border-color:var(--accent2)}
+.ab-card img{width:100%;aspect-ratio:2.5/3.5;object-fit:contain;background:#f4fafd;display:block}
+.ab-card .nm{padding:4px 5px;font-size:.66rem;color:var(--text2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.ab-card .qty{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;font-size:.62rem;padding:1px 6px;border-radius:8px;font-weight:700}
+.ab-card .exbadge{position:absolute;top:4px;left:4px;background:linear-gradient(135deg,#ffcb05,#ffd54f);color:#333;font-size:.58rem;padding:1px 5px;border-radius:6px;font-weight:700;font-family:var(--ft)}
+.ab-empty{grid-column:1/-1;text-align:center;padding:40px 16px;color:var(--text3);font-size:.82rem;line-height:1.7}
+.ab-empty .ei{font-size:2.5rem;margin-bottom:10px}
+/* 진화 경로 선택 모달 */
+.ep-box{background:var(--bg);border-radius:var(--r);max-width:400px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.ep-hdr{padding:14px 16px;background:linear-gradient(135deg,#ffcb05,#ffd54f);text-align:center;flex-shrink:0}
+.ep-hdr h3{font-family:var(--ft);font-size:1rem;color:#333;margin-bottom:2px}
+.ep-hdr p{font-size:.72rem;color:#555}
+.ep-list{flex:1;overflow-y:auto;padding:10px 12px}
+.ep-item{background:var(--card);border:2px solid var(--cb);border-radius:var(--rs);padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.15s}
+.ep-item:active{transform:scale(.98);border-color:var(--accent2)}
+.ep-item img{width:46px;height:46px;border-radius:var(--rs);object-fit:contain;background:var(--bg3);flex-shrink:0}
+.ep-item .info{flex:1;min-width:0}
+.ep-item .nm{font-family:var(--ft);font-size:.88rem;color:var(--text);margin-bottom:2px}
+.ep-item .sub{font-size:.68rem;color:var(--text3)}
+.ep-cancel{padding:10px;text-align:center;border-top:1px solid var(--cb);background:var(--bg2);flex-shrink:0}
+.ep-cancel button{background:none;border:none;color:var(--text3);font-size:.78rem;cursor:pointer;padding:6px 16px}
 
 .dbm-search{flex-shrink:0;background:var(--bg2);padding:8px 10px;border-bottom:1px solid var(--cb)}
 .dbm-search input{width:100%;padding:8px 12px;border:1.5px solid var(--cb);border-radius:18px;font-family:var(--fb);font-size:.8rem;outline:none;background:var(--bg3)}
@@ -484,6 +524,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <span class="lb">카드 풀:</span>
     <button class="pool-btn on" id="poolBtnDex" onclick="setDeckPool('dex')">📚 도감 전체</button>
     <button class="pool-btn" id="poolBtnColl" onclick="setDeckPool('collection')">🎒 내 컬렉션</button>
+    <button class="auto-btn" onclick="openAutoBuildModal()" title="자동 빌드" aria-label="자동 빌드">🪄</button>
   </div>
   <div class="dbm-search">
     <input type="text" id="dbmQuery" placeholder="카드 이름 검색..." oninput="onDbmSearch()">
@@ -494,6 +535,34 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <button class="bbtn" onclick="openDeckSheet()">📋 현재 덱</button>
     <button class="bbtn" id="dbmValidBtn" onclick="openValidationModal()">✅ 검증</button>
     <button class="bbtn bad" onclick="confirmClearDeck()">🗑️ 비우기</button>
+  </div>
+</div>
+
+<!-- 🪄 자동 빌드: Basic 포켓몬 선택 모달 -->
+<div class="ab-fs" id="abFs" onclick="if(event.target===this)closeAutoBuildModal()">
+  <div class="ab-box">
+    <div class="ab-hdr">
+      <h3>🪄 자동 덱 빌드</h3>
+      <button class="x" onclick="closeAutoBuildModal()">&times;</button>
+    </div>
+    <div class="ab-desc">💡 중심이 될 <b>기본 포켓몬</b>을 고르세요. 진화체·트레이너·에너지가 자동으로 채워집니다.</div>
+    <div class="ab-srch">
+      <input type="text" id="abQuery" placeholder="포켓몬 이름 검색..." oninput="onAutoBuildSearch()">
+      <div class="ab-filters" id="abFilters"></div>
+    </div>
+    <div class="ab-grid" id="abGrid"></div>
+  </div>
+</div>
+
+<!-- 🪄 자동 빌드: 진화 경로 선택 모달 (다중 진화 케이스) -->
+<div class="ab-fs" id="epFs" onclick="if(event.target===this)closeEvolutionPathModal()">
+  <div class="ep-box">
+    <div class="ep-hdr">
+      <h3 id="epTitle">🌿 진화 경로 선택</h3>
+      <p id="epSub">어느 진화 경로로 갈까요?</p>
+    </div>
+    <div class="ep-list" id="epList"></div>
+    <div class="ep-cancel"><button onclick="closeEvolutionPathModal()">취소</button></div>
   </div>
 </div>
 
