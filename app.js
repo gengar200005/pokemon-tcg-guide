@@ -914,25 +914,49 @@ function fillPokemonLine(basicCard,targetPath,maxCopy){
    - 목표: 풀덱 12장, 하프덱 6장까지 포켓몬 확보
    - 선정: 같은 pokemon_type의 Basic, 주인공/이미 덱에 있는 카드 제외
    - 정렬: 에이스 점수 내림차순 + 동률 셔플 (다시 뽑기 시 다양성)
+
+   세션 17c: isAutoBuildBasic (evolution_lines 필수) 대신 "관대한 Basic 판정" 사용.
+   evolution_lines에 등록 안 된 최신 카드도 포함되도록 card_type='기본 포켓몬' 직접 검사.
 */
 function fillBasicFiller(basicCard,maxCopy,isHalf){
   var pokeTarget=isHalf?6:12;
   var counts=deckCounts(_deckBuilder);
-  if(counts.pok>=pokeTarget)return {added:0};
+  if(counts.pok>=pokeTarget)return {added:0,scanned:0,matched:0};
 
   var myType=basicCard.pokemon_type||'';
-  if(!myType)return {added:0};
+  if(!myType)return {added:0,scanned:0,matched:0};
 
-  var basics=getCollectionBasics();
+  /* 컬렉션 직접 순회 — 관대한 Basic 판정.
+     조건: card_class='pokemon' AND (card_type에 '기본' 포함 OR evolution_lines stage='basic')
+     AND pokemon_type 일치 AND 주인공이 아니고 아직 덱에 없음. */
   var candidates=[];
-  for(var i=0;i<basics.length;i++){
-    var b=basics[i];
-    if(b.card.bs_code===basicCard.bs_code)continue; /* 주인공 제외 */
-    if(_deckBuilder.cards[b.card.bs_code]>0)continue; /* 이미 덱에 있음 */
-    if(b.card.pokemon_type!==myType)continue; /* 타입 일치 필수 */
-    candidates.push(b);
+  var scanned=0;
+  var collected=D.collected||{};
+  for(var bsCode in collected){
+    scanned++;
+    if(bsCode===basicCard.bs_code)continue;
+    if(_deckBuilder.cards[bsCode]>0)continue;
+    var entry=collected[bsCode];
+    if(!entry)continue;
+    var card=dbByCode[bsCode];
+    if(!card)continue;
+    if(card.card_class!=='pokemon')continue;
+    if(card.pokemon_type!==myType)continue;
+    /* Basic 판정 (관대): card_type 직접 검사 우선, 없으면 evolution_lines 폴백 */
+    var isBasic=false;
+    var ct=card.card_type||'';
+    if(ct.indexOf('기본')>=0)isBasic=true;
+    else{
+      var ev=evolutionByCode[bsCode];
+      if(ev&&ev.stage==='basic')isBasic=true;
+    }
+    /* 진화 카드 제외 (1진화/2진화/M진화 등) — '기본'이 이름에 있어도 'M진화'이면 제외 */
+    if(ct.indexOf('1진화')>=0||ct.indexOf('2진화')>=0||ct.indexOf('M진화')>=0)isBasic=false;
+    if(!isBasic)continue;
+    candidates.push({card:card,owned:entry.qty||1});
   }
-  if(candidates.length===0)return {added:0};
+  var matched=candidates.length;
+  if(matched===0)return {added:0,scanned:scanned,matched:0};
 
   /* 에이스 점수 내림차순 + 동률 셔플 */
   shuffleArray(candidates);
@@ -949,7 +973,7 @@ function fillBasicFiller(basicCard,maxCopy,isHalf){
       added+=put;
     }
   }
-  return {added:added};
+  return {added:added,scanned:scanned,matched:matched};
 }
 
 /* 재귀 판정: baseName에서 출발해 depth 내에 targetPath에 도달 가능한가? */
@@ -2389,6 +2413,10 @@ function renderDeckSheet(){
     h+='<button class="rc-reroll" onclick="rerollAutoBuild()" title="다시 뽑기">🎲 다시 뽑기</button>';
     h+='</div>';
     h+='<div class="rc-row"><span class="rc-ic">🌟</span><span class="rc-lbl">주인공</span><span class="rc-val">'+esc(r.protagonist)+'</span><span class="rc-qty">×'+r.protagonistQty+'</span></div>';
+    /* 세션 17c: 합계 표시 — 사용자가 한눈에 포켓몬/트레이너/에너지 개수 진단 */
+    var pokTarget=(_lastAutoBuild.isHalf?6:12);
+    var pokLow=(typeof r.pokQty==='number'&&r.pokQty<pokTarget);
+    h+='<div class="rc-row'+(pokLow?' rc-warn':'')+'"><span class="rc-ic">🐉</span><span class="rc-lbl">포켓몬 합계</span><span class="rc-val">'+(r.pokQty||0)+'장'+(pokLow?' — 같은 타입 Basic이 더 필요해요':'')+'</span></div>';
     if(r.drawName){
       h+='<div class="rc-row"><span class="rc-ic">🎴</span><span class="rc-lbl">카드 뽑기 도우미</span><span class="rc-val">'+esc(r.drawName)+'</span><span class="rc-qty">×'+r.drawQty+'</span></div>';
     }else if(typeof r.trnQty==='number'&&r.trnQty===0){
