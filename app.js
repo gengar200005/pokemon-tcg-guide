@@ -1122,7 +1122,10 @@ function showCardModal(c){
     }
     if(c.flavor_text)h+='<p style="font-size:.7rem;color:var(--text3);margin-top:8px;font-style:italic;text-align:center">"'+esc(c.flavor_text)+'"</p>';
   }else if(c.card_class==='trainer'){
-    if(c.trainer_subtype)h+='<div class="dr"><span class="dl">서브타입</span><span>'+esc(trainerSubLabel(c.trainer_subtype))+'</span></div>';
+    /* 세션 15: trainerGroup()으로 통합 분류 (도구는 card_type에 있음) */
+    var tg=trainerGroup(c);
+    var tgLabel={supporter:'서포터',item:'아이템',tool:'포켓몬의 도구'}[tg]||tg;
+    if(tg)h+='<div class="dr"><span class="dl">서브타입</span><span>'+esc(tgLabel)+'</span></div>';
     if(c.effect_text){
       h+='<div style="margin-top:10px;padding:10px;background:rgba(255,203,5,.1);border-radius:10px;font-size:.78rem;color:var(--text2);line-height:1.6">'+esc(c.effect_text)+'</div>';
     }
@@ -1159,7 +1162,9 @@ function typeIcon(t){
   return '<svg class="t-ico"><use href="#'+id+'"/></svg>';
 }
 function trainerSubLabel(s){
-  return{item:'아이템',supporter:'서포터',fossil:'화석',tool:'포켓몬의 도구'}[s]||s;
+  /* 세션 15: DB 실측 기반 정리. trainer_subtype 필드에는 item/supporter/null만 존재.
+     도구/화석은 card_type으로 별도 판별되므로 여기서 처리하지 않음. */
+  return{item:'아이템',supporter:'서포터'}[s]||s;
 }
 
 function addCard(bs_code){
@@ -1196,7 +1201,7 @@ var _collFilters={
   type:'all',     /* 풀/불꽃/물/번개/초/격투/악/강철/드래곤/무색 */
   stage:'all',    /* basic/stage1/stage2 */
   ex:'all',       /* normal/ex/mega */
-  trainerSub:'all', /* item/supporter/fossil/tool */
+  trainerSub:'all', /* item/supporter/tool (세션 15: fossil 제거, DB 증거 없음) */
   retreat:'all'   /* 0/1/2/3+ */
 };
 
@@ -1229,7 +1234,11 @@ function matchCollFilter(c){
     if(f.ex==='ex'&&(!isEx||isMega))return false;
     if(f.ex==='mega'&&!isMega)return false;
   }
-  if(f.trainerSub!=='all'&&c.trainer_subtype!==f.trainerSub)return false;
+  /* 세션 15: 트레이너 서브 필터는 trainerGroup() 사용 (도구는 card_type 기반) */
+  if(f.trainerSub!=='all'){
+    if(c.card_class!=='trainer')return false;
+    if(trainerGroup(c)!==f.trainerSub)return false;
+  }
   if(f.retreat!=='all'){
     var r=c.retreat;
     if(f.retreat==='3'&&!(r>=3))return false;
@@ -1285,7 +1294,7 @@ function renderColl(){
   h+=fchip('ex','all','전체')+fchip('ex','normal','일반')+fchip('ex','ex','ex')+fchip('ex','mega','메가 ex');
   h+='</div></div>';
   h+='<div class="fgroup"><div class="fl">트레이너</div><div class="frow">';
-  h+=fchip('trainerSub','all','전체')+fchip('trainerSub','item','아이템')+fchip('trainerSub','supporter','서포터')+fchip('trainerSub','tool','도구')+fchip('trainerSub','fossil','화석');
+  h+=fchip('trainerSub','all','전체')+fchip('trainerSub','item','아이템')+fchip('trainerSub','supporter','서포터')+fchip('trainerSub','tool','도구');
   h+='</div></div>';
   h+='<div class="fgroup"><div class="fl">후퇴</div><div class="frow">';
   h+=fchip('retreat','all','전체')+fchip('retreat','0','0')+fchip('retreat','1','1')+fchip('retreat','2','2')+fchip('retreat','3','3+');
@@ -1350,17 +1359,18 @@ var _deckQuery='';
 var _deckClassFilter='all'; /* all|pokemon|trainer|energy|stadium */
 var _deckStageFilter='all'; /* all|basic|stage1|stage2 (포켓몬 한정) */
 var _deckTypeFilter='all'; /* all|불꽃|물|... (포켓몬 타입 한정) */
-var _deckTrainerFilter='all'; /* all|supporter|item|tool|stadium (트레이너 한정) */
+var _deckTrainerFilter='all'; /* all|supporter|item|tool (트레이너 한정, trainerGroup() 반환값) */
 var _deckBuilderRendering=false;
 
 /* 포켓몬 타입 11종 — DB의 pokemon_type 필드 값 (세션 15: '노말'→'무색' 버그 수정. DB 실제값 확인 완료) */
 var POKEMON_TYPES=['불꽃','물','풀','번개','초','격투','악','강철','페어리','드래곤','무색'];
-/* 트레이너 세부 — DB의 trainer_subtype 필드 값 */
+/* 트레이너 세부 — trainerGroup() 반환값 기준 (세션 15: DB 실측 기반 재정리)
+   DB의 trainer_subtype 필드는 item/supporter/null 뿐이고, 도구는 card_type='포켓몬의 도구'에서 판별.
+   tool은 trainerGroup()이 card_type 기반으로 합성 생성. stadium/fossil은 DB상 별도 분류 아니므로 제외. */
 var TRAINER_SUBTYPES=[
   {key:'supporter',label:'서포트'},
   {key:'item',label:'아이템'},
-  {key:'tool',label:'도구'},
-  {key:'stadium',label:'스타디움'}
+  {key:'tool',label:'도구'}
 ];
 
 /* ─── 카드 분류 헬퍼 (DB 필드 기반) ─── */
@@ -1370,8 +1380,26 @@ function cardStage(c){
   var t=c.card_type||'';
   if(t.indexOf('2진화')>=0)return 'stage2';
   if(t.indexOf('1진화')>=0)return 'stage1';
+  /* 세션 15 버그 수정: V진화 포켓몬(VSTAR/VMAX)은 포켓몬 V에서 진화하는 1진화급 */
+  if(t.indexOf('V진화')>=0)return 'stage1';
   if(t.indexOf('기본')>=0)return 'basic';
-  return 'basic'; /* 기본값 — VSTAR/V/ex 등도 카드 텍스트엔 "기본 포켓몬" 들어감 */
+  return 'basic'; /* 기본값 — "포켓몬 GX", "TAG TEAM GX" 등 명시 없는 케이스 */
+}
+/* 트레이너 카드 통합 분류 (세션 15 신규)
+   DB 불일치 해결: trainer_subtype은 'item'/'supporter'/null 뿐이고,
+   도구 카드는 card_type='포켓몬의 도구'로 별도 분류돼있음.
+   화석 카드는 DB상 그냥 아이템으로 저장 (별도 분류 없음).
+   반환값: 'supporter' | 'item' | 'tool' */
+function trainerGroup(c){
+  if(!c||c.card_class!=='trainer')return null;
+  /* card_type 우선 체크 — 도구는 여기에 있음 */
+  var t=c.card_type||'';
+  if(t.indexOf('포켓몬의 도구')>=0)return 'tool';
+  /* trainer_subtype 기반 */
+  var s=c.trainer_subtype;
+  if(s==='supporter')return 'supporter';
+  /* item 또는 null → 아이템으로 분류 (화석 포함) */
+  return 'item';
 }
 function isBasicEnergy(c){
   /* 기본 에너지: card_class='energy' AND 이름에 "기본" 포함 또는 짧은 이름 */
@@ -1898,7 +1926,8 @@ function getDeckBuilderCards(){
       if(_deckTypeFilter!=='all'&&c.pokemon_type!==_deckTypeFilter)continue;
     }
     if(_deckClassFilter==='trainer'){
-      if(_deckTrainerFilter!=='all'&&c.trainer_subtype!==_deckTrainerFilter)continue;
+      /* 세션 15: trainerGroup()으로 통합 분류 (도구는 card_type 기반) */
+      if(_deckTrainerFilter!=='all'&&trainerGroup(c)!==_deckTrainerFilter)continue;
     }
     if(_deckQuery){
       var nm=c.name_kr||'';
