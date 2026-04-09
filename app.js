@@ -1317,6 +1317,17 @@ var _collFilters={
   trainerSub:'all', /* item/supporter/tool (세션 15: fossil 제거, DB 증거 없음) */
   retreat:'all'   /* 0/1/2/3+ */
 };
+/* 세션 17: 수집 탭 서브탭 + 페이지네이션 */
+var _collClass='pokemon';
+var _collLimit=120;
+function setCollClass(cls,btn){
+  _collClass=cls;
+  _collLimit=120;
+  var sub=$('coll-subtabs').getElementsByTagName('button');
+  for(var i=0;i<sub.length;i++)sub[i].className='subtab';
+  btn.className='subtab on';
+  renderColl();
+}
 
 function setCollFilter(key,val,btn){
   _collFilters[key]=val;
@@ -1324,60 +1335,76 @@ function setCollFilter(key,val,btn){
   var grp=btn.parentNode.querySelectorAll('.fchip');
   for(var i=0;i<grp.length;i++)grp[i].classList.remove('active');
   btn.classList.add('active');
+  _collLimit=120; /* 세션 17: 필터 변경 시 페이지네이션 리셋 */
   renderColl();
 }
 function resetCollFilters(){
   _collFilters={type:'all',stage:'all',ex:'all',trainerSub:'all',retreat:'all'};
+  _collLimit=120;
   renderColl();
 }
 function matchCollFilter(c){
   var f=_collFilters;
-  if(f.type!=='all'&&c.pokemon_type!==f.type)return false;
-  if(f.stage!=='all'){
-    var ct=c.card_type||'';
-    if(f.stage==='basic'&&ct.indexOf('기본')<0)return false;
-    if(f.stage==='stage1'&&ct.indexOf('1진화')<0)return false;
-    if(f.stage==='stage2'&&ct.indexOf('2진화')<0)return false;
+  /* 세션 17: 현재 서브탭(_collClass) 기준으로 적용 가능한 필터만 평가
+     도감 탭 matchDexFilter와 동일 패턴 — 숨겨진 필터는 적용도 안 됨 */
+  var isPokemonTab=(_collClass==='pokemon');
+  var isTrainerTab=(_collClass==='trainer');
+  if(isPokemonTab){
+    if(f.type!=='all'&&c.pokemon_type!==f.type)return false;
+    if(f.stage!=='all'){
+      var ct=c.card_type||'';
+      if(f.stage==='basic'&&ct.indexOf('기본')<0)return false;
+      if(f.stage==='stage1'&&ct.indexOf('1진화')<0)return false;
+      if(f.stage==='stage2'&&ct.indexOf('2진화')<0)return false;
+    }
+    if(f.ex!=='all'){
+      var nm=c.name_kr||'';
+      var isEx=/ex$/i.test(nm)||nm.indexOf(' ex')>=0;
+      var isMega=nm.indexOf('메가')===0||nm.indexOf('M ')===0;
+      if(f.ex==='normal'&&(isEx||isMega))return false;
+      if(f.ex==='ex'&&(!isEx||isMega))return false;
+      if(f.ex==='mega'&&!isMega)return false;
+    }
+    if(f.retreat!=='all'){
+      var r=c.retreat;
+      if(f.retreat==='3'&&!(r>=3))return false;
+      else if(f.retreat!=='3'&&r!==parseInt(f.retreat,10))return false;
+    }
+  }else if(isTrainerTab){
+    if(f.trainerSub!=='all'){
+      if(trainerGroup(c)!==f.trainerSub)return false;
+    }
   }
-  if(f.ex!=='all'){
-    var nm=c.name_kr||'';
-    var isEx=/ex$/i.test(nm)||nm.indexOf(' ex')>=0;
-    var isMega=nm.indexOf('메가')===0||nm.indexOf('M ')===0;
-    if(f.ex==='normal'&&(isEx||isMega))return false;
-    if(f.ex==='ex'&&(!isEx||isMega))return false;
-    if(f.ex==='mega'&&!isMega)return false;
-  }
-  /* 세션 15: 트레이너 서브 필터는 trainerGroup() 사용 (도구는 card_type 기반) */
-  if(f.trainerSub!=='all'){
-    if(c.card_class!=='trainer')return false;
-    if(trainerGroup(c)!==f.trainerSub)return false;
-  }
-  if(f.retreat!=='all'){
-    var r=c.retreat;
-    if(f.retreat==='3'&&!(r>=3))return false;
-    else if(f.retreat!=='3'&&r!==parseInt(f.retreat,10))return false;
-  }
+  /* energy, stadium 서브탭: 적용 가능한 필터 없음 → 통과 */
   return true;
 }
 function renderColl(){
   if(!cardsDB.length){
+    $('coll-summary-top').innerHTML='';
+    $('coll-subtabs').style.display='none';
     $('coll-r').innerHTML='<div class="loading"><div class="spinner"></div><p>카드 DB 로딩 중...</p></div>';
     return;
   }
+  /* 세션 16 fix: 필터 details open 상태 보존 */
+  var _prevCollFiltOpen=(function(){var el=$('coll-filt');return el?el.open:false;})();
   var codes=Object.keys(D.collected);
   if(codes.length===0){
+    /* 세션 17: 빈 수집함 — 요약 헤더/서브탭 숨기고 안내만 표시 */
+    $('coll-summary-top').innerHTML='';
+    $('coll-subtabs').style.display='none';
     $('coll-r').innerHTML='<div class="empty"><div class="ei">🃏</div><p>아직 수집한 카드가 없어요!<br><span style="font-size:.72rem">📚 도감 탭에서 카드를 추가해보세요</span></p></div>';
     return;
   }
+  /* 서브탭 다시 표시 (이전에 숨겨졌을 수 있음) */
+  $('coll-subtabs').style.display='';
+
   /* 수집 카드 → 풀 데이터로 hydrate */
   var collCards=[];
   for(var i=0;i<codes.length;i++){
     var c=dbByCode[codes[i]];
     if(c)collCards.push(c);
   }
-  /* 필터 적용 */
-  var filtered=collCards.filter(matchCollFilter);
-  /* 종류별 카운트 */
+  /* 종류별 카운트 (전체 수집 breakdown — 서브탭 필터 이전의 전체 수) */
   var byClass={pokemon:0,trainer:0,energy:0,stadium:0};
   for(var k=0;k<collCards.length;k++){
     var cc=collCards[k];
@@ -1386,42 +1413,67 @@ function renderColl(){
   var totalQty=0;
   for(var bc in D.collected)if(D.collected.hasOwnProperty(bc))totalQty+=(D.collected[bc].qty||1);
 
-  /* 헤더 */
-  var h='<div class="coll-summary">';
-  h+='<div class="cs-row"><b>'+collCards.length.toLocaleString()+'</b>종 · 총 '+totalQty.toLocaleString()+'장</div>';
-  h+='<div class="cs-breakdown">🐾 '+byClass.pokemon+' · 🎫 '+byClass.trainer+' · ⚡ '+byClass.energy+' · 🏟️ '+byClass.stadium+'</div>';
-  h+='</div>';
+  /* 세션 17: 요약 헤더 — 서브탭 위에 별도 렌더 (전체 수집 규모 항상 표시) */
+  var topHtml='<div class="coll-summary">';
+  topHtml+='<div class="cs-row"><b>'+collCards.length.toLocaleString()+'</b>종 · 총 '+totalQty.toLocaleString()+'장</div>';
+  topHtml+='<div class="cs-breakdown">🐾 '+byClass.pokemon+' · 🎫 '+byClass.trainer+' · ⚡ '+byClass.energy+' · 🏟️ '+byClass.stadium+'</div>';
+  topHtml+='</div>';
+  $('coll-summary-top').innerHTML=topHtml;
 
-  /* 필터 칩 */
-  h+='<details class="coll-filters" id="coll-filt"><summary>🔍 필터 ('+filtered.length+'/'+collCards.length+'장 표시)</summary>';
-  h+='<div class="fgroup"><div class="fl">속성</div><div class="frow">';
-  h+=fchip('type','all','전체');
-  ['풀','불꽃','물','번개','초','격투','악','강철','페어리','드래곤','무색'].forEach(function(t){
-    h+=fchipRaw('type',t,typeIcon(t)+' '+esc(t));
-  });
-  h+='</div></div>';
-  h+='<div class="fgroup"><div class="fl">진화</div><div class="frow">';
-  h+=fchip('stage','all','전체')+fchip('stage','basic','기본')+fchip('stage','stage1','1진화')+fchip('stage','stage2','2진화');
-  h+='</div></div>';
-  h+='<div class="fgroup"><div class="fl">ex</div><div class="frow">';
-  h+=fchip('ex','all','전체')+fchip('ex','normal','일반')+fchip('ex','ex','ex')+fchip('ex','mega','메가 ex');
-  h+='</div></div>';
-  h+='<div class="fgroup"><div class="fl">트레이너</div><div class="frow">';
-  h+=fchip('trainerSub','all','전체')+fchip('trainerSub','item','아이템')+fchip('trainerSub','supporter','서포터')+fchip('trainerSub','tool','도구');
-  h+='</div></div>';
-  h+='<div class="fgroup"><div class="fl">후퇴</div><div class="frow">';
-  h+=fchip('retreat','all','전체')+fchip('retreat','0','0')+fchip('retreat','1','1')+fchip('retreat','2','2')+fchip('retreat','3','3+');
-  h+='</div></div>';
-  h+='<button class="btn btn-g" style="margin-top:8px;width:100%" onclick="resetCollFilters()">필터 초기화</button>';
-  h+='</details>';
+  /* 세션 17: 1차 필터 — 서브탭(card_class) */
+  var classCards=collCards.filter(function(c){return c.card_class===_collClass;});
+  /* 2차 필터 — 사용자 필터 */
+  var filtered=classCards.filter(matchCollFilter);
+  var total=filtered.length;
+  var preTotal=classCards.length;
+  var shown=filtered.slice(0,_collLimit);
+
+  /* 필터 칩 — 서브탭별로 의미 있는 필터만 표시 (도감과 동일 패턴) */
+  var h='';
+  var hasPokemonFilters=(_collClass==='pokemon');
+  var hasTrainerFilters=(_collClass==='trainer');
+  if(hasPokemonFilters||hasTrainerFilters){
+    h+='<details class="coll-filters" id="coll-filt"><summary>🔍 필터 ('+total.toLocaleString()+'/'+preTotal.toLocaleString()+'장 표시)</summary>';
+    if(hasPokemonFilters){
+      h+='<div class="fgroup"><div class="fl">속성</div><div class="frow">';
+      h+=fchip('type','all','전체');
+      ['풀','불꽃','물','번개','초','격투','악','강철','페어리','드래곤','무색'].forEach(function(t){
+        h+=fchipRaw('type',t,typeIcon(t)+' '+esc(t));
+      });
+      h+='</div></div>';
+      h+='<div class="fgroup"><div class="fl">진화</div><div class="frow">';
+      h+=fchip('stage','all','전체')+fchip('stage','basic','기본')+fchip('stage','stage1','1진화')+fchip('stage','stage2','2진화');
+      h+='</div></div>';
+      h+='<div class="fgroup"><div class="fl">ex</div><div class="frow">';
+      h+=fchip('ex','all','전체')+fchip('ex','normal','일반')+fchip('ex','ex','ex')+fchip('ex','mega','메가 ex');
+      h+='</div></div>';
+      h+='<div class="fgroup"><div class="fl">후퇴</div><div class="frow">';
+      h+=fchip('retreat','all','전체')+fchip('retreat','0','0')+fchip('retreat','1','1')+fchip('retreat','2','2')+fchip('retreat','3','3+');
+      h+='</div></div>';
+    }
+    if(hasTrainerFilters){
+      h+='<div class="fgroup"><div class="fl">트레이너</div><div class="frow">';
+      h+=fchip('trainerSub','all','전체')+fchip('trainerSub','item','아이템')+fchip('trainerSub','supporter','서포터')+fchip('trainerSub','tool','도구');
+      h+='</div></div>';
+    }
+    h+='<button class="btn btn-g" style="margin-top:8px;width:100%" onclick="resetCollFilters()">필터 초기화</button>';
+    h+='</details>';
+  }
 
   /* 카드 그리드 */
-  if(filtered.length===0){
-    h+='<div class="empty"><div class="ei">🔍</div><p>필터 조건에 맞는 카드 없음</p></div>';
+  if(total===0){
+    if(preTotal===0){
+      /* 이 서브탭에 수집한 카드가 없음 */
+      var emptyMsg={pokemon:'포켓몬',trainer:'트레이너',energy:'에너지',stadium:'스타디움'}[_collClass]||'카드';
+      h+='<div class="empty"><div class="ei">🃏</div><p>수집한 '+emptyMsg+' 카드 없음</p></div>';
+    }else{
+      /* 필터 때문에 0개 */
+      h+='<div class="empty"><div class="ei">🔍</div><p>필터 조건에 맞는 카드 없음<br><span style="font-size:.72rem">필터를 초기화하거나 조건을 바꿔보세요</span></p></div>';
+    }
   }else{
     h+='<div class="dgrid">';
-    for(var m=0;m<filtered.length;m++){
-      var fc=filtered[m];
+    for(var m=0;m<shown.length;m++){
+      var fc=shown[m];
       var img=fc.image_url||placeholderImg(fc.name_kr);
       var qty=(D.collected[fc.bs_code]&&D.collected[fc.bs_code].qty)||1;
       h+='<div class="dc owned" data-bs="'+esc(fc.bs_code)+'">';
@@ -1432,9 +1484,14 @@ function renderColl(){
       h+='</div>';
     }
     h+='</div>';
+    if(shown.length<total){
+      h+='<div style="text-align:center;margin-top:14px"><button class="btn btn-p" onclick="_collLimit+=120;renderColl()">더 보기 (+120)</button></div>';
+    }
   }
 
   $('coll-r').innerHTML=h;
+  /* 세션 16 fix: 필터 details open 상태 복원 */
+  if(_prevCollFiltOpen){var _cfEl=$('coll-filt');if(_cfEl)_cfEl.open=true;}
   /* 클릭 핸들러 */
   var els=$('coll-r').querySelectorAll('.dc');
   for(var n=0;n<els.length;n++){

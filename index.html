@@ -547,6 +547,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <!-- 🃏 수집 탭 -->
 <div class="pnl" id="p-coll">
   <div class="st">🃏 내 수집함</div>
+  <div id="coll-summary-top"></div>
+  <div class="subtabs" id="coll-subtabs">
+    <button class="subtab on" onclick="setCollClass('pokemon',this)">🐾 포켓몬</button>
+    <button class="subtab" onclick="setCollClass('trainer',this)">🎫 트레이너</button>
+    <button class="subtab" onclick="setCollClass('energy',this)">⚡ 에너지</button>
+    <button class="subtab" onclick="setCollClass('stadium',this)">🏟️ 스타디움</button>
+  </div>
   <div id="coll-r"><div class="loading"><div class="spinner"></div><p>준비 중...</p></div></div>
 </div>
 
