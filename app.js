@@ -361,6 +361,20 @@ function buildTrainerIndexes(){
 var _abQuery='';
 var _abTypeFilter='all';
 
+/* 🎲 세션 17: 다시 뽑기 — 직전 자동 빌드 입력/요약 보관.
+   recipe는 renderDeckSheet에서 "아이 친화 요약 카드"로 렌더됨. */
+var _lastAutoBuild=null;
+/* {basicBsCode, targetPath, recipe:{protagonist, protagonistQty, drawName, drawQty, energyName, energyQty}} */
+
+/* Fisher–Yates 셔플 — 자동 빌드 다양성용. 원본 배열을 변조. */
+function shuffleArray(arr){
+  for(var i=arr.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    var tmp=arr[i];arr[i]=arr[j];arr[j]=tmp;
+  }
+  return arr;
+}
+
 /* 카드가 "자동 빌드 후보 Basic"인지 판정:
    - card_class === 'pokemon'
    - evolution_lines의 stage가 'basic' (진짜 기본 + Basic ex 포함, 예: 미라이돈 ex, 코라이돈 ex)
@@ -719,12 +733,34 @@ function runAutoBuild(basicCard,targetPath){
   counts=deckCounts(_deckBuilder);
   var deficit=targetTotal-counts.total;
   if(deficit>0){
-    fillEnergy(energyType,deficit,strict); /* 부족분 만큼 추가 */
+    var extra=fillEnergy(energyType,deficit,strict); /* 부족분 만큼 추가 */
+    if(extra&&extra.name&&!energyStats.name)energyStats=extra;
   }
 
   /* Step 7: 결과 요약 + UI 갱신 */
   counts=deckCounts(_deckBuilder);
   refreshDeckBuilder();
+
+  /* 세션 17: 레시피 카드 데이터 — 아이 친화 요약 (주인공/카드뽑기/에너지).
+     에너지 합계는 deckCounts.ene 사용. */
+  var recipe={
+    protagonist:basicCard.name_kr||'',
+    protagonistImg:basicCard.image_url||'',
+    protagonistQty:_deckBuilder.cards[basicCard.bs_code]||0,
+    targetPath:targetPath||'',
+    drawName:(trainerStats.firstDraw&&trainerStats.firstDraw.name)||'',
+    drawQty:(trainerStats.firstDraw&&trainerStats.firstDraw.qty)||0,
+    energyName:(energyStats&&energyStats.name)||'',
+    energyQty:counts.ene||0,
+    energyType:energyType
+  };
+  _lastAutoBuild={
+    basicBsCode:basicCard.bs_code,
+    targetPath:targetPath,
+    recipe:recipe,
+    isHalf:isHalf
+  };
+
   showAutoBuildResult({
     total:counts.total,
     target:targetTotal,
@@ -737,6 +773,20 @@ function runAutoBuild(basicCard,targetPath){
     evolutionStages:lineStats.stages,
     trainerMissing:trainerStats.missing
   });
+}
+
+/* 🎲 세션 17: 다시 뽑기 — 직전 자동 빌드를 동일 입력으로 재실행.
+   랜덤화 덕분에 포켓몬 동률/트레이너/에너지 선택이 달라져 매번 다른 덱이 나옴. */
+function rerollAutoBuild(){
+  if(!_lastAutoBuild){toast('먼저 자동 빌드를 해주세요','#f39c12');return;}
+  if(!_deckBuilder){toast('빌더가 열려있지 않아요','#e74c3c');return;}
+  var card=dbByCode[_lastAutoBuild.basicBsCode];
+  if(!card){toast('카드를 찾을 수 없어요','#e74c3c');return;}
+  /* 기존 덱 비우고 재실행 (확인 안 묻고 바로) */
+  _deckBuilder.cards={};
+  runAutoBuild(card,_lastAutoBuild.targetPath);
+  /* 시트가 이미 열려있으니 즉시 갱신 (500ms 대기 없이 시각 피드백) */
+  if(typeof renderDeckSheet==='function')renderDeckSheet();
 }
 
 /* Step 1~2: 포켓몬 라인 채우기
@@ -821,7 +871,9 @@ function fillPokemonLine(basicCard,targetPath,maxCopy){
       continue;
     }
 
-    /* 에이스성 점수 내림차순 정렬 — 강한 카드 우선 */
+    /* 에이스성 점수 내림차순 정렬 — 강한 카드 우선.
+       세션 17: 동률 카드는 셔플해서 "다시 뽑기" 시 다양성 확보. */
+    shuffleArray(ownedInGroup);
     ownedInGroup.sort(function(a,b){return b.aceScore-a.aceScore;});
 
     /* maxCopy까지 채우기 (여러 카드 섞어도 됨 — 같은 base_kr이면 진화 라인상 같은 역할) */
@@ -883,6 +935,7 @@ function fillTrainers(hasStage2,maxCopy,isHalf,energyType){
   var added=0;
   var missing=[];
   var usedBsCodes={}; /* 이미 추가한 카드는 다음 카테고리에서 제외 */
+  var firstDraw=null; /* 세션 17: 레시피 카드용 — 처음 뽑힌 draw_support 저장 */
 
   function addFromTag(tag){
     if(added>=trainerTarget)return;
@@ -908,14 +961,17 @@ function fillTrainers(hasStage2,maxCopy,isHalf,energyType){
       missing.push(tag);
       return;
     }
-    /* 대표 1종 선택: 첫 번째 (이미 trainerTagIndex 순서대로 들어가 있음).
-       필요하면 여기서 더 정교한 선택 로직 추가 가능 */
-    var chosen=owned[0];
+    /* 세션 17: 대표 1종 — 이전엔 owned[0] 고정이었으나 "다시 뽑기" 다양성을 위해
+       후보 중 랜덤 선택. 카테고리 하나당 후보가 보통 2~5개라 체감 변화 큼. */
+    var chosen=owned[Math.floor(Math.random()*owned.length)];
     var put=Math.min(maxCopy,chosen.qty,trainerTarget-added);
     if(put>0){
       _deckBuilder.cards[chosen.bs]=(_deckBuilder.cards[chosen.bs]||0)+put;
       usedBsCodes[chosen.bs]=true;
       added+=put;
+      if(tag==='draw_support'&&!firstDraw){
+        firstDraw={name:chosen.card.name_kr||'',qty:put};
+      }
     }
   }
 
@@ -932,7 +988,7 @@ function fillTrainers(hasStage2,maxCopy,isHalf,energyType){
     }
   }
 
-  return {added:added,missing:missing};
+  return {added:added,missing:missing,firstDraw:firstDraw};
 }
 
 /* Step 5~6: 에너지 채우기
@@ -951,61 +1007,67 @@ function fillEnergy(energyType,deficit,strict){
   };
   var wantedName=energyNameMap[energyType]||'무색 에너지';
 
-  /* 컬렉션에서 해당 기본 에너지 카드 찾기 */
-  var candidateBsCode=null;
+  /* 세션 17: 컬렉션에서 해당 기본 에너지 카드를 "모두" 수집 → 랜덤 1종 선택.
+     같은 타입의 다른 일러스트/세트가 여러 장 있으면 다시 뽑을 때 달라짐. */
+  var primaryCandidates=[];  /* 이름에 "기본" 포함 (확실한 기본 에너지) */
+  var fallbackCandidates=[]; /* "특수" 없는 타입 에너지 (폴백) */
   for(var bc in D.collected){
     var card=dbByCode[bc];
     if(!card||card.card_class!=='energy')continue;
     var nm=card.name_kr||'';
-    /* 기본 에너지 판정: 이름에 "기본" 또는 wantedName이 포함 */
     if(nm.indexOf(wantedName)>=0&&nm.indexOf('기본')>=0){
-      candidateBsCode=bc;
-      break;
-    }
-    /* 폴백: wantedName 포함하고 "특수"는 제외 */
-    if(nm.indexOf(wantedName)>=0&&nm.indexOf('특수')<0){
-      candidateBsCode=bc;
-      break;
+      primaryCandidates.push(card);
+    }else if(nm.indexOf(wantedName)>=0&&nm.indexOf('특수')<0){
+      fallbackCandidates.push(card);
     }
   }
-  /* 폴백 2: 컬렉션에 없으면 cardsDB에서 찾기 (도감 전체) */
-  if(!candidateBsCode){
+  var pool=primaryCandidates.length>0?primaryCandidates:fallbackCandidates;
+  var chosen=null;
+  if(pool.length>0){
+    chosen=pool[Math.floor(Math.random()*pool.length)];
+  }
+  /* 폴백 2: 컬렉션에 없으면 cardsDB 전체에서 첫 매칭 */
+  if(!chosen){
     for(var i=0;i<cardsDB.length;i++){
       var c=cardsDB[i];
       if(!c||c.card_class!=='energy')continue;
       var nm2=c.name_kr||'';
       if(nm2.indexOf(wantedName)>=0&&(nm2.indexOf('기본')>=0||nm2.indexOf('특수')<0)){
-        candidateBsCode=c.bs_code;
+        chosen=c;
         break;
       }
     }
   }
 
-  if(!candidateBsCode)return {added:0};
+  if(!chosen)return {added:0};
 
   /* 기본 에너지는 무제한 — maxCopy 제약 없이 추가 */
-  _deckBuilder.cards[candidateBsCode]=(_deckBuilder.cards[candidateBsCode]||0)+deficit;
-  return {added:deficit};
+  _deckBuilder.cards[chosen.bs_code]=(_deckBuilder.cards[chosen.bs_code]||0)+deficit;
+  return {added:deficit,name:chosen.name_kr||wantedName};
 }
 
-/* Step 7: 결과 토스트 + 현재 덱 시트 자동 펼치기 */
+/* Step 7: 결과 토스트 + 현재 덱 시트 자동 펼치기
+   세션 17: 아이 친화 톤 — "부족" 대신 응원/축하 문구로. */
 function showAutoBuildResult(stats){
   var msg='';
+  var bg='#27ae60';
   if(stats.total>=stats.target){
-    msg='🪄 자동 빌드 완료 — '+stats.total+'/'+stats.target;
+    msg='✨ 덱 완성! '+(stats.basicName||'')+' 덱 '+stats.total+'/'+stats.target;
   }else if(stats.total>=Math.floor(stats.target*0.75)){
-    msg='🪄 자동 빌드 완료 — '+stats.total+'/'+stats.target+' (일부 미달)';
+    msg='🎉 거의 다 됐어! '+stats.total+'/'+stats.target+'장';
+    bg='#3dc0ec';
   }else{
-    msg='⚠️ 컬렉션이 부족해요 — '+stats.total+'/'+stats.target+'만 채움';
+    msg='🌱 '+stats.total+'/'+stats.target+'장 — 카드를 더 모으면 더 멋져져!';
+    bg='#f39c12';
   }
-  toast(msg,stats.total>=stats.target?'#27ae60':'#f39c12');
+  toast(msg,bg);
 
-  /* 진화 라인 경고 */
+  /* 진화 라인 안내 — 경고가 아니라 "괜찮아" 응원으로 */
   if(stats.evolutionStages){
     var s=stats.evolutionStages;
     if(s.basic>0&&(s.stage1===0&&s.stage2===0&&s.mega===0)&&stats.targetPath){
       setTimeout(function(){
-        toast('"'+stats.targetPath+'" 진화 카드가 없어서 Basic만 추가됨','#f39c12');
+        toast('💪 '+stats.targetPath+'은 아직이지만, '+(stats.basicName||'기본 포켓몬')+'만으로도 멋진 덱이야!','#3dc0ec');
       },1500);
     }
   }
@@ -1860,6 +1922,7 @@ function newDeck(format){
     createdAt:Date.now(),
     updatedAt:Date.now()
   };
+  _lastAutoBuild=null; /* 세션 17: 새 덱 시작 시 레시피 초기화 */
   _deckPool='dex';
   _deckQuery='';
   _deckClassFilter='all';
@@ -1889,6 +1952,7 @@ function editDeck(id){
     createdAt:found.createdAt||Date.now(),
     updatedAt:found.updatedAt||Date.now()
   };
+  _lastAutoBuild=null; /* 세션 17: 기존 덱 편집 시 레시피 초기화 */
   _deckPool=_deckBuilder.pool;
   _deckQuery='';
   _deckClassFilter='all';
@@ -2257,8 +2321,27 @@ function renderDeckSheet(){
   var counts=deckCounts(_deckBuilder);
   var target=_deckBuilder.format==='half'?30:60;
   var h='';
+
+  /* 🎲 세션 17: 자동 빌드 직후라면 레시피 카드 표시 — 아이 친화 요약 + 다시 뽑기.
+     주인공 카드가 덱에 실제로 남아있을 때만 (수동 편집으로 지웠으면 자동 숨김). */
+  if(_lastAutoBuild&&_lastAutoBuild.recipe&&_deckBuilder.cards[_lastAutoBuild.basicBsCode]>0){
+    var r=_lastAutoBuild.recipe;
+    h+='<div class="recipe-card">';
+    h+='<div class="rc-title">🪄 자동 빌드 레시피';
+    h+='<button class="rc-reroll" onclick="rerollAutoBuild()" title="다시 뽑기">🎲 다시 뽑기</button>';
+    h+='</div>';
+    h+='<div class="rc-row"><span class="rc-ic">🌟</span><span class="rc-lbl">주인공</span><span class="rc-val">'+esc(r.protagonist)+'</span><span class="rc-qty">×'+r.protagonistQty+'</span></div>';
+    if(r.drawName){
+      h+='<div class="rc-row"><span class="rc-ic">🎴</span><span class="rc-lbl">카드 뽑기 도우미</span><span class="rc-val">'+esc(r.drawName)+'</span><span class="rc-qty">×'+r.drawQty+'</span></div>';
+    }
+    if(r.energyName){
+      h+='<div class="rc-row"><span class="rc-ic">⚡</span><span class="rc-lbl">에너지</span><span class="rc-val">'+esc(r.energyName)+'</span><span class="rc-qty">×'+r.energyQty+'</span></div>';
+    }
+    h+='</div>';
+  }
+
   if(counts.total===0){
-    h='<div class="dbm-empty" style="grid-column:none">덱이 비어있어요</div>';
+    h+='<div class="dbm-empty" style="grid-column:none">덱이 비어있어요</div>';
   }else{
     var order=['pokemon','trainer','energy','stadium'];
     for(var k=0;k<order.length;k++){

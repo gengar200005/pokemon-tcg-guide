@@ -251,6 +251,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .dbs-cat{font-family:var(--ft);font-size:.78rem;color:var(--accent);padding:8px 4px 4px;border-bottom:2px solid var(--accent);margin-bottom:4px;margin-top:6px}
 .dbs-cat:first-child{margin-top:0}
 
+/* 🎲 세션 17: 자동 빌드 레시피 카드 — 아이 친화 요약 + 다시 뽑기 */
+.recipe-card{background:linear-gradient(135deg,#fff7e0,#fffbec);border:1.5px solid #ffcb05;border-radius:14px;padding:10px 12px;margin-bottom:10px;box-shadow:0 2px 8px rgba(255,203,5,.15)}
+.recipe-card .rc-title{font-family:var(--ft);font-size:.82rem;color:#8a6500;display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.recipe-card .rc-reroll{margin-left:auto;background:linear-gradient(135deg,#ffcb05,#ffd54f);border:none;border-radius:14px;padding:5px 11px;font-family:var(--ft);font-size:.72rem;color:#333;cursor:pointer;box-shadow:0 2px 4px rgba(255,203,5,.3);display:flex;align-items:center;gap:3px}
+.recipe-card .rc-reroll:active{transform:scale(.95)}
+.recipe-card .rc-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.74rem;color:#5a4500}
+.recipe-card .rc-row .rc-ic{width:18px;text-align:center;font-size:.9rem;flex-shrink:0}
+.recipe-card .rc-row .rc-lbl{color:#8a6500;margin-right:4px;flex-shrink:0}
+.recipe-card .rc-row .rc-val{color:#3a2a00;font-family:var(--ft);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recipe-card .rc-row .rc-qty{color:#a07500;font-family:var(--ft);font-size:.7rem;margin-left:4px}
+
 /* 검증 결과 */
 .vr-list{padding:6px 14px 12px}
 .vr-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:.76rem;line-height:1.4}
