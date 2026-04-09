@@ -460,13 +460,19 @@ function onAutoBuildSearch(){
 
 /* 타입 필터 칩 렌더 */
 function renderAutoBuildFilters(){
-  var types=['all','풀','불','물','번개','초','격투','악','강철','페어리','드래곤','무'];
-  var labels={all:'🌟 전체','풀':'🌿 풀','불':'🔥 불','물':'💧 물','번개':'⚡ 번개','초':'🔮 초','격투':'👊 격투','악':'🌙 악','강철':'⚙️ 강철','페어리':'🧚 페어리','드래곤':'🐉 드래곤','무':'⭐ 무'};
+  /* 세션 15: 이모지 → SVG 심볼. 세션 14 버그 수정 — 기존 '불'/'무'는 DB 실제값('불꽃'/'무색')과 불일치해 필터 결과 0건이었음. 공식 TCG 11종으로 교정. */
+  var types=['all','풀','불꽃','물','번개','초','격투','악','강철','페어리','드래곤','무색'];
   var h='';
   for(var i=0;i<types.length;i++){
     var t=types[i];
     var active=(_abTypeFilter===t)?' active':'';
-    h+='<button class="fchip'+active+'" onclick="setAutoBuildType(\''+t+'\')">'+esc(labels[t]||t)+'</button>';
+    var label;
+    if(t==='all'){
+      label='<svg class="t-ico"><use href="#tt-colorless"/></svg> 전체';
+    }else{
+      label=typeIcon(t)+' '+esc(t);
+    }
+    h+='<button class="fchip'+active+'" onclick="setAutoBuildType(\''+t+'\')">'+label+'</button>';
   }
   $('abFilters').innerHTML=h;
 }
@@ -1146,8 +1152,11 @@ function showCardModal(c){
   $('mo').className='mo show';
 }
 function typeIcon(t){
-  var m={'풀':'🌿','불꽃':'🔥','물':'💧','번개':'⚡','초':'🔮','격투':'👊','악':'🌙','강철':'⚙️','드래곤':'🐉','무색':'⚪','요정':'🧚'};
-  return m[t]||'';
+  /* 세션 15: 이모지 → SVG 심볼. DB 실제값 기준 (공식 TCG 타입명 11종: 풀/불꽃/물/번개/초/격투/악/강철/페어리/드래곤/무색). */
+  var m={'풀':'tt-grass','불꽃':'tt-fire','물':'tt-water','번개':'tt-lightning','초':'tt-psychic','격투':'tt-fighting','악':'tt-dark','강철':'tt-steel','페어리':'tt-fairy','드래곤':'tt-dragon','무색':'tt-colorless'};
+  var id=m[t];
+  if(!id)return '';
+  return '<svg class="t-ico"><use href="#'+id+'"/></svg>';
 }
 function trainerSubLabel(s){
   return{item:'아이템',supporter:'서포터',fossil:'화석',tool:'포켓몬의 도구'}[s]||s;
@@ -1265,8 +1274,8 @@ function renderColl(){
   h+='<details class="coll-filters" id="coll-filt"><summary>🔍 필터 ('+filtered.length+'/'+collCards.length+'장 표시)</summary>';
   h+='<div class="fgroup"><div class="fl">속성</div><div class="frow">';
   h+=fchip('type','all','전체');
-  ['풀','불꽃','물','번개','초','격투','악','강철','드래곤','무색'].forEach(function(t){
-    h+=fchip('type',t,typeIcon(t)+' '+t);
+  ['풀','불꽃','물','번개','초','격투','악','강철','페어리','드래곤','무색'].forEach(function(t){
+    h+=fchipRaw('type',t,typeIcon(t)+' '+esc(t));
   });
   h+='</div></div>';
   h+='<div class="fgroup"><div class="fl">진화</div><div class="frow">';
@@ -1318,6 +1327,11 @@ function fchip(key,val,label){
   var active=_collFilters[key]===val;
   return'<button class="fchip'+(active?' active':'')+'" onclick="setCollFilter(\''+key+'\',\''+esc(val)+'\',this)">'+esc(label)+'</button>';
 }
+/* 세션 15: SVG 심볼 포함 라벨용 — HTML 이스케이프 안 함. 오직 typeIcon() 결과 + 타입명에만 사용. */
+function fchipRaw(key,val,labelHtml){
+  var active=_collFilters[key]===val;
+  return'<button class="fchip'+(active?' active':'')+'" onclick="setCollFilter(\''+key+'\',\''+esc(val)+'\',this)">'+labelHtml+'</button>';
+}
 
 /* ═══════════════════════════════════════════════════════════════
    🏗️ 덱 탭 — 커스텀 덱 빌더 (세션 11)
@@ -1339,8 +1353,8 @@ var _deckTypeFilter='all'; /* all|불꽃|물|... (포켓몬 타입 한정) */
 var _deckTrainerFilter='all'; /* all|supporter|item|tool|stadium (트레이너 한정) */
 var _deckBuilderRendering=false;
 
-/* 포켓몬 타입 11종 — DB의 pokemon_type 필드 값 */
-var POKEMON_TYPES=['불꽃','물','풀','번개','초','격투','악','강철','페어리','드래곤','노말'];
+/* 포켓몬 타입 11종 — DB의 pokemon_type 필드 값 (세션 15: '노말'→'무색' 버그 수정. DB 실제값 확인 완료) */
+var POKEMON_TYPES=['불꽃','물','풀','번개','초','격투','악','강철','페어리','드래곤','무색'];
 /* 트레이너 세부 — DB의 trainer_subtype 필드 값 */
 var TRAINER_SUBTYPES=[
   {key:'supporter',label:'서포트'},
@@ -1366,8 +1380,8 @@ function isBasicEnergy(c){
   /* 한국 카드는 "기본 불꽃 에너지" 같은 형식 또는 그냥 "불꽃 에너지" */
   /* 실용 휴리스틱: 이름이 "X 에너지" 형태고 "기본"이거나 카드 텍스트가 짧으면 기본 */
   if(n.indexOf('기본')>=0)return true;
-  /* 보강: 8가지 기본 타입명 매칭 */
-  var basicTypes=['불꽃','물','풀','번개','초','격투','악','강철','페어리','드래곤','노말'];
+  /* 보강: 11가지 기본 타입명 매칭 (세션 15: '노말'→'무색' 버그 수정) */
+  var basicTypes=['불꽃','물','풀','번개','초','격투','악','강철','페어리','드래곤','무색'];
   for(var i=0;i<basicTypes.length;i++){
     if(n===basicTypes[i]+' 에너지')return true;
   }
@@ -1563,74 +1577,7 @@ function renderDeckTab(){
   }
   h+='</div>';
 
-  /* 시판 덱 카탈로그 — 버튼 클릭 시 모달로 로드 */
-  h+='<div class="deck-section"><div class="sh"><h4>📦 시판 덱 카탈로그</h4></div>';
-  h+='<div style="text-align:center;padding:14px 12px"><button class="btn btn-b" onclick="loadCatalogModal()" style="width:100%;max-width:280px">📦 시판 덱 카탈로그 불러오기</button><div style="font-size:.68rem;color:var(--text3);margin-top:8px">한국 정발 시판 덱 제품 정보 (포켓몬코리아 공식)</div></div>';
-  h+='</div>';
-
   $('deck-r').innerHTML=h;
-}
-
-/* ─── 시판 덱 카탈로그 모달 ─── */
-var _catalogCache=null;
-function loadCatalogModal(){
-  /* 캐시 있으면 즉시 렌더 */
-  if(_catalogCache){renderCatalogModal(_catalogCache);return;}
-  /* 로딩 모달 */
-  $('mb').innerHTML='<h3>📦 시판 덱 카탈로그</h3><div style="text-align:center;padding:30px 10px;color:var(--text3);font-size:.85rem">불러오는 중...</div>';
-  $('mo').className='mo show';
-  fetch('data/korean_decks_catalog.json',{cache:'no-cache'})
-    .then(function(r){
-      if(!r.ok)throw new Error('HTTP '+r.status);
-      return r.json();
-    })
-    .then(function(data){
-      _catalogCache=data;
-      renderCatalogModal(data);
-    })
-    .catch(function(e){
-      $('mb').innerHTML='<h3>📦 시판 덱 카탈로그</h3><div style="text-align:center;padding:24px 10px;color:var(--red);font-size:.82rem">불러오기 실패<br><span style="font-size:.7rem;color:var(--text3)">'+esc(e.message||e)+'</span></div><div class="acts" style="margin-top:14px"><button class="btn btn-g" onclick="closeM()">닫기</button></div>';
-    });
-}
-function renderCatalogModal(data){
-  var decks=data.decks||[];
-  var h='<h3>📦 시판 덱 카탈로그</h3>';
-  h+='<p style="font-size:.72rem;color:var(--text3);text-align:center;margin-bottom:10px">한국 정발 제품 '+decks.length+'종 · 출처: 포켓몬코리아 공식</p>';
-  /* 시리즈별 그룹핑 */
-  var groups={};
-  var order=['MEGA','스칼렛&바이올렛','소드&실드','썬&문','XY','BW','기타'];
-  for(var i=0;i<decks.length;i++){
-    var s=decks[i].series||'기타';
-    if(!groups[s])groups[s]=[];
-    groups[s].push(decks[i]);
-  }
-  h+='<div style="max-height:60vh;overflow-y:auto;background:var(--bg3);border-radius:10px;padding:8px 10px">';
-  for(var k=0;k<order.length;k++){
-    var key=order[k];
-    var arr=groups[key];
-    if(!arr||!arr.length)continue;
-    h+='<div style="font-family:var(--ft);color:var(--accent);font-size:.78rem;padding:8px 0 6px;border-bottom:2px solid var(--accent);margin-top:6px">'+esc(key)+' ('+arr.length+')</div>';
-    h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px 0">';
-    for(var j=0;j<arr.length;j++){
-      var d=arr[j];
-      h+='<div style="background:var(--bg2);border-radius:8px;padding:6px;display:flex;flex-direction:column;align-items:center;text-align:center">';
-      if(d.image){
-        h+='<img src="'+esc(d.image)+'" style="width:100%;max-width:120px;height:auto;border-radius:6px;margin-bottom:6px" loading="lazy" onerror="this.style.display=\'none\'">';
-      }
-      h+='<div style="font-size:.7rem;line-height:1.3;min-height:2.6em;color:var(--text1);margin-bottom:6px">'+esc(d.name)+'</div>';
-      if(d.buy_url){
-        h+='<a href="'+esc(d.buy_url)+'" target="_blank" rel="noopener" style="display:inline-block;background:var(--accent);color:#fff;font-size:.66rem;padding:4px 10px;border-radius:14px;text-decoration:none;font-weight:600">🛒 구매</a>';
-      }else{
-        h+='<span style="font-size:.62rem;color:var(--text3)">단종</span>';
-      }
-      h+='</div>';
-    }
-    h+='</div>';
-  }
-  h+='</div>';
-  h+='<div class="acts" style="margin-top:14px"><button class="btn btn-g" onclick="closeM()">닫기</button></div>';
-  $('mb').innerHTML=h;
-  $('mo').className='mo show';
 }
 
 /* ─── 덱 상세 보기 모달 ─── */

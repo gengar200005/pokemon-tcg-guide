@@ -410,12 +410,94 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   .scan-frame{width:85vw}
   .subtab{font-size:.7rem;padding:7px 2px}
 }
+/* 타입 심볼 SVG 아이콘 — 세션 15 */
+.t-ico{width:1.1em;height:1.1em;vertical-align:-0.2em;display:inline-block;flex-shrink:0}
+.t-ico-lg{width:1.4em;height:1.4em;vertical-align:-0.3em}
+.h1-ico{width:1em;height:1em;vertical-align:-0.12em;margin-right:2px;filter:drop-shadow(0 2px 4px rgba(255,203,5,.4))}
 </style>
 </head>
 <body>
+<!-- ═══ 타입 심볼 SVG 스프라이트 (세션 15) ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- 풀 (잎사귀) -->
+    <symbol id="tt-grass" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#7db93f"/>
+      <path d="M12 4 Q6 8 6 14 Q6 18 12 20 Q18 18 18 14 Q18 8 12 4 Z" fill="#fff"/>
+      <path d="M12 7 Q9 10 9 14 Q9 17 12 18 Q15 17 15 14 Q15 10 12 7 Z" fill="#7db93f"/>
+    </symbol>
+    <!-- 불꽃 -->
+    <symbol id="tt-fire" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#e24e1b"/>
+      <path d="M12 4 C14 8 17 9 17 13 C17 17 14.5 19 12 19 C9.5 19 7 17 7 13 C7 10 9 9 10 6 C10.5 8 11 9 12 4 Z" fill="#fff"/>
+      <path d="M12 10 C13 12 14.5 13 14.5 15 C14.5 17 13.3 18 12 18 C10.7 18 9.5 17 9.5 15 C9.5 13.5 10.5 13 11 11 C11.3 12 11.5 12.5 12 10 Z" fill="#ffd33d"/>
+    </symbol>
+    <!-- 물 (물방울) -->
+    <symbol id="tt-water" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#3692dc"/>
+      <path d="M12 4 C8 10 6 13 6 15.5 C6 18.5 8.7 20 12 20 C15.3 20 18 18.5 18 15.5 C18 13 16 10 12 4 Z" fill="#fff"/>
+      <ellipse cx="10" cy="15" rx="1.5" ry="2" fill="#bde3ff"/>
+    </symbol>
+    <!-- 번개 -->
+    <symbol id="tt-lightning" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#f5c518"/>
+      <path d="M13 3 L6 13 L11 13 L9 21 L18 10 L13 10 L15 3 Z" fill="#fff" stroke="#8a6d00" stroke-width="0.8" stroke-linejoin="round"/>
+    </symbol>
+    <!-- 초 (눈) -->
+    <symbol id="tt-psychic" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#9b5ba5"/>
+      <ellipse cx="12" cy="12" rx="7" ry="4.5" fill="#fff"/>
+      <circle cx="12" cy="12" r="3" fill="#4a2252"/>
+      <circle cx="13" cy="11" r="1" fill="#fff"/>
+    </symbol>
+    <!-- 격투 (주먹) -->
+    <symbol id="tt-fighting" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#d97d2e"/>
+      <rect x="7" y="8" width="10" height="9" rx="2" fill="#fff"/>
+      <rect x="7" y="8" width="10" height="2" fill="#d97d2e"/>
+      <line x1="9.5" y1="10.5" x2="9.5" y2="17" stroke="#d97d2e" stroke-width="0.8"/>
+      <line x1="12" y1="10.5" x2="12" y2="17" stroke="#d97d2e" stroke-width="0.8"/>
+      <line x1="14.5" y1="10.5" x2="14.5" y2="17" stroke="#d97d2e" stroke-width="0.8"/>
+    </symbol>
+    <!-- 악 (원) -->
+    <symbol id="tt-dark" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#2d2d3f"/>
+      <circle cx="12" cy="12" r="7" fill="none" stroke="#fff" stroke-width="2"/>
+      <circle cx="12" cy="12" r="3" fill="#fff"/>
+    </symbol>
+    <!-- 강철 (기어) -->
+    <symbol id="tt-steel" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#8a9ba8"/>
+      <path d="M12 5 L13 7 L15.5 6.5 L16 9 L18 10 L17 12 L18 14 L16 15 L15.5 17.5 L13 17 L12 19 L11 17 L8.5 17.5 L8 15 L6 14 L7 12 L6 10 L8 9 L8.5 6.5 L11 7 Z" fill="#fff"/>
+      <circle cx="12" cy="12" r="3" fill="#8a9ba8"/>
+    </symbol>
+    <!-- 드래곤 (다이아몬드) -->
+    <symbol id="tt-dragon" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#b89830"/>
+      <path d="M12 4 L18 12 L12 20 L6 12 Z" fill="#fff"/>
+      <path d="M12 8 L15 12 L12 16 L9 12 Z" fill="#ffd84a"/>
+    </symbol>
+    <!-- 페어리 (하트) -->
+    <symbol id="tt-fairy" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#e58fc8"/>
+      <path d="M12 19 C8 16 5 13 5 10 C5 8 6.5 6.5 8.5 6.5 C10 6.5 11.3 7.5 12 9 C12.7 7.5 14 6.5 15.5 6.5 C17.5 6.5 19 8 19 10 C19 13 16 16 12 19 Z" fill="#fff"/>
+    </symbol>
+    <!-- 무색 (별) -->
+    <symbol id="tt-colorless" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="11" fill="#c9c9c9"/>
+      <circle cx="12" cy="12" r="7" fill="#fff"/>
+      <circle cx="12" cy="12" r="3.5" fill="#eaeaea"/>
+    </symbol>
+    <!-- h1 헤더용 피카츄 번개 (큰 사이즈) -->
+    <symbol id="pk-bolt" viewBox="0 0 32 32">
+      <path d="M18 2 L8 18 L15 18 L12 30 L24 12 L17 12 L20 2 Z" fill="#ffcb05" stroke="#3c5aa6" stroke-width="1.5" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+</svg>
+
 <div class="app">
   <div class="hdr">
-    <h1>⚡ 포켓몬 TCG 가이드</h1>
+    <h1><svg class="h1-ico"><use href="#pk-bolt"/></svg> 포켓몬 TCG 가이드</h1>
     <p>아빠와 함께하는 카드 배틀 모험!</p>
   </div>
   <div class="auth-strip" id="auth-strip">
