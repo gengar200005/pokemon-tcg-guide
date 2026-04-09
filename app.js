@@ -519,19 +519,495 @@ function renderBasicPokemonList(){
   grid.innerHTML=h;
 }
 
-/* Basic 선택 핸들러 — 단계 3에서 실제 자동 빌드 연결.
-   현재는 선택 확인용 플레이스홀더. */
+/* Basic 선택 핸들러 — 단계 3: 실제 자동 빌드 실행 */
 function selectBasicPokemon(bsCode){
   var card=dbByCode[bsCode];
   if(!card){toast('카드를 찾을 수 없어요','#e74c3c');return;}
-  /* TODO 단계 3: 단일/다중 진화 경로 판정 → 자동 빌드 실행 */
-  console.log('[AutoBuild] Basic 선택:',card.name_kr,bsCode);
-  toast('✅ 선택: '+card.name_kr+' (단계 3에서 자동 빌드 연결 예정)','#27ae60');
+
+  /* 진화 경로 탐색 (단일/다중 판정) */
+  var paths=findEvolutionPath(card);
+
+  if(paths.length===0){
+    /* Basic 자체로 완결 (진화 없음). 예: 미라이돈 ex, 코라이돈 ex */
+    closeAutoBuildModal();
+    confirmAndRunAutoBuild(card,null);
+  }else if(paths.length===1){
+    /* 단일 진화 경로 — 자동 진행 */
+    closeAutoBuildModal();
+    confirmAndRunAutoBuild(card,paths[0]);
+  }else{
+    /* 다중 진화 경로 (예: 이브이) — 경로 선택 모달 */
+    openEvolutionPathModal(card,paths);
+  }
 }
 
-/* 진화 경로 선택 모달 닫기 (단계 3 준비) */
-function closeEvolutionPathModal(){
+/* ═══════════════════════════════════════════════════════════════
+   🪄 세션 14: 자동 빌드 — 단계 3 (코어 알고리즘)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 컬렉션 수량 유틸 */
+function getOwnedQty(bsCode){
+  if(!D.collected||!D.collected[bsCode])return 0;
+  return D.collected[bsCode].qty||1;
+}
+
+/* 진화 경로 탐색:
+   Basic 카드에서 출발 → evolutionForwardIndex로 자식 → 자식 → 자식 (최대 3단계)
+   반환: 각 경로는 "최종 도달 base_kr 이름" 목록.
+   예) 파이리 → ['리자몽'] (단일)
+   예) 이브이 → ['샤미드','쥬피썬더','부스터',...] (다중)
+   예) 미라이돈 ex → [] (진화 없음)
+
+   우리는 자식의 base_kr를 모아서 **베이스 이름 집합**을 반환.
+   이브이 → 샤미드/쥬피썬더/... 8개 베이스.
+   파이리 → 리자드가 먼저 나오지만, 리자드의 자식(리자몽)도 같은 "리자몽 라인"이라
+     → 최종 단계까지 따라가서 "리자몽" 하나만 경로로 반환.
+*/
+function findEvolutionPath(basicCard){
+  var startName=basicCard.base_kr||basicCard.name_kr;
+  var ev=evolutionByCode[basicCard.bs_code];
+  if(ev&&ev.base_kr)startName=ev.base_kr;
+
+  /* BFS로 자식 수집 (3단계 제한) */
+  var visited={};
+  var finalBases={}; /* 최종 도달 베이스 이름 집합 */
+  visited[startName]=true;
+
+  /* 단계 1: startName의 직접 자식들 */
+  var directChildren=evolutionForwardIndex[startName]||[];
+  if(directChildren.length===0){
+    return []; /* 진화 없음 */
+  }
+
+  /* 각 직접 자식의 base_kr 집합 (여러 경로의 시작점) */
+  var rootBases={};
+  for(var i=0;i<directChildren.length;i++){
+    var childBase=directChildren[i].base_kr;
+    if(childBase&&childBase!==startName)rootBases[childBase]=true;
+  }
+
+  /* 각 rootBase별로 끝까지 따라가서 "최종 진화체 base_kr" 찾기 */
+  for(var rootBase in rootBases){
+    var finalBase=traceToFinalEvolution(rootBase,visited,0);
+    finalBases[finalBase]=true;
+  }
+
+  /* 결과: 최종 베이스 이름 배열 */
+  var paths=[];
+  for(var fb in finalBases)paths.push(fb);
+  return paths;
+}
+
+/* 재귀로 마지막 진화 단계까지 따라감.
+   같은 베이스 이름이 여러 단계에 퍼져있어도, 자식이 더 이상 없으면 거기가 끝.
+   메가 ex는 1진화 포지션이지만 "베이스→메가 ex"가 최종이라 자연스레 처리됨. */
+function traceToFinalEvolution(baseName,visited,depth){
+  if(depth>=3)return baseName; /* 깊이 제한 */
+  if(visited[baseName])return baseName; /* 순환 방지 */
+  visited[baseName]=true;
+
+  var nextChildren=evolutionForwardIndex[baseName]||[];
+  var nextBases={};
+  for(var i=0;i<nextChildren.length;i++){
+    var nb=nextChildren[i].base_kr;
+    if(nb&&nb!==baseName)nextBases[nb]=true;
+  }
+
+  var keys=Object.keys(nextBases);
+  if(keys.length===0)return baseName; /* 자식 없음 = 최종 */
+  /* 자식이 여럿이면 첫 번째로 (이런 경우는 드물고, 상위에서 분기된 상태일 것) */
+  return traceToFinalEvolution(keys[0],visited,depth+1);
+}
+
+/* 다중 진화 경로 선택 모달 */
+function openEvolutionPathModal(basicCard,paths){
+  $('epTitle').textContent='🌿 '+esc(basicCard.name_kr)+' 진화 경로';
+  $('epSub').textContent='어느 진화체 중심으로 짤까요?';
+  var listEl=$('epList');
+  var h='';
+  for(var i=0;i<paths.length;i++){
+    var pname=paths[i];
+    /* 대표 카드 찾기 — 해당 base_kr의 첫 번째 카드 이미지 사용 */
+    var repCard=null;
+    for(var j=0;j<cardsDB.length;j++){
+      var c=cardsDB[j];
+      if(c&&c.card_class==='pokemon'&&c.base_kr===pname){
+        repCard=c;
+        break;
+      }
+    }
+    /* 폴백: evolution_lines에서 찾기 */
+    if(!repCard){
+      for(var k=0;k<evolutionLines.length;k++){
+        if(evolutionLines[k].base_kr===pname){
+          repCard=dbByCode[evolutionLines[k].bs_code];
+          if(repCard)break;
+        }
+      }
+    }
+    var img=repCard?(repCard.image_url||placeholderImg(pname)):placeholderImg(pname);
+    /* 컬렉션에 있는지 표시 */
+    var hasInColl=false;
+    for(var bc in D.collected){
+      var cc=dbByCode[bc];
+      if(cc&&cc.base_kr===pname){hasInColl=true;break;}
+    }
+    var sub=hasInColl?'✅ 컬렉션에 있음':'⚠️ 컬렉션 없음 (부분 진화)';
+    h+='<div class="ep-item" onclick="chooseEvolutionPath(\''+esc(basicCard.bs_code)+'\',\''+esc(pname)+'\')">'
+      +'<img src="'+esc(img)+'" alt="'+esc(pname)+'" onerror="this.src=\''+placeholderImg(pname)+'\'">'
+      +'<div class="info"><div class="nm">'+esc(pname)+'</div><div class="sub">'+sub+'</div></div>'
+      +'</div>';
+  }
+  listEl.innerHTML=h;
+  $('epFs').className='ab-fs on';
+}
+
+function chooseEvolutionPath(basicBsCode,targetPath){
   $('epFs').className='ab-fs';
+  closeAutoBuildModal();
+  var card=dbByCode[basicBsCode];
+  if(!card){toast('카드를 찾을 수 없어요','#e74c3c');return;}
+  confirmAndRunAutoBuild(card,targetPath);
+}
+
+/* 자동 빌드 실행 전 확인:
+   - 빌더에 이미 카드 있으면 덮어쓰기 확인 */
+function confirmAndRunAutoBuild(basicCard,targetPath){
+  if(!_deckBuilder){toast('빌더가 열려있지 않아요','#e74c3c');return;}
+  var hasCards=false;
+  for(var bc in _deckBuilder.cards){
+    if(_deckBuilder.cards[bc]>0){hasCards=true;break;}
+  }
+  if(hasCards){
+    if(!confirm('현재 덱을 비우고 자동 빌드할까요?'))return;
+    _deckBuilder.cards={};
+  }
+  runAutoBuild(basicCard,targetPath);
+}
+
+/* ═══ 메인 자동 빌드 ═══
+   알고리즘 v2 Step 1~7
+   입력: basicCard (선택한 Basic 카드), targetPath (최종 진화 base_kr 이름 or null)
+*/
+function runAutoBuild(basicCard,targetPath){
+  var isHalf=_deckBuilder.format==='half';
+  var targetTotal=isHalf?30:60;
+  var strict=isHalf&&(_deckBuilder.strict!==false);
+  var maxCopy=strict?2:4;
+
+  /* Step 1~2: 포켓몬 라인 채우기 */
+  var lineStats=fillPokemonLine(basicCard,targetPath,maxCopy);
+
+  /* 에이스 타입 추출 (트레이너/에너지 분배용) */
+  var energyType=basicCard.pokemon_type||'무';
+
+  /* Step 4: 트레이너 자동 채우기 */
+  var trainerStats=fillTrainers(lineStats.hasStage2,maxCopy,isHalf,energyType);
+
+  /* Step 5: 에너지 채우기 (타입 맞춤) */
+  var counts=deckCounts(_deckBuilder);
+  var energyTarget=isHalf?6:11;
+  var energyStats=fillEnergy(energyType,energyTarget,strict);
+
+  /* Step 6: 빈 슬롯 보정 (에너지로 부족분 채움) */
+  counts=deckCounts(_deckBuilder);
+  var deficit=targetTotal-counts.total;
+  if(deficit>0){
+    fillEnergy(energyType,deficit,strict); /* 부족분 만큼 추가 */
+  }
+
+  /* Step 7: 결과 요약 + UI 갱신 */
+  counts=deckCounts(_deckBuilder);
+  refreshDeckBuilder();
+  showAutoBuildResult({
+    total:counts.total,
+    target:targetTotal,
+    pok:counts.pok,
+    trn:counts.trn,
+    ene:counts.ene,
+    std:counts.std,
+    basicName:basicCard.name_kr,
+    targetPath:targetPath,
+    evolutionStages:lineStats.stages,
+    trainerMissing:trainerStats.missing
+  });
+}
+
+/* Step 1~2: 포켓몬 라인 채우기
+   - Step 1: 선택한 Basic을 maxCopy 장 추가
+   - Step 2: targetPath까지 진화 단계별 자식 찾아서 컬렉션에 있는 만큼 추가
+   반환: {hasStage2:bool, stages:{basic:n, stage1:n, stage2:n, mega:n}, missing:[]}
+*/
+function fillPokemonLine(basicCard,targetPath,maxCopy){
+  var stages={basic:0,stage1:0,stage2:0,mega:0,other:0};
+  var missing=[];
+
+  /* Step 1: 에이스 Basic 투입 */
+  var basicOwned=getOwnedQty(basicCard.bs_code);
+  var basicQty=Math.min(maxCopy,basicOwned);
+  if(basicQty>0){
+    _deckBuilder.cards[basicCard.bs_code]=basicQty;
+    stages.basic+=basicQty;
+  }
+
+  /* targetPath가 없으면 (예: 미라이돈 ex) 종료 */
+  if(!targetPath)return {hasStage2:false,stages:stages,missing:missing};
+
+  /* Step 2: 진화 라인 타고 올라가기
+     startName에서 시작 → forward 탐색 → targetPath에 도달하거나 막다른 길까지 */
+  var startName=basicCard.base_kr||basicCard.name_kr;
+  var ev=evolutionByCode[basicCard.bs_code];
+  if(ev&&ev.base_kr)startName=ev.base_kr;
+
+  /* BFS: 각 단계에서 컬렉션에 있는 카드를 추가 */
+  var visited={};
+  visited[startName]=true;
+  var currentBase=startName;
+  var safety=0;
+  while(currentBase&&currentBase!==targetPath&&safety<5){
+    safety++;
+    /* currentBase의 자식들 중 targetPath 방향으로 가는 것 선택 */
+    var children=evolutionForwardIndex[currentBase]||[];
+    if(children.length===0)break;
+
+    /* 자식을 base_kr별로 그룹핑 */
+    var byBase={};
+    for(var i=0;i<children.length;i++){
+      var cb=children[i].base_kr;
+      if(!cb||cb===currentBase)continue;
+      if(!byBase[cb])byBase[cb]=[];
+      byBase[cb].push(children[i]);
+    }
+
+    /* targetPath 방향으로 갈 base_kr 선택 */
+    var nextBase=null;
+    if(byBase[targetPath]){
+      nextBase=targetPath;
+    }else{
+      /* 직접 일치 안 하면, 어느 base가 targetPath까지 이어지는지 탐색 */
+      for(var bname in byBase){
+        if(visited[bname])continue;
+        if(leadsToTarget(bname,targetPath,3)){nextBase=bname;break;}
+      }
+      /* 그래도 못 찾으면 첫 번째 */
+      if(!nextBase)nextBase=Object.keys(byBase)[0];
+    }
+
+    if(!nextBase)break;
+    visited[nextBase]=true;
+
+    /* nextBase 그룹의 카드들 중 컬렉션에 있는 것들을 수집 */
+    var groupCards=byBase[nextBase]||[];
+    var ownedInGroup=[];
+    for(var j=0;j<groupCards.length;j++){
+      var evCard=groupCards[j];
+      var dbCard=dbByCode[evCard.bs_code];
+      if(!dbCard)continue;
+      var owned=getOwnedQty(evCard.bs_code);
+      if(owned>0){
+        ownedInGroup.push({card:dbCard,ev:evCard,owned:owned,aceScore:getAceScore(dbCard)});
+      }
+    }
+
+    if(ownedInGroup.length===0){
+      missing.push(nextBase);
+      currentBase=nextBase; /* 다음 단계로 계속 진행 (중간 단계 비어도 끝까지 시도) */
+      continue;
+    }
+
+    /* 에이스성 점수 내림차순 정렬 — 강한 카드 우선 */
+    ownedInGroup.sort(function(a,b){return b.aceScore-a.aceScore;});
+
+    /* maxCopy까지 채우기 (여러 카드 섞어도 됨 — 같은 base_kr이면 진화 라인상 같은 역할) */
+    var remain=maxCopy;
+    for(var k=0;k<ownedInGroup.length&&remain>0;k++){
+      var g=ownedInGroup[k];
+      var put=Math.min(remain,g.owned,maxCopy);
+      if(put>0){
+        _deckBuilder.cards[g.card.bs_code]=(_deckBuilder.cards[g.card.bs_code]||0)+put;
+        remain-=put;
+        /* stage 카운팅 */
+        var st=g.ev.stage||'other';
+        if(stages.hasOwnProperty(st))stages[st]+=put;
+        else stages.other+=put;
+      }
+    }
+
+    currentBase=nextBase;
+  }
+
+  return {
+    hasStage2:stages.stage2>0,
+    stages:stages,
+    missing:missing
+  };
+}
+
+/* 재귀 판정: baseName에서 출발해 depth 내에 targetPath에 도달 가능한가? */
+function leadsToTarget(baseName,targetPath,depth){
+  if(depth<=0)return false;
+  if(baseName===targetPath)return true;
+  var children=evolutionForwardIndex[baseName]||[];
+  var seen={};
+  for(var i=0;i<children.length;i++){
+    var cb=children[i].base_kr;
+    if(!cb||seen[cb])continue;
+    seen[cb]=true;
+    if(leadsToTarget(cb,targetPath,depth-1))return true;
+  }
+  return false;
+}
+
+/* Step 4: 트레이너 자동 채우기
+   9단계 우선순위로 컬렉션의 트레이너 카테고리를 순회.
+   각 카테고리당 1종 선택해서 maxCopy까지.
+   반환: {added:n, missing:['tag1',...]}
+*/
+function fillTrainers(hasStage2,maxCopy,isHalf,energyType){
+  /* 수량 목표 (세션 14 컨펌 3/4) */
+  var trainerTarget=isHalf?11:25;
+
+  /* 우선순위 (evolution_accel은 Stage 2 있을 때만 위로) */
+  var priority=['draw_support','pokemon_search','gust'];
+  if(hasStage2)priority.push('evolution_accel');
+  priority=priority.concat(['energy_search','switch','recovery','energy_acceleration','healing']);
+  /* 조건부: 빈 슬롯 있으면 hand_disrupt/tool_defensive도 */
+  var lowPriority=['hand_disrupt','tool_defensive'];
+
+  var added=0;
+  var missing=[];
+  var usedBsCodes={}; /* 이미 추가한 카드는 다음 카테고리에서 제외 */
+
+  function addFromTag(tag){
+    if(added>=trainerTarget)return;
+    var bsCodes=trainerTagIndex[tag]||[];
+    /* 컬렉션에 있는 카드만 필터 */
+    var owned=[];
+    for(var i=0;i<bsCodes.length;i++){
+      var bs=bsCodes[i];
+      if(usedBsCodes[bs])continue;
+      var q=getOwnedQty(bs);
+      if(q<=0)continue;
+      var card=dbByCode[bs];
+      if(!card)continue;
+      /* energy_acceleration은 타입 매칭 — 이름/효과에 에이스 타입이 들어가야 */
+      if(tag==='energy_acceleration'){
+        var txt=(card.effect_text||'')+' '+(card.name_kr||'');
+        /* 에이스 타입 또는 '기본 에너지' 같은 범용 키워드 필요 */
+        if(txt.indexOf(energyType)<0&&txt.indexOf('기본 에너지')<0)continue;
+      }
+      owned.push({bs:bs,card:card,qty:q});
+    }
+    if(owned.length===0){
+      missing.push(tag);
+      return;
+    }
+    /* 대표 1종 선택: 첫 번째 (이미 trainerTagIndex 순서대로 들어가 있음).
+       필요하면 여기서 더 정교한 선택 로직 추가 가능 */
+    var chosen=owned[0];
+    var put=Math.min(maxCopy,chosen.qty,trainerTarget-added);
+    if(put>0){
+      _deckBuilder.cards[chosen.bs]=(_deckBuilder.cards[chosen.bs]||0)+put;
+      usedBsCodes[chosen.bs]=true;
+      added+=put;
+    }
+  }
+
+  /* 우선순위 순회 */
+  for(var i=0;i<priority.length;i++){
+    addFromTag(priority[i]);
+    if(added>=trainerTarget)break;
+  }
+  /* 여유 슬롯 있으면 저우선순위 태그도 */
+  if(added<trainerTarget){
+    for(var j=0;j<lowPriority.length;j++){
+      addFromTag(lowPriority[j]);
+      if(added>=trainerTarget)break;
+    }
+  }
+
+  return {added:added,missing:missing};
+}
+
+/* Step 5~6: 에너지 채우기
+   에이스 타입에 맞는 기본 에너지를 deficit만큼 추가.
+   기본 에너지는 무제한(룰상)이지만 컬렉션에 있는 것만 사용. 없으면 무색.
+   타입명 → 기본 에너지 카드명 매핑:
+     '풀'→'풀 에너지', '불'→'불 에너지', 등
+*/
+function fillEnergy(energyType,deficit,strict){
+  if(deficit<=0)return {added:0};
+  /* 타입 → 기본 에너지 이름 매핑 */
+  var energyNameMap={
+    '풀':'풀 에너지','불':'불 에너지','물':'물 에너지','번개':'번개 에너지',
+    '초':'초 에너지','격투':'격투 에너지','악':'악 에너지','강철':'강철 에너지',
+    '페어리':'페어리 에너지','드래곤':'드래곤 에너지','무':'무색 에너지'
+  };
+  var wantedName=energyNameMap[energyType]||'무색 에너지';
+
+  /* 컬렉션에서 해당 기본 에너지 카드 찾기 */
+  var candidateBsCode=null;
+  for(var bc in D.collected){
+    var card=dbByCode[bc];
+    if(!card||card.card_class!=='energy')continue;
+    var nm=card.name_kr||'';
+    /* 기본 에너지 판정: 이름에 "기본" 또는 wantedName이 포함 */
+    if(nm.indexOf(wantedName)>=0&&nm.indexOf('기본')>=0){
+      candidateBsCode=bc;
+      break;
+    }
+    /* 폴백: wantedName 포함하고 "특수"는 제외 */
+    if(nm.indexOf(wantedName)>=0&&nm.indexOf('특수')<0){
+      candidateBsCode=bc;
+      break;
+    }
+  }
+  /* 폴백 2: 컬렉션에 없으면 cardsDB에서 찾기 (도감 전체) */
+  if(!candidateBsCode){
+    for(var i=0;i<cardsDB.length;i++){
+      var c=cardsDB[i];
+      if(!c||c.card_class!=='energy')continue;
+      var nm2=c.name_kr||'';
+      if(nm2.indexOf(wantedName)>=0&&(nm2.indexOf('기본')>=0||nm2.indexOf('특수')<0)){
+        candidateBsCode=c.bs_code;
+        break;
+      }
+    }
+  }
+
+  if(!candidateBsCode)return {added:0};
+
+  /* 기본 에너지는 무제한 — maxCopy 제약 없이 추가 */
+  _deckBuilder.cards[candidateBsCode]=(_deckBuilder.cards[candidateBsCode]||0)+deficit;
+  return {added:deficit};
+}
+
+/* Step 7: 결과 토스트 + 현재 덱 시트 자동 펼치기 */
+function showAutoBuildResult(stats){
+  var msg='';
+  if(stats.total>=stats.target){
+    msg='🪄 자동 빌드 완료 — '+stats.total+'/'+stats.target;
+  }else if(stats.total>=Math.floor(stats.target*0.75)){
+    msg='🪄 자동 빌드 완료 — '+stats.total+'/'+stats.target+' (일부 미달)';
+  }else{
+    msg='⚠️ 컬렉션이 부족해요 — '+stats.total+'/'+stats.target+'만 채움';
+  }
+  toast(msg,stats.total>=stats.target?'#27ae60':'#f39c12');
+
+  /* 진화 라인 경고 */
+  if(stats.evolutionStages){
+    var s=stats.evolutionStages;
+    if(s.basic>0&&(s.stage1===0&&s.stage2===0&&s.mega===0)&&stats.targetPath){
+      setTimeout(function(){
+        toast('"'+stats.targetPath+'" 진화 카드가 없어서 Basic만 추가됨','#f39c12');
+      },1500);
+    }
+  }
+
+  /* 현재 덱 시트 자동 펼치기 (사용자가 바로 검토) */
+  setTimeout(function(){
+    if(typeof openDeckSheet==='function')openDeckSheet();
+  },500);
 }
 
 /* ═══════════════════════════════════════════════════════════════
