@@ -760,8 +760,25 @@ function runAutoBuild(basicCard,targetPath){
     energyType:energyType,
     pokQty:counts.pok||0,    /* 세션 17b: 포켓몬 합계 */
     trnQty:counts.trn||0,    /* 세션 17b: 트레이너 합계 (0이면 경고 행 노출) */
-    fillerAdded:(fillerStats&&fillerStats.added)||0
+    fillerAdded:(fillerStats&&fillerStats.added)||0,
+    fillerScanned:(fillerStats&&fillerStats.scanned)||0,  /* 세션 17d: 진단 — 컬렉션 총 스캔 개수 */
+    fillerMatched:(fillerStats&&fillerStats.matched)||0   /* 세션 17d: 진단 — 필터 통과 후보 개수 */
   };
+
+  /* 세션 17d: 콘솔 디버그 — 브라우저 F12로 확인 가능 */
+  if(typeof console!=='undefined'&&console.log){
+    console.log('[AutoBuild v17d]',{
+      basic:basicCard.name_kr,
+      type:energyType,
+      pokQty:counts.pok,
+      trnQty:counts.trn,
+      eneQty:counts.ene,
+      total:counts.total,
+      target:targetTotal,
+      filler:fillerStats,
+      collectionSize:Object.keys(D.collected||{}).length
+    });
+  }
   _lastAutoBuild={
     basicBsCode:basicCard.bs_code,
     targetPath:targetPath,
@@ -2416,7 +2433,11 @@ function renderDeckSheet(){
     /* 세션 17c: 합계 표시 — 사용자가 한눈에 포켓몬/트레이너/에너지 개수 진단 */
     var pokTarget=(_lastAutoBuild.isHalf?6:12);
     var pokLow=(typeof r.pokQty==='number'&&r.pokQty<pokTarget);
-    h+='<div class="rc-row'+(pokLow?' rc-warn':'')+'"><span class="rc-ic">🐉</span><span class="rc-lbl">포켓몬 합계</span><span class="rc-val">'+(r.pokQty||0)+'장'+(pokLow?' — 같은 타입 Basic이 더 필요해요':'')+'</span></div>';
+    h+='<div class="rc-row'+(pokLow?' rc-warn':'')+'"><span class="rc-ic">🐉</span><span class="rc-lbl">포켓몬 합계</span><span class="rc-val">'+(r.pokQty||0)+'/'+pokTarget+'장</span></div>';
+    /* 세션 17d: 진단 행 — Pokemon이 부족할 때 후보 스캔 결과 노출 (디버그) */
+    if(pokLow){
+      h+='<div class="rc-row rc-warn"><span class="rc-ic">🔍</span><span class="rc-lbl">진단</span><span class="rc-val">컬렉션 '+r.fillerScanned+'장 스캔 → 같은 타입('+esc(r.energyType||'?')+') Basic '+r.fillerMatched+'장 발견</span></div>';
+    }
     if(r.drawName){
       h+='<div class="rc-row"><span class="rc-ic">🎴</span><span class="rc-lbl">카드 뽑기 도우미</span><span class="rc-val">'+esc(r.drawName)+'</span><span class="rc-qty">×'+r.drawQty+'</span></div>';
     }else if(typeof r.trnQty==='number'&&r.trnQty===0){
