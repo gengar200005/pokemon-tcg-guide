@@ -497,7 +497,12 @@ function setAutoBuildType(t){
   renderBasicPokemonList();
 }
 
-/* Basic 포켓몬 그리드 렌더 — 에이스성 점수 내림차순 */
+/* Basic 포켓몬 그리드 렌더 — 세션 17f: 진화 라인 그룹핑 + 큰 카드.
+   - base_kr (evolution_lines) 기준으로 그룹화 → 같은 포켓몬의 모든 버전이 한 묶음
+   - 그룹 내부: 에이스 점수 내림 (ex/V 우선)
+   - 그룹 간: 그룹 최강 카드의 에이스 점수 내림 → 동률은 가나다
+   - 카드 크기: 한 줄 2장 (CSS .ab-group-grid)
+*/
 function renderBasicPokemonList(){
   var basics=getCollectionBasics();
   /* 필터 적용 */
@@ -506,35 +511,68 @@ function renderBasicPokemonList(){
     if(_abQuery&&b.card.name_kr&&b.card.name_kr.indexOf(_abQuery)<0)return false;
     return true;
   });
-  /* 정렬: 에이스성 점수 내림 → HP 내림 → 이름 가나다 */
-  filtered.sort(function(a,b){
-    var sa=getAceScore(a.card),sb=getAceScore(b.card);
-    if(sa!==sb)return sb-sa;
-    var ha=parseInt(a.card.hp,10)||0,hb=parseInt(b.card.hp,10)||0;
-    if(ha!==hb)return hb-ha;
-    return (a.card.name_kr||'').localeCompare(b.card.name_kr||'');
-  });
   /* 렌더 */
   var grid=$('abGrid');
   if(!filtered.length){
     grid.innerHTML='<div class="ab-empty"><div class="ei">🔍</div><p>조건에 맞는 기본 포켓몬이<br>없어요.</p></div>';
     return;
   }
-  var h='';
+
+  /* 그룹핑: base_kr (없으면 name_kr 폴백) */
+  var groups={};
   for(var i=0;i<filtered.length;i++){
     var b=filtered[i];
-    var c=b.card;
-    var img=c.image_url||placeholderImg(c.name_kr);
-    var nm=c.name_kr||'(이름 없음)';
-    /* ex 배지: Basic ex 카드 강조 */
-    var isEx=/\sex$/i.test(nm)||nm.indexOf(' ex ')>=0;
-    var exBadge=isEx?'<div class="exbadge">ex</div>':'';
-    h+='<div class="ab-card" onclick="selectBasicPokemon(\''+esc(c.bs_code)+'\')">'
-      +exBadge
-      +'<div class="qty">×'+b.owned+'</div>'
-      +'<img src="'+esc(img)+'" alt="'+esc(nm)+'" loading="lazy" onerror="this.src=\''+placeholderImg(nm)+'\'">'
-      +'<div class="nm">'+esc(nm)+'</div>'
-      +'</div>';
+    var ev=evolutionByCode[b.card.bs_code];
+    var key=(ev&&ev.base_kr)||b.card.name_kr||'?';
+    if(!groups[key])groups[key]=[];
+    groups[key].push(b);
+  }
+
+  /* 그룹 내부 정렬: 에이스 점수 내림 → HP 내림 → 이름 */
+  var groupKeys=Object.keys(groups);
+  for(var g=0;g<groupKeys.length;g++){
+    groups[groupKeys[g]].sort(function(a,b){
+      var sa=getAceScore(a.card),sb=getAceScore(b.card);
+      if(sa!==sb)return sb-sa;
+      var ha=parseInt(a.card.hp,10)||0,hb=parseInt(b.card.hp,10)||0;
+      if(ha!==hb)return hb-ha;
+      return (a.card.name_kr||'').localeCompare(b.card.name_kr||'');
+    });
+  }
+
+  /* 그룹 정렬: 그룹 내 최고 에이스 점수 → 동률은 이름 가나다 */
+  groupKeys.sort(function(ka,kb){
+    var ma=0,mb=0;
+    for(var i=0;i<groups[ka].length;i++)ma=Math.max(ma,getAceScore(groups[ka][i].card));
+    for(var j=0;j<groups[kb].length;j++)mb=Math.max(mb,getAceScore(groups[kb][j].card));
+    if(ma!==mb)return mb-ma;
+    return ka.localeCompare(kb);
+  });
+
+  /* HTML 빌드 */
+  var h='';
+  for(var k=0;k<groupKeys.length;k++){
+    var key=groupKeys[k];
+    var group=groups[key];
+    var totalQty=0,totalKinds=group.length;
+    for(var n=0;n<group.length;n++)totalQty+=group[n].owned;
+    h+='<div class="ab-group-hdr">🌿 '+esc(key)+' <span class="ab-group-meta">'+totalKinds+'종 · 총 '+totalQty+'장</span></div>';
+    h+='<div class="ab-group-grid">';
+    for(var m=0;m<group.length;m++){
+      var b2=group[m];
+      var c=b2.card;
+      var img=c.image_url||placeholderImg(c.name_kr);
+      var nm=c.name_kr||'(이름 없음)';
+      var isEx=/\sex$/i.test(nm)||nm.indexOf(' ex ')>=0;
+      var exBadge=isEx?'<div class="exbadge">ex</div>':'';
+      h+='<div class="ab-card" onclick="selectBasicPokemon(\''+esc(c.bs_code)+'\')">'
+        +exBadge
+        +'<div class="qty">×'+b2.owned+'</div>'
+        +'<img src="'+esc(img)+'" alt="'+esc(nm)+'" loading="lazy" onerror="this.src=\''+placeholderImg(nm)+'\'">'
+        +'<div class="nm">'+esc(nm)+'</div>'
+        +'</div>';
+    }
+    h+='</div>';
   }
   grid.innerHTML=h;
 }
