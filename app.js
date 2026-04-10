@@ -766,25 +766,52 @@ function runAutoBuild(basicCard,targetPath){
   };
 
   /* 세션 17d: 콘솔 디버그 — 브라우저 F12로 확인 가능 */
+  var debugInfo={
+    version:'v17e',
+    basic:basicCard.name_kr,
+    basicBs:basicCard.bs_code,
+    type:energyType,
+    pokQty:counts.pok,
+    trnQty:counts.trn,
+    eneQty:counts.ene,
+    total:counts.total,
+    target:targetTotal,
+    filler:fillerStats,
+    collectionSize:Object.keys(D.collected||{}).length
+  };
   if(typeof console!=='undefined'&&console.log){
-    console.log('[AutoBuild v17d]',{
-      basic:basicCard.name_kr,
-      type:energyType,
-      pokQty:counts.pok,
-      trnQty:counts.trn,
-      eneQty:counts.ene,
-      total:counts.total,
-      target:targetTotal,
-      filler:fillerStats,
-      collectionSize:Object.keys(D.collected||{}).length
-    });
+    console.log('[AutoBuild v17e]',debugInfo);
   }
+
+  /* 세션 17e: 진단 강제 노출 — Pokemon 채우기 실패 시 alert으로 정보 표시.
+     사용자가 캡처해서 공유 가능. 정상 빌드면 alert 없음. */
+  var pokeTargetCheck=isHalf?6:12;
+  if(counts.pok<pokeTargetCheck&&typeof alert==='function'){
+    setTimeout(function(){
+      alert('🔍 자동 빌드 진단 (v17e)\n\n'+
+        '주인공: '+debugInfo.basic+' ('+debugInfo.basicBs+')\n'+
+        '타입: '+debugInfo.type+'\n'+
+        '포켓몬: '+debugInfo.pokQty+'/'+pokeTargetCheck+'장\n'+
+        '트레이너: '+debugInfo.trnQty+'장\n'+
+        '에너지: '+debugInfo.eneQty+'장\n\n'+
+        '━━ 보강 진단 ━━\n'+
+        '컬렉션 총 카드: '+debugInfo.collectionSize+'장\n'+
+        '필러 스캔: '+(debugInfo.filler&&debugInfo.filler.scanned)+'장\n'+
+        '같은 타입 Basic 발견: '+(debugInfo.filler&&debugInfo.filler.matched)+'장\n'+
+        '추가됨: '+(debugInfo.filler&&debugInfo.filler.added)+'장\n\n'+
+        '※ 이 화면을 캡처해서 보내주세요.');
+    },800);
+  }
+
   _lastAutoBuild={
     basicBsCode:basicCard.bs_code,
     targetPath:targetPath,
     recipe:recipe,
-    isHalf:isHalf
+    isHalf:isHalf,
+    debug:debugInfo  /* 세션 17e: 진단 정보 영구 저장 */
   };
+  /* 세션 17e: 덱 객체에도 저장 → 새로고침/저장 후에도 레시피 카드 유지 */
+  if(_deckBuilder)_deckBuilder.lastAutoBuild=_lastAutoBuild;
 
   showAutoBuildResult({
     total:counts.total,
@@ -2049,9 +2076,11 @@ function editDeck(id){
     cards:normalizeDeckCards(found),
     isNew:false,
     createdAt:found.createdAt||Date.now(),
-    updatedAt:found.updatedAt||Date.now()
+    updatedAt:found.updatedAt||Date.now(),
+    lastAutoBuild:found.lastAutoBuild||null  /* 세션 17e: 저장된 레시피 복원 */
   };
-  _lastAutoBuild=null; /* 세션 17: 기존 덱 편집 시 레시피 초기화 */
+  /* 세션 17e: 저장된 자동 빌드 레시피가 있으면 복원, 없으면 초기화 */
+  _lastAutoBuild=_deckBuilder.lastAutoBuild||null;
   _deckPool=_deckBuilder.pool;
   _deckQuery='';
   _deckClassFilter='all';
@@ -2529,7 +2558,8 @@ function saveCurrentDeck(){
     strict:_deckBuilder.format==='half'?(_deckBuilder.strict!==false):true,
     cards:cardsArr,
     createdAt:_deckBuilder.createdAt,
-    updatedAt:_deckBuilder.updatedAt
+    updatedAt:_deckBuilder.updatedAt,
+    lastAutoBuild:_deckBuilder.lastAutoBuild||null  /* 세션 17e: 레시피도 함께 저장 */
   };
   if(!Array.isArray(D.customDecksV1))D.customDecksV1=[];
   /* upsert */
