@@ -1,0 +1,50 @@
+rules_version = '2';
+
+// ════════════════════════════════════════════════════════════════
+// Pokemon TCG Guide — Firestore Security Rules
+// ════════════════════════════════════════════════════════════════
+// 이 파일은 Firebase Console > Firestore Database > 규칙 탭에
+// 붙여넣기 후 "게시" 버튼을 눌러 배포해야 적용됩니다.
+//
+// 배포 방법:
+// 1. https://console.firebase.google.com/ 접속
+// 2. pokemon-tcg-268ce 프로젝트 선택
+// 3. 왼쪽 메뉴 "Firestore Database" → "규칙" 탭
+// 4. 아래 내용 전체를 복사해서 붙여넣기
+// 5. "게시" 버튼 클릭
+// ════════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ──────────────────────────────────────────────────────────
+    // users/{uid} — 사용자별 도감·덱 데이터
+    // ──────────────────────────────────────────────────────────
+    // - 본인은 항상 자기 문서 읽기/쓰기 가능
+    // - 가족 연결된 자녀 계정은 부모 문서도 읽기/쓰기 가능
+    //   (자녀의 users/{childUid}.linkedParentUid == 부모 uid 인 경우)
+    // ──────────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == uid ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.linkedParentUid == uid
+        )
+      );
+    }
+
+    // ──────────────────────────────────────────────────────────
+    // userIndex/{emailKey} — 이메일 → UID 역색인 (가족 연결용)
+    // ──────────────────────────────────────────────────────────
+    // - 로그인한 사용자는 누구나 조회 가능 (부모 이메일로 UID 찾기 위해)
+    // - 본인 UID와 일치하는 매핑만 생성/수정 가능
+    // ──────────────────────────────────────────────────────────
+    match /userIndex/{emailKey} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+    }
+
+  }
+}

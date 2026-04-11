@@ -30,6 +30,7 @@ try{
 var auth=firebase.auth();
 var db=firebase.firestore();
 var currentUser=null;
+var effectiveUid=null; /* 클라우드 읽기/쓰기에 사용할 UID — 가족 연결 시 부모 UID */
 
 /* ═══ Local State ═══ */
 var cardsDB=[]; /* 전체 카드 DB (메모리 캐시) */
@@ -134,17 +135,139 @@ function updateAuthUI(){
   if(!lbl||!st)return; /* DOM 아직 준비 전 */
   if(currentUser){
     lbl.textContent='로그아웃';
-    st.textContent='☁️ '+(currentUser.displayName||currentUser.email||'로그인됨');
+    var base='☁️ '+(currentUser.displayName||currentUser.email||'로그인됨');
+    if(effectiveUid && effectiveUid!==currentUser.uid){
+      base+=' · 👨‍👧 가족 공유중';
+    }
+    st.textContent=base;
   }else{
     lbl.textContent='Google 로그인';
     st.textContent='☁️ 로그인하면 클라우드 저장!';
   }
+  var linkBtn=$('link-btn');
+  if(linkBtn)linkBtn.style.display=currentUser?'inline-flex':'none';
+}
+/* 이메일 → UID 역색인 (가족 연결용). 로그인 시 본인 매핑을 기록 */
+function ensureUserIndex(){
+  if(!currentUser||!currentUser.email)return;
+  var key=currentUser.email.toLowerCase();
+  db.collection('userIndex').doc(key).set({
+    uid:currentUser.uid,
+    displayName:currentUser.displayName||'',
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  },{merge:true}).catch(function(e){console.warn('userIndex fail',e);});
+}
+/* 현재 로그인 사용자가 부모 계정에 연결되어 있는지 확인하고 effectiveUid 결정 */
+function resolveEffectiveUid(cb){
+  if(!currentUser){effectiveUid=null;if(cb)cb();return;}
+  db.collection('users').doc(currentUser.uid).get().then(function(doc){
+    if(doc.exists&&doc.data().linkedParentUid){
+      effectiveUid=doc.data().linkedParentUid;
+    }else{
+      effectiveUid=currentUser.uid;
+    }
+    if(cb)cb();
+  }).catch(function(e){
+    console.warn('resolveEffectiveUid fail',e);
+    effectiveUid=currentUser.uid;
+    if(cb)cb();
+  });
 }
 auth.onAuthStateChanged(function(u){
   currentUser=u;
-  updateAuthUI();
-  if(u)loadFromCloud();
+  if(u){
+    ensureUserIndex();
+    resolveEffectiveUid(function(){
+      updateAuthUI();
+      loadFromCloud();
+    });
+  }else{
+    effectiveUid=null;
+    updateAuthUI();
+  }
 });
+
+/* ═══ 가족 계정 연결 (부모 이메일로 도감 공유) ═══ */
+function openLinkModal(){
+  if(!currentUser){toast('먼저 Google 로그인이 필요해요','#e74c3c');return;}
+  var mb=$('mb');if(!mb)return;
+  var linked=(effectiveUid&&effectiveUid!==currentUser.uid);
+  var html='<h3>👨‍👧 가족 도감 공유</h3>';
+  if(linked){
+    html+='<p style="font-size:.82rem;line-height:1.55;color:var(--text2);text-align:center;margin:10px 0">이 계정은 현재 <b>부모 계정의 도감·덱을 공유</b>하고 있어요.<br>여기서 추가/수정한 내용은 부모 계정에도 그대로 반영돼요.</p>';
+    html+='<div style="background:#eaf6fc;padding:10px 12px;border-radius:10px;margin:12px 0;font-size:.72rem;color:#35637a"><b>연결된 부모 UID</b><br><code style="font-size:.68rem;word-break:break-all">'+esc(effectiveUid)+'</code></div>';
+    html+='<div class="acts"><button class="btn btn-g" onclick="closeM()">닫기</button><button class="btn btn-d" onclick="unlinkAccount()">🔓 연결 해제</button></div>';
+  }else{
+    html+='<p style="font-size:.82rem;line-height:1.55;color:var(--text2);text-align:center;margin:10px 0">부모님의 <b>Google 계정 이메일</b>을 입력하면<br>같은 도감·덱을 함께 사용할 수 있어요.</p>';
+    html+='<div style="background:#fff4e0;padding:10px 12px;border-radius:10px;margin:10px 0;font-size:.72rem;color:#8b6000;line-height:1.5">⚠️ 부모님이 이 앱에 <b>먼저 Google 로그인</b>을 한 번 해야 찾을 수 있어요.<br>⚠️ 연결 후에는 이 계정의 기존 도감·덱 데이터는 부모 계정 데이터로 <b>대체</b>됩니다.</div>';
+    html+='<input type="email" id="linkParentEmail" placeholder="부모님 이메일 (예: mom@gmail.com)" style="width:100%;padding:10px 12px;border:1.5px solid var(--cb);border-radius:10px;font-size:.9rem;margin:8px 0 14px;box-sizing:border-box" autocomplete="email">';
+    html+='<div class="acts"><button class="btn btn-g" onclick="closeM()">취소</button><button class="btn btn-p" onclick="submitLinkParent()">🔗 연결하기</button></div>';
+  }
+  mb.innerHTML=html;
+  $('mo').className='mo show';
+  setTimeout(function(){var el=$('linkParentEmail');if(el)el.focus();},80);
+}
+function submitLinkParent(){
+  if(!currentUser)return;
+  var input=$('linkParentEmail');
+  if(!input)return;
+  var email=(input.value||'').trim().toLowerCase();
+  if(!email||email.indexOf('@')<0){toast('올바른 이메일을 입력해 주세요','#e74c3c');return;}
+  if(currentUser.email&&email===currentUser.email.toLowerCase()){
+    toast('자기 자신과는 연결할 수 없어요','#e74c3c');return;
+  }
+  db.collection('userIndex').doc(email).get().then(function(doc){
+    if(!doc.exists){
+      toast('해당 이메일을 찾을 수 없어요. 부모님이 먼저 앱에 로그인해야 해요.','#e74c3c');
+      return;
+    }
+    var parentUid=doc.data().uid;
+    if(!parentUid){toast('매핑 정보가 잘못되었어요','#e74c3c');return;}
+    if(parentUid===currentUser.uid){toast('자기 자신과는 연결할 수 없어요','#e74c3c');return;}
+    db.collection('users').doc(currentUser.uid).set({
+      linkedParentUid:parentUid,
+      email:currentUser.email||'',
+      displayName:currentUser.displayName||''
+    },{merge:true}).then(function(){
+      effectiveUid=parentUid;
+      _localDirty=false;
+      closeM();
+      toast('✅ 가족 도감 연결 완료!','#2ecc71');
+      updateAuthUI();
+      loadFromCloud();
+    }).catch(function(e){
+      console.warn('link fail',e);
+      toast('연결 실패: '+(e.message||e),'#e74c3c');
+    });
+  }).catch(function(e){
+    console.warn('userIndex lookup fail',e);
+    toast('조회 실패: '+(e.message||e),'#e74c3c');
+  });
+}
+function unlinkAccount(){
+  if(!currentUser)return;
+  if(!confirm('가족 연결을 해제할까요?\n이 계정은 다시 자신의 (빈) 도감을 사용하게 돼요.\n부모 계정의 데이터는 그대로 남아있어요.'))return;
+  db.collection('users').doc(currentUser.uid).set({
+    linkedParentUid:firebase.firestore.FieldValue.delete()
+  },{merge:true}).then(function(){
+    effectiveUid=currentUser.uid;
+    _localDirty=false;
+    /* 로컬 D를 비워서 부모 데이터가 남지 않도록 */
+    D.collected={};
+    D.customDecksV1=[];
+    try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){}
+    closeM();
+    toast('🔓 가족 연결 해제됨','#e67e22');
+    updateAuthUI();
+    loadFromCloud();
+    if(_currentTab==='coll')renderColl();
+    if(_currentTab==='dex')renderDex();
+    if(_currentTab==='deck'){var dr=$('deck-r');if(dr)dr.dataset.rendered='';renderDeckTab();}
+  }).catch(function(e){
+    console.warn('unlink fail',e);
+    toast('해제 실패: '+(e.message||e),'#e74c3c');
+  });
+}
 
 /* ═══ Save / Sync ═══ */
 function sv(){
@@ -156,21 +279,25 @@ function sv(){
   }
 }
 function saveToCloud(){
-  if(!currentUser)return;
+  if(!currentUser||!effectiveUid)return;
   /* v4 데이터는 별도 필드(collectedV4)로 저장 — 기존 v3 cards/decks는 건드리지 않음 */
   /* customDecksV1도 별도 필드 — v3 decks 절대 안 건드림 */
-  db.collection('users').doc(currentUser.uid).set({
+  /* 가족 연결 상태면 부모 문서(effectiveUid)에 씀. 부모 본인의 displayName/email은 덮어쓰지 않음 */
+  var payload={
     collectedV4:D.collected,
     customDecksV1:D.customDecksV1||[],
     schemaVersion:'v4',
-    updatedAtV4:firebase.firestore.FieldValue.serverTimestamp(),
-    displayName:currentUser.displayName||'',
-    email:currentUser.email||''
-  },{merge:true}).then(function(){_localDirty=false;}).catch(function(e){console.warn('cloud save fail',e);});
+    updatedAtV4:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(effectiveUid===currentUser.uid){
+    payload.displayName=currentUser.displayName||'';
+    payload.email=currentUser.email||'';
+  }
+  db.collection('users').doc(effectiveUid).set(payload,{merge:true}).then(function(){_localDirty=false;}).catch(function(e){console.warn('cloud save fail',e);});
 }
 function loadFromCloud(){
-  if(!currentUser)return;
-  db.collection('users').doc(currentUser.uid).get().then(function(doc){
+  if(!currentUser||!effectiveUid)return;
+  db.collection('users').doc(effectiveUid).get().then(function(doc){
     if(doc.exists){
       var d=doc.data();
       if(d.collectedV4&&!_localDirty){
