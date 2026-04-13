@@ -3714,11 +3714,13 @@ function renderBdmPresetList(){
     var totalCards=0;
     for(var j=0;j<p.cards.length;j++)totalCards+=p.cards[j].qty;
     var seriesLabel=p.series==='MEGA'?'MEGA':'SV';
-    h+='<div class="bdm-preset-card" onclick="selectBdmPreset(\''+esc(p.id)+'\')">';
-    h+='<div class="pi">🎴</div>';
-    h+='<div class="pinfo"><div class="pn">'+esc(p.name_kr)+'</div>';
+    h+='<div class="bdm-preset-card">';
+    h+='<div class="pi" onclick="selectBdmPreset(\''+esc(p.id)+'\')">🎴</div>';
+    h+='<div class="pinfo" onclick="selectBdmPreset(\''+esc(p.id)+'\')" style="cursor:pointer"><div class="pn">'+esc(p.name_kr)+'</div>';
     h+='<div class="ps">'+seriesLabel+' · '+p.cards.length+'종 '+totalCards+'장</div></div>';
-    h+='<div class="parrow">›</div>';
+    h+='<div class="bdm-quick-btns">';
+    h+='<button class="bdm-quick-btn" onclick="event.stopPropagation();bdmQuickAdd(\''+esc(p.id)+'\')">한 번에<br>덱 추가</button>';
+    h+='</div>';
     h+='</div>';
   }
   h+='</div>';
@@ -3905,6 +3907,63 @@ function bdmRegisterAll(){
   renderBdmDetail();
   var msg='✅ '+count+'종 카드 일괄 등록 완료!';
   if(skipped>0)msg+=' ('+skipped+'종 스킵)';
+  toast(msg);
+}
+
+function bdmQuickAdd(presetId){
+  var presets=_bdmPresets.presets||[];
+  var p=null;
+  for(var i=0;i<presets.length;i++){
+    if(presets[i].id===presetId){p=presets[i];break;}
+  }
+  if(!p)return;
+  /* 1) 수집함에 일괄 등록 (4장 제한 스킵) */
+  var regCount=0,skipCount=0;
+  for(var j=0;j<p.cards.length;j++){
+    var bc=p.cards[j].bs_code;
+    var presetQty=p.cards[j].qty;
+    var card=dbByCode[bc]||null;
+    var basicEne=isBasicEnergy(card);
+    var existing=D.collected[bc];
+    var currentQty=existing?(existing.qty||1):0;
+    var maxAllowed=basicEne?9999:4;
+    var canAdd=Math.max(0,maxAllowed-currentQty);
+    var addQty=Math.min(presetQty,canAdd);
+    if(addQty>0){
+      D.collected[bc]={qty:currentQty+addQty,collectedAt:existing?existing.collectedAt:Date.now()};
+      regCount++;
+    }else if(!basicEne&&canAdd===0){
+      skipCount++;
+    }
+  }
+  /* 2) 내 덱으로 생성 */
+  var deckCards=[];
+  for(var k=0;k<p.cards.length;k++){
+    deckCards.push({bs_code:p.cards[k].bs_code,qty:p.cards[k].qty});
+  }
+  var totalInDeck=0;
+  for(var m=0;m<deckCards.length;m++)totalInDeck+=deckCards[m].qty;
+  var format=totalInDeck<=30?'half':'full';
+  var deckName=p.name_kr||'시판덱';
+  if(!Array.isArray(D.customDecksV1))D.customDecksV1=[];
+  D.customDecksV1.push({
+    id:'d_'+Date.now()+'_'+Math.floor(Math.random()*1000),
+    name:deckName,
+    format:format,
+    pool:'dex',
+    strict:format==='half',
+    cards:deckCards,
+    createdAt:Date.now(),
+    updatedAt:Date.now()
+  });
+  sv();
+  closeBulkDeck();
+  $('deck-r').dataset.rendered='';
+  renderDeckTab();
+  var msg='🎉 "'+deckName+'" 등록+덱 생성 완료!';
+  if(regCount>0)msg+=' ('+regCount+'종 등록';
+  if(skipCount>0)msg+=', '+skipCount+'종 스킵';
+  if(regCount>0)msg+=')';
   toast(msg);
 }
 
