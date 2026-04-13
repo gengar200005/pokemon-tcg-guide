@@ -2622,7 +2622,7 @@ function renderDeckSlotView(){
       h+='<img src="'+esc(img)+'" loading="lazy" onerror="this.src=\''+placeholderImg(c2.name_kr)+'\'">';
       h+='<div class="sq">×'+item.qty+'</div>';
       h+='<div class="sminus">−</div>';
-      h+='<div class="sr-lbl">'+esc(c2.name_kr||'')+'</div>';
+      h+='<div class="slot-name">'+esc(c2.name_kr||'')+'</div>';
       h+='</div>';
     }
   }
