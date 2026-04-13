@@ -2097,13 +2097,12 @@ function renderDeckTab(){
 
   /* 새 덱 만들기 */
   h+='<div class="st">🆕 새 덱 만들기</div>';
-  h+='<div class="deck-new-btns">';
+  h+='<div class="deck-new-btns" style="grid-template-columns:1fr 1fr;margin-bottom:8px">';
   h+='<button class="deck-new-btn" onclick="newDeck(\'full\')"><span class="em">🎴</span>풀덱<span class="sub">60장 · 정식 룰</span></button>';
   h+='<button class="deck-new-btn half" onclick="newDeck(\'half\')"><span class="em">👨‍👦</span>하프덱<span class="sub">30장 · 아이와 함께</span></button>';
   h+='</div>';
-
   /* 시판덱 일괄등록 */
-  h+='<button class="deck-new-btn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,#e67e22,#f39c12)" onclick="openBulkDeck()"><span class="em">📦</span>시판덱 일괄등록<span class="sub">구매한 시판덱 카드를 한번에 등록</span></button>';
+  h+='<div style="margin-bottom:14px"><button class="deck-new-btn" style="width:100%;background:linear-gradient(135deg,#e67e22,#f39c12);box-shadow:0 3px 12px rgba(230,126,34,.35)" onclick="openBulkDeck()"><span class="em">📦</span>시판덱 일괄등록<span class="sub">구매한 시판덱 카드를 한번에 등록</span></button></div>';
 
   /* 내 덱 목록 */
   h+='<div class="deck-section"><div class="sh"><h4>📋 내 덱</h4></div>';
