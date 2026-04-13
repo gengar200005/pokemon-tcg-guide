@@ -2102,6 +2102,9 @@ function renderDeckTab(){
   h+='<button class="deck-new-btn half" onclick="newDeck(\'half\')"><span class="em">👨‍👦</span>하프덱<span class="sub">30장 · 아이와 함께</span></button>';
   h+='</div>';
 
+  /* 시판덱 일괄등록 */
+  h+='<button class="deck-new-btn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,#e67e22,#f39c12)" onclick="openBulkDeck()"><span class="em">📦</span>시판덱 일괄등록<span class="sub">구매한 시판덱 카드를 한번에 등록</span></button>';
+
   /* 내 덱 목록 */
   h+='<div class="deck-section"><div class="sh"><h4>📋 내 덱</h4></div>';
   var decks=D.customDecksV1||[];
@@ -3674,6 +3677,284 @@ function selectScanModel(id){
   $('scanModelMenu').className='scan-model-menu';
   var m=getCurrentScanModel();
   toast('🤖 '+m.label+' 선택됨','#3dc0ec');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   📦 시판덱 일괄등록 (Bulk Deck Registration)
+   ═══════════════════════════════════════════════════════════════ */
+var PRESET_URL='https://gengar200005.github.io/pokemon-tcg-guide/data/starter_deck_presets.json';
+var _bdmPresets=null; /* 캐시된 프리셋 데이터 */
+var _bdmCurrentPreset=null; /* 현재 선택된 프리셋 */
+var _bdmCardStates={}; /* bs_code → {presetQty, ownedQty, addQty, maxed, card} */
+
+function openBulkDeck(){
+  $('bdm').className='bdm show';
+  $('bdmTitle').textContent='📦 시판덱 일괄등록';
+  _bdmCurrentPreset=null;
+  _bdmCardStates={};
+  renderBdmPresetList();
+}
+function closeBulkDeck(){
+  $('bdm').className='bdm';
+  _bdmCurrentPreset=null;
+  _bdmCardStates={};
+}
+
+function renderBdmPresetList(){
+  var ct=$('bdmContent');
+  if(!_bdmPresets){
+    ct.innerHTML='<div class="bdm-desc">시판덱 목록을 불러오는 중...</div><div style="text-align:center;padding:40px"><div class="spinner"></div></div>';
+    loadBdmPresets(function(){renderBdmPresetList();});
+    return;
+  }
+  var h='<div class="bdm-desc">구매한 시판덱을 선택하면 포함된 카드를 확인하고 일괄 등록할 수 있어요. 이미 4장을 보유한 카드는 자동으로 건너뜁니다.</div>';
+  h+='<div class="bdm-presets">';
+  var presets=_bdmPresets.presets||[];
+  for(var i=0;i<presets.length;i++){
+    var p=presets[i];
+    var totalCards=0;
+    for(var j=0;j<p.cards.length;j++)totalCards+=p.cards[j].qty;
+    var seriesLabel=p.series==='MEGA'?'MEGA':'SV';
+    h+='<div class="bdm-preset-card" onclick="selectBdmPreset(\''+esc(p.id)+'\')">';
+    h+='<div class="pi">🎴</div>';
+    h+='<div class="pinfo"><div class="pn">'+esc(p.name_kr)+'</div>';
+    h+='<div class="ps">'+seriesLabel+' · '+p.cards.length+'종 '+totalCards+'장</div></div>';
+    h+='<div class="parrow">›</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+  ct.innerHTML=h;
+}
+
+function loadBdmPresets(cb){
+  fetch(PRESET_URL).then(function(r){return r.json();}).then(function(data){
+    _bdmPresets=data;
+    if(cb)cb();
+  }).catch(function(e){
+    console.warn('시판덱 프리셋 로드 실패:',e);
+    /* 로컬 fallback 시도 */
+    fetch('data/starter_deck_presets.json').then(function(r){return r.json();}).then(function(data){
+      _bdmPresets=data;
+      if(cb)cb();
+    }).catch(function(e2){
+      toast('시판덱 데이터 로드 실패','#e74c3c');
+    });
+  });
+}
+
+function selectBdmPreset(presetId){
+  var presets=_bdmPresets.presets||[];
+  var p=null;
+  for(var i=0;i<presets.length;i++){
+    if(presets[i].id===presetId){p=presets[i];break;}
+  }
+  if(!p){toast('프리셋을 찾을 수 없어요','#e74c3c');return;}
+  _bdmCurrentPreset=p;
+  $('bdmTitle').textContent='📦 '+p.name_kr;
+  buildBdmCardStates();
+  renderBdmDetail();
+}
+
+function buildBdmCardStates(){
+  _bdmCardStates={};
+  if(!_bdmCurrentPreset)return;
+  var cards=_bdmCurrentPreset.cards;
+  for(var i=0;i<cards.length;i++){
+    var item=cards[i];
+    var bc=item.bs_code;
+    var presetQty=item.qty;
+    var ownedQty=0;
+    if(D.collected[bc])ownedQty=D.collected[bc].qty||1;
+    var card=dbByCode[bc]||null;
+    /* 기본 에너지는 4장 제한 없음 (기존 isBasicEnergy 함수 활용) */
+    var basicEne=isBasicEnergy(card);
+    var maxAllowed=basicEne?9999:4;
+    var canAdd=Math.max(0,maxAllowed-ownedQty);
+    var addQty=Math.min(presetQty,canAdd);
+    var maxed=canAdd===0&&!basicEne;
+    _bdmCardStates[bc]={
+      presetQty:presetQty,
+      ownedQty:ownedQty,
+      addQty:addQty,
+      maxed:maxed,
+      registered:false,
+      card:card,
+      isBasicEnergy:basicEne
+    };
+  }
+}
+
+function renderBdmDetail(){
+  if(!_bdmCurrentPreset)return;
+  var cards=_bdmCurrentPreset.cards;
+  var totalNew=0,totalSkip=0,totalCards=cards.length;
+  for(var i=0;i<cards.length;i++){
+    var st=_bdmCardStates[cards[i].bs_code];
+    if(st){
+      if(st.maxed||st.addQty===0)totalSkip++;
+      else if(!st.registered)totalNew++;
+    }
+  }
+
+  var h='';
+  /* 진행 상태 바 */
+  var registered=0;
+  for(var bc in _bdmCardStates)if(_bdmCardStates[bc].registered)registered++;
+  var pct=totalCards>0?Math.round((registered/(totalCards-totalSkip||1))*100):0;
+  if(totalCards===totalSkip)pct=100;
+
+  h+='<div class="bdm-detail-hdr">';
+  h+='<span class="dh-name">'+esc(_bdmCurrentPreset.name_kr)+'</span>';
+  h+='<span class="dh-stats">등록 가능 '+(totalCards-totalSkip)+'종 · 스킵 '+totalSkip+'종</span>';
+  h+='</div>';
+  h+='<div class="bdm-progress"><div class="prog-bar-wrap"><div class="prog-bar" style="width:'+pct+'%"></div></div><span class="prog-text">'+registered+'/'+(totalCards-totalSkip)+' 등록</span></div>';
+
+  /* 카드 그리드 */
+  h+='<div class="bdm-cards-grid">';
+  for(var k=0;k<cards.length;k++){
+    var bc2=cards[k].bs_code;
+    var st2=_bdmCardStates[bc2];
+    if(!st2)continue;
+    var c=st2.card;
+    var img=c?(c.image_url||placeholderImg(c.name_kr)):placeholderImg(bc2);
+    var name=c?(c.name_kr||bc2):bc2;
+    var cls='bdm-card';
+    if(st2.registered)cls+=' owned';
+    if(st2.maxed)cls+=' maxed';
+
+    h+='<div class="'+cls+'" data-bc="'+esc(bc2)+'">';
+    h+='<img class="bdm-card-img" src="'+img+'" loading="lazy" onerror="this.src=\''+placeholderImg(name)+'\'" alt="'+esc(name)+'">';
+    h+='<div class="bdm-qty-badge">×'+st2.presetQty+'</div>';
+    if(st2.ownedQty>0&&!st2.maxed){
+      h+='<div class="bdm-own-badge">'+st2.ownedQty+'장 보유</div>';
+    }
+    if(st2.maxed){
+      /* 음영처리 + 소지중 표시 (CSS ::after로 처리) */
+    }else if(st2.registered){
+      h+='<div class="bdm-add-badge">+'+st2.addQty+' 등록됨</div>';
+    }else if(st2.addQty>0){
+      h+='<button class="bdm-card-btn" onclick="event.stopPropagation();bdmRegisterOne(\''+esc(bc2)+'\')">+'+st2.addQty+' 등록</button>';
+    }else{
+      h+='<div class="bdm-skip-badge">스킵</div>';
+    }
+    h+='<div class="bdm-card-name">'+esc(name)+'</div>';
+    h+='</div>';
+  }
+  h+='</div>';
+
+  /* 하단 버튼 */
+  var allDone=true;
+  var anyRegistered=false;
+  for(var bc3 in _bdmCardStates){
+    var s3=_bdmCardStates[bc3];
+    if(!s3.maxed&&s3.addQty>0&&!s3.registered)allDone=false;
+    if(s3.registered)anyRegistered=true;
+  }
+  h+='<div class="bdm-bot">';
+  h+='<button class="bdm-btn secondary" onclick="bdmBackToList()" style="flex:.6">← 목록</button>';
+  if(!allDone){
+    h+='<button class="bdm-btn primary" onclick="bdmRegisterAll()">일괄 등록</button>';
+  }
+  if(allDone||anyRegistered){
+    h+='<button class="bdm-btn secondary" onclick="bdmSendToDeck()">나의 덱으로 보내기</button>';
+  }
+  h+='</div>';
+
+  $('bdmContent').innerHTML=h;
+}
+
+function bdmRegisterOne(bc){
+  var st=_bdmCardStates[bc];
+  if(!st||st.maxed||st.addQty===0||st.registered)return;
+  var existing=D.collected[bc];
+  var currentQty=existing?existing.qty||1:0;
+  var newQty=currentQty+st.addQty;
+  if(!st.isBasicEnergy&&newQty>4)newQty=4;
+  D.collected[bc]={
+    qty:newQty,
+    collectedAt:existing?existing.collectedAt:Date.now()
+  };
+  st.registered=true;
+  st.ownedQty=newQty;
+  sv();
+  renderBdmDetail();
+  toast('✅ '+((st.card&&st.card.name_kr)||bc)+' +'+st.addQty+'장 등록');
+}
+
+function bdmRegisterAll(){
+  var count=0;
+  var skipped=0;
+  for(var bc in _bdmCardStates){
+    var st=_bdmCardStates[bc];
+    if(st.maxed||st.addQty===0||st.registered){
+      if(st.maxed)skipped++;
+      continue;
+    }
+    var existing=D.collected[bc];
+    var currentQty=existing?existing.qty||1:0;
+    var newQty=currentQty+st.addQty;
+    if(!st.isBasicEnergy&&newQty>4)newQty=4;
+    D.collected[bc]={
+      qty:newQty,
+      collectedAt:existing?existing.collectedAt:Date.now()
+    };
+    st.registered=true;
+    st.ownedQty=newQty;
+    count++;
+  }
+  sv();
+  renderBdmDetail();
+  var msg='✅ '+count+'종 카드 일괄 등록 완료!';
+  if(skipped>0)msg+=' ('+skipped+'종 스킵)';
+  toast(msg);
+}
+
+function bdmBackToList(){
+  _bdmCurrentPreset=null;
+  _bdmCardStates={};
+  $('bdmTitle').textContent='📦 시판덱 일괄등록';
+  renderBdmPresetList();
+}
+
+function bdmSendToDeck(){
+  if(!_bdmCurrentPreset)return;
+  var cards=_bdmCurrentPreset.cards;
+  var deckCards={};
+  /* 등록된 카드만 덱에 넣기 (프리셋 수량 그대로) */
+  for(var i=0;i<cards.length;i++){
+    var bc=cards[i].bs_code;
+    var st=_bdmCardStates[bc];
+    if(!st)continue;
+    /* 등록 안 됐어도 이미 소유중이면 덱에 포함 */
+    if(st.registered||st.ownedQty>0){
+      deckCards[bc]=cards[i].qty;
+    }
+  }
+  var totalInDeck=0;
+  for(var k in deckCards)totalInDeck+=deckCards[k];
+  var format=totalInDeck<=30?'half':'full';
+  var deckName=_bdmCurrentPreset.name_kr||'시판덱';
+  var newDeckObj={
+    id:'d_'+Date.now()+'_'+Math.floor(Math.random()*1000),
+    name:deckName,
+    format:format,
+    pool:'dex',
+    strict:format==='half',
+    cards:[],
+    createdAt:Date.now(),
+    updatedAt:Date.now()
+  };
+  for(var bc2 in deckCards){
+    newDeckObj.cards.push({bs_code:bc2,qty:deckCards[bc2]});
+  }
+  if(!Array.isArray(D.customDecksV1))D.customDecksV1=[];
+  D.customDecksV1.push(newDeckObj);
+  sv();
+  closeBulkDeck();
+  /* 덱 탭 갱신 */
+  $('deck-r').dataset.rendered='';
+  renderDeckTab();
+  toast('🎉 "'+deckName+'" 덱이 생성되었어요!');
 }
 
 /* ═══════════════════════════════════════════════════════════════
