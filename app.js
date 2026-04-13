@@ -3917,8 +3917,8 @@ function bdmQuickAdd(presetId){
     if(presets[i].id===presetId){p=presets[i];break;}
   }
   if(!p)return;
-  /* 1) 수집함에 일괄 등록 (4장 제한 스킵) */
-  var regCount=0,skipCount=0;
+  /* 1) 수집함에 부족한 카드만 등록 (이미 충분하면 건드리지 않음) */
+  var regCount=0,skipCount=0,alreadyCount=0;
   for(var j=0;j<p.cards.length;j++){
     var bc=p.cards[j].bs_code;
     var presetQty=p.cards[j].qty;
@@ -3926,15 +3926,20 @@ function bdmQuickAdd(presetId){
     var basicEne=isBasicEnergy(card);
     var existing=D.collected[bc];
     var currentQty=existing?(existing.qty||1):0;
-    var maxAllowed=basicEne?9999:4;
-    var canAdd=Math.max(0,maxAllowed-currentQty);
-    var addQty=Math.min(presetQty,canAdd);
-    if(addQty>0){
-      D.collected[bc]={qty:currentQty+addQty,collectedAt:existing?existing.collectedAt:Date.now()};
-      regCount++;
-    }else if(!basicEne&&canAdd===0){
-      skipCount++;
+    if(currentQty>=presetQty){
+      /* 이미 필요한 만큼 보유 → 수집함 변경 없이 스킵 */
+      alreadyCount++;
+      continue;
     }
+    /* 부족분만 추가 (4장 제한 적용) */
+    var maxAllowed=basicEne?9999:4;
+    var targetQty=Math.min(presetQty,maxAllowed);
+    if(currentQty>=targetQty){
+      alreadyCount++;
+      continue;
+    }
+    D.collected[bc]={qty:targetQty,collectedAt:existing?existing.collectedAt:Date.now()};
+    regCount++;
   }
   /* 2) 내 덱으로 생성 */
   var deckCards=[];
@@ -3960,10 +3965,9 @@ function bdmQuickAdd(presetId){
   closeBulkDeck();
   $('deck-r').dataset.rendered='';
   renderDeckTab();
-  var msg='🎉 "'+deckName+'" 등록+덱 생성 완료!';
-  if(regCount>0)msg+=' ('+regCount+'종 등록';
-  if(skipCount>0)msg+=', '+skipCount+'종 스킵';
-  if(regCount>0)msg+=')';
+  var msg='🎉 "'+deckName+'" 덱 생성 완료!';
+  if(regCount>0)msg+=' ('+regCount+'종 추가 등록)';
+  else if(alreadyCount>0)msg+=' (모든 카드 이미 보유)';
   toast(msg);
 }
 
