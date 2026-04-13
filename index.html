@@ -230,6 +230,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .db-card.has .qm{display:flex}
 .dbm-empty{grid-column:1/-1;text-align:center;padding:30px 10px;color:var(--text3);font-size:.8rem}
 
+/* ═══ 덱 슬롯 뷰 ═══ */
+.slot-grid{flex:1;overflow-y:auto;padding:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-content:start;-webkit-overflow-scrolling:touch}
+.slot-cat{grid-column:1/-1;font-family:var(--ft);font-size:.78rem;color:var(--accent);padding:6px 4px 2px;border-bottom:2px solid var(--accent);margin-top:4px}
+.slot-cat:first-child{margin-top:0}
+.slot-card{position:relative;border-radius:8px;overflow:hidden;cursor:pointer;transition:.15s;aspect-ratio:.72;background:var(--card);border:1.5px solid var(--cb);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.slot-card:active{transform:scale(.94);border-color:var(--red)}
+.slot-card img{width:100%;height:100%;object-fit:cover;display:block}
+.slot-card .sq{position:absolute;top:3px;right:3px;background:var(--accent);color:#fff;font-family:var(--ft);font-size:.65rem;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.slot-card .sr-lbl{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff;font-size:.55rem;padding:12px 4px 3px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot-card .sminus{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:rgba(231,76,60,.85);color:#fff;font-size:.9rem;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;pointer-events:none;line-height:1}
+.slot-card:hover .sminus,.slot-card:active .sminus{opacity:1}
+.slot-empty{aspect-ratio:.72;border:2px dashed var(--cb);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;background:var(--bg3)}
+.slot-empty:active{transform:scale(.94);border-color:var(--accent);background:rgba(61,192,236,.08)}
+.slot-empty .splus{width:36px;height:36px;border-radius:50%;background:var(--cb);color:var(--text3);font-size:1.4rem;display:flex;align-items:center;justify-content:center;font-weight:300;line-height:1}
+.slot-empty:active .splus{background:var(--accent);color:#fff}
+/* 검색 오버레이 (슬롯 위에) */
+.dbm-search-overlay{display:none;position:absolute;inset:0;background:var(--bg);z-index:5;flex-direction:column}
+.dbm-search-overlay.on{display:flex}
+.dso-hdr{flex-shrink:0;background:var(--bg2);padding:8px 10px;border-bottom:1px solid var(--cb);display:flex;align-items:center;gap:8px}
+.dso-hdr .dso-back{width:32px;height:32px;border-radius:50%;border:none;background:var(--bg4);color:var(--text2);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dso-hdr input{flex:1;padding:8px 12px;border:1.5px solid var(--cb);border-radius:16px;font-family:var(--fb);font-size:.8rem;outline:none;background:var(--bg3)}
+.dso-hdr input:focus{border-color:var(--accent)}
+.dso-filters{flex-shrink:0;display:flex;gap:4px;padding:6px 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--bg2);border-bottom:1px solid var(--cb)}
+.dso-filters::-webkit-scrollbar{display:none}
+.dso-filters .fchip{flex-shrink:0}
+.dso-grid{flex:1;overflow-y:auto;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;align-content:start;-webkit-overflow-scrolling:touch}
+
 .dbm-bot{flex-shrink:0;background:var(--bg2);border-top:1.5px solid var(--cb);display:flex;gap:0}
 .dbm-bot .bbtn{flex:1;padding:11px 4px;border:none;background:var(--bg2);font-family:var(--ft);font-size:.78rem;color:var(--text2);cursor:pointer;border-right:1px solid var(--cb)}
 .dbm-bot .bbtn:last-child{border-right:none}
@@ -691,18 +718,29 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <div class="cnt">⚡ 에너지<b id="cntEne">0</b></div>
     <div class="cnt">🏟️ 스타디움<b id="cntStd">0</b></div>
   </div>
-  <div class="dbm-pool-toggle">
+  <div class="dbm-pool-toggle" id="dbmPoolToggle">
     <span class="lb">카드 풀:</span>
     <button class="pool-btn on" id="poolBtnDex" onclick="setDeckPool('dex')">📚 도감 전체</button>
     <button class="pool-btn" id="poolBtnColl" onclick="setDeckPool('collection')">🎒 내 컬렉션</button>
     <button class="auto-btn" onclick="openAutoBuildModal()" title="자동 빌드" aria-label="자동 빌드">🪄</button>
   </div>
-  <div class="dbm-search">
+  <div class="dbm-search" id="dbmSearchBar">
     <input type="text" id="dbmQuery" placeholder="카드 이름 검색..." oninput="onDbmSearch()">
     <div class="dbm-filters" id="dbmFilters"></div>
   </div>
   <div class="dbm-grid" id="dbmGrid"></div>
-  <div class="dbm-bot">
+  <!-- 슬롯 뷰 (편집 모드 기본 뷰) -->
+  <div class="slot-grid" id="slotGrid" style="display:none"></div>
+  <!-- 카드 추가 검색 오버레이 -->
+  <div class="dbm-search-overlay" id="dso">
+    <div class="dso-hdr">
+      <button class="dso-back" onclick="exitDeckSearch()">←</button>
+      <input type="text" id="dsoQuery" placeholder="추가할 카드 검색..." oninput="onDsoSearch()">
+    </div>
+    <div class="dso-filters" id="dsoFilters"></div>
+    <div class="dso-grid" id="dsoGrid"></div>
+  </div>
+  <div class="dbm-bot" id="dbmBot">
     <button class="bbtn" onclick="openDeckSheet()">📋 현재 덱</button>
     <button class="bbtn" id="dbmValidBtn" onclick="openValidationModal()">✅ 검증</button>
     <button class="bbtn bad" onclick="confirmClearDeck()">🗑️ 비우기</button>
@@ -817,6 +855,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="app.js?v=s18-bulk"></script>
+<script src="app.js?v=s18-slots"></script>
 </body>
 </html>

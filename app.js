@@ -1877,6 +1877,7 @@ function fchipRaw(key,val,labelHtml){
 
 /* ─── 덱 빌더 상태 ─── */
 var _deckBuilder=null; /* { id, name, format, pool, strict, cards:{bs_code:qty}, isNew } */
+var _deckViewMode='slots'; /* 'slots' = 슬롯 뷰 (기본), 'catalog' = 기존 카탈로그 뷰 */
 var _deckPool='dex';
 var _deckQuery='';
 var _deckClassFilter='all'; /* all|pokemon|trainer|energy|stadium */
@@ -2286,7 +2287,9 @@ function openDeckBuilder(){
   renderDbmFilters();
   /* 검색 초기화 */
   $('dbmQuery').value='';
-  /* 카드 그리드 + 카운터 */
+  /* 슬롯 뷰를 기본으로 표시 */
+  _deckViewMode='slots';
+  applyDeckViewMode();
   refreshDeckBuilder();
 }
 function updateStrictBtn(){
@@ -2532,6 +2535,222 @@ function refreshDeckBuilder(){
     grid.innerHTML=h;
   }finally{
     _deckBuilderRendering=false;
+  }
+  /* 슬롯 뷰도 동기화 */
+  if(_deckViewMode==='slots')renderDeckSlotView();
+}
+
+/* ─── 뷰 모드 전환 ─── */
+function applyDeckViewMode(){
+  var isSlot=(_deckViewMode==='slots');
+  $('dbmPoolToggle').style.display=isSlot?'none':'';
+  $('dbmSearchBar').style.display=isSlot?'none':'';
+  $('dbmGrid').style.display=isSlot?'none':'';
+  $('slotGrid').style.display=isSlot?'':'none';
+  $('dso').className='dbm-search-overlay'; /* 검색 오버레이 닫기 */
+  /* 하단 버튼 변경 */
+  var bot=$('dbmBot');
+  if(isSlot){
+    bot.innerHTML='<button class="bbtn" onclick="switchToCatalogView()">📚 카드 추가</button>'
+      +'<button class="bbtn" onclick="openValidationModal()">✅ 검증</button>'
+      +'<button class="bbtn bad" onclick="confirmClearDeck()">🗑️ 비우기</button>';
+  }else{
+    bot.innerHTML='<button class="bbtn" onclick="switchToSlotView()">🃏 슬롯 뷰</button>'
+      +'<button class="bbtn" onclick="openDeckSheet()">📋 현재 덱</button>'
+      +'<button class="bbtn" onclick="openValidationModal()">✅ 검증</button>'
+      +'<button class="bbtn bad" onclick="confirmClearDeck()">🗑️ 비우기</button>';
+  }
+}
+function switchToSlotView(){
+  _deckViewMode='slots';
+  applyDeckViewMode();
+  renderDeckSlotView();
+}
+function switchToCatalogView(){
+  _deckViewMode='catalog';
+  applyDeckViewMode();
+  renderDbmFilters();
+  $('dbmQuery').value=_deckQuery||'';
+  refreshDeckBuilder();
+}
+
+/* ─── 슬롯 뷰 렌더 ─── */
+function renderDeckSlotView(){
+  if(!_deckBuilder)return;
+  var target=_deckBuilder.format==='half'?30:60;
+  var counts=deckCounts(_deckBuilder);
+  /* 카운터 동기화 */
+  $('cntPok').textContent=counts.pok;
+  $('cntTrn').textContent=counts.trn;
+  $('cntEne').textContent=counts.ene;
+  $('cntStd').textContent=counts.std;
+  $('dbmCount').textContent=counts.total+'/'+target;
+  var pct=Math.min(100,Math.round(counts.total/target*100));
+  var prog=$('dbmProg');
+  prog.style.width=pct+'%';
+  prog.className='progress-bar'+(counts.total>target?' over':'');
+
+  /* 카드를 종류별 그룹핑 */
+  var groups={pokemon:[],trainer:[],energy:[],stadium:[]};
+  var labels={pokemon:'🐉 포켓몬',trainer:'🛠️ 트레이너',energy:'⚡ 에너지',stadium:'🏟️ 스타디움'};
+  for(var bc in _deckBuilder.cards){
+    var qty=_deckBuilder.cards[bc]||0;
+    if(qty<=0)continue;
+    var c=dbByCode[bc];
+    if(!c)continue;
+    var grp=c.card_class;
+    if(!groups[grp])grp='trainer';
+    groups[grp].push({card:c,qty:qty,bc:bc});
+  }
+  for(var g in groups){
+    groups[g].sort(function(a,b){return (a.card.name_kr||'').localeCompare(b.card.name_kr||'');});
+  }
+
+  var h='';
+  var order=['pokemon','trainer','energy','stadium'];
+  for(var k=0;k<order.length;k++){
+    var key=order[k];
+    var arr=groups[key];
+    if(!arr.length)continue;
+    var sub=0;for(var x=0;x<arr.length;x++)sub+=arr[x].qty;
+    h+='<div class="slot-cat">'+labels[key]+' ('+sub+')</div>';
+    for(var y=0;y<arr.length;y++){
+      var item=arr[y];
+      var c2=item.card;
+      var img=c2.image_url||placeholderImg(c2.name_kr);
+      h+='<div class="slot-card" onclick="slotRemoveOne(\''+esc(item.bc)+'\')">';
+      h+='<img src="'+esc(img)+'" loading="lazy" onerror="this.src=\''+placeholderImg(c2.name_kr)+'\'">';
+      h+='<div class="sq">×'+item.qty+'</div>';
+      h+='<div class="sminus">−</div>';
+      h+='<div class="sr-lbl">'+esc(c2.name_kr||'')+'</div>';
+      h+='</div>';
+    }
+  }
+  /* 빈 슬롯 표시 */
+  var emptyCount=Math.max(0,target-counts.total);
+  if(emptyCount>0){
+    h+='<div class="slot-cat">➕ 빈 슬롯 ('+emptyCount+')</div>';
+    var showSlots=Math.min(emptyCount,12); /* 최대 12개만 표시 */
+    for(var s=0;s<showSlots;s++){
+      h+='<div class="slot-empty" onclick="enterDeckSearch()">';
+      h+='<div class="splus">+</div>';
+      h+='</div>';
+    }
+    if(emptyCount>showSlots){
+      h+='<div class="slot-empty" onclick="enterDeckSearch()" style="grid-column:1/-1;aspect-ratio:auto;padding:12px;font-size:.75rem;color:var(--text3);flex-direction:column;gap:4px">';
+      h+='<div class="splus" style="width:28px;height:28px;font-size:1rem">+</div>';
+      h+='나머지 '+(emptyCount-showSlots)+'장 추가';
+      h+='</div>';
+    }
+  }
+  if(counts.total===0&&emptyCount===0){
+    h+='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text3)">덱이 비어있어요</div>';
+  }
+  $('slotGrid').innerHTML=h;
+}
+
+function slotRemoveOne(bs_code){
+  if(!_deckBuilder||!_deckBuilder.cards[bs_code])return;
+  _deckBuilder.cards[bs_code]--;
+  if(_deckBuilder.cards[bs_code]<=0)delete _deckBuilder.cards[bs_code];
+  renderDeckSlotView();
+  if($('dbs').className.indexOf('show')>=0)renderDeckSheet();
+}
+
+/* ─── 카드 검색 오버레이 (슬롯 뷰에서 "+" 클릭) ─── */
+var _dsoQuery='';
+var _dsoClassFilter='all';
+function enterDeckSearch(){
+  $('dso').className='dbm-search-overlay on';
+  $('dsoQuery').value='';
+  _dsoQuery='';
+  _dsoClassFilter='all';
+  renderDsoFilters();
+  renderDsoGrid();
+  $('dsoQuery').focus();
+}
+function exitDeckSearch(){
+  $('dso').className='dbm-search-overlay';
+  renderDeckSlotView();
+}
+function onDsoSearch(){
+  _dsoQuery=$('dsoQuery').value.trim();
+  renderDsoGrid();
+}
+function setDsoFilter(val){
+  _dsoClassFilter=val;
+  renderDsoFilters();
+  renderDsoGrid();
+}
+function renderDsoFilters(){
+  var h='';
+  var filters=[['all','전체'],['pokemon','🐉포켓몬'],['trainer','🛠️트레이너'],['energy','⚡에너지'],['stadium','🏟️스타디움']];
+  for(var i=0;i<filters.length;i++){
+    h+='<button class="fchip'+(_dsoClassFilter===filters[i][0]?' active':'')+'" onclick="setDsoFilter(\''+filters[i][0]+'\')">'+filters[i][1]+'</button>';
+  }
+  $('dsoFilters').innerHTML=h;
+}
+function renderDsoGrid(){
+  /* 내 컬렉션 카드를 기본으로 표시 (보유 카드에서 추가하는 게 자연스러움) */
+  var pool=[];
+  for(var bc in D.collected){
+    var c=dbByCode[bc];
+    if(c)pool.push(c);
+  }
+  /* 컬렉션 비어있으면 도감 전체로 fallback */
+  if(pool.length===0)pool=cardsDB;
+  var filtered=[];
+  for(var i=0;i<pool.length;i++){
+    var c=pool[i];
+    if(_dsoClassFilter!=='all'&&c.card_class!==_dsoClassFilter)continue;
+    if(_dsoQuery){
+      var nm=c.name_kr||'';
+      if(nm.indexOf(_dsoQuery)<0)continue;
+    }
+    filtered.push(c);
+  }
+  var MAX=120;
+  var shown=filtered.slice(0,MAX);
+  var grid=$('dsoGrid');
+  if(shown.length===0){
+    grid.innerHTML='<div class="dbm-empty">검색 결과가 없어요</div>';
+    return;
+  }
+  var h='';
+  for(var j=0;j<shown.length;j++){
+    var c2=shown[j];
+    var bc2=c2.bs_code;
+    var qty=_deckBuilder?(_deckBuilder.cards[bc2]||0):0;
+    var hasIt=qty>0;
+    var img=c2.image_url||placeholderImg(c2.name_kr);
+    h+='<div class="db-card'+(hasIt?' has':'')+'" onclick="dsoAddCard(\''+esc(bc2)+'\')">';
+    h+='<img src="'+esc(img)+'" loading="lazy" onerror="this.src=\''+placeholderImg(c2.name_kr)+'\'">';
+    if(hasIt)h+='<div class="qty-badge">'+qty+'</div>';
+    h+='<div class="nm">'+esc(c2.name_kr||'')+'</div>';
+    h+='</div>';
+  }
+  if(filtered.length>MAX){
+    h+='<div class="dbm-empty">'+filtered.length+'장 중 '+MAX+'장 표시<br><span style="font-size:.7rem">검색으로 좁혀주세요</span></div>';
+  }
+  grid.innerHTML=h;
+}
+function dsoAddCard(bs_code){
+  /* 기존 addToDeck 로직 활용 */
+  addToDeck(bs_code);
+  /* 그리드 갱신 (수량 뱃지 업데이트) */
+  renderDsoGrid();
+  /* 카운터 동기화 */
+  if(_deckBuilder){
+    var counts=deckCounts(_deckBuilder);
+    var target=_deckBuilder.format==='half'?30:60;
+    $('cntPok').textContent=counts.pok;
+    $('cntTrn').textContent=counts.trn;
+    $('cntEne').textContent=counts.ene;
+    $('cntStd').textContent=counts.std;
+    $('dbmCount').textContent=counts.total+'/'+target;
+    var pct=Math.min(100,Math.round(counts.total/target*100));
+    $('dbmProg').style.width=pct+'%';
+    $('dbmProg').className='progress-bar'+(counts.total>target?' over':'');
   }
 }
 
