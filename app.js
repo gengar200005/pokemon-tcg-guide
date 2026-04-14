@@ -2619,7 +2619,7 @@ function renderDeckSlotView(){
       var c2=item.card;
       var img=c2.image_url||placeholderImg(c2.name_kr);
       h+='<div class="slot-card" onclick="slotRemoveOne(\''+esc(item.bc)+'\')">';
-      h+='<img src="'+esc(img)+'" loading="lazy" onerror="this.src=\''+placeholderImg(c2.name_kr)+'\'">';
+      h+='<div class="slot-img-wrap"><img src="'+esc(img)+'" loading="lazy" onerror="this.src=\''+placeholderImg(c2.name_kr)+'\'"></div>';
       h+='<div class="sq">×'+item.qty+'</div>';
       h+='<div class="sminus">−</div>';
       h+='<div class="slot-name">'+esc(c2.name_kr||'')+'</div>';

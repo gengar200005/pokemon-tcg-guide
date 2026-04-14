@@ -234,15 +234,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .slot-grid{flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start;-webkit-overflow-scrolling:touch}
 .slot-cat{grid-column:1/-1;font-family:var(--ft);font-size:.82rem;color:var(--accent);padding:6px 4px 2px;border-bottom:2px solid var(--accent);margin-top:6px}
 .slot-cat:first-child{margin-top:0}
-.slot-card{position:relative;border-radius:10px;overflow:hidden;cursor:pointer;transition:.15s;background:var(--card);border:1.5px solid var(--cb);box-shadow:var(--shadow);display:flex;flex-direction:column}
+.slot-card{position:relative;border-radius:10px;overflow:hidden;cursor:pointer;transition:.15s;background:var(--card);border:1.5px solid var(--cb);box-shadow:var(--shadow)}
 .slot-card:active{transform:scale(.95);border-color:var(--red)}
-.slot-card img{width:100%;aspect-ratio:2.5/3.5;object-fit:contain;display:block;background:#f4fafd}
-.slot-card .sq{position:absolute;top:4px;right:4px;background:var(--accent);color:#fff;font-family:var(--ft);font-size:.72rem;min-width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:0 6px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.slot-card .slot-name{padding:4px 5px;font-size:.68rem;color:var(--text2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;font-family:var(--fb)}
-.slot-card .sminus{position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:rgba(231,76,60,.9);color:#fff;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.3);line-height:1}
-.slot-empty{aspect-ratio:2.5/3.5;border:2px dashed var(--cb);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;background:var(--bg3)}
+.slot-card .slot-img-wrap{position:relative;width:100%;padding-bottom:140%;background:#f4fafd;overflow:hidden}
+.slot-card .slot-img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+.slot-card .sq{position:absolute;top:4px;right:4px;background:var(--accent);color:#fff;font-family:var(--ft);font-size:.72rem;min-width:26px;height:26px;border-radius:13px;display:flex;align-items:center;justify-content:center;padding:0 7px;box-shadow:0 1px 4px rgba(0,0,0,.3);z-index:2}
+.slot-card .slot-name{padding:5px 6px 6px;font-size:.7rem;color:var(--text2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;font-family:var(--fb);background:var(--card)}
+.slot-card .sminus{position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:rgba(231,76,60,.92);color:#fff;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.3);line-height:1;z-index:2}
+.slot-empty{position:relative;border:2px dashed var(--cb);border-radius:10px;cursor:pointer;transition:.15s;background:var(--bg3);padding-bottom:140%}
 .slot-empty:active{transform:scale(.95);border-color:var(--accent);background:rgba(61,192,236,.08)}
-.slot-empty .splus{width:40px;height:40px;border-radius:50%;background:var(--cb);color:var(--text3);font-size:1.5rem;display:flex;align-items:center;justify-content:center;font-weight:300;line-height:1}
+.slot-empty .splus{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:var(--cb);color:var(--text3);font-size:1.5rem;display:flex;align-items:center;justify-content:center;font-weight:300;line-height:1}
 .slot-empty:active .splus{background:var(--accent);color:#fff}
 /* 검색 오버레이 (슬롯 위에) */
 .dbm-search-overlay{display:none;position:absolute;inset:0;background:var(--bg);z-index:5;flex-direction:column}
@@ -854,6 +855,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="app.js?v=s18-slots2"></script>
+<script src="app.js?v=s18-slots3"></script>
 </body>
 </html>
