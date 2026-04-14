@@ -2619,34 +2619,31 @@ function renderDeckSlotView(){
       var c2=item.card;
       var img=c2.image_url||placeholderImg(c2.name_kr);
       h+='<div class="slot-card" onclick="slotRemoveOne(\''+esc(item.bc)+'\')">';
-      h+='<div class="slot-img-wrap"><img src="'+esc(img)+'" loading="lazy" onerror="this.src=\''+placeholderImg(c2.name_kr)+'\'"></div>';
+      h+='<img src="'+esc(img)+'" loading="lazy" onerror="this.src=\''+placeholderImg(c2.name_kr)+'\'">';
       h+='<div class="sq">×'+item.qty+'</div>';
       h+='<div class="sminus">−</div>';
       h+='<div class="slot-name">'+esc(c2.name_kr||'')+'</div>';
       h+='</div>';
     }
   }
-  /* 빈 슬롯 표시 */
+  /* 빈 슬롯 표시 — 목표 장수까지 전부 슬롯으로 */
   var emptyCount=Math.max(0,target-counts.total);
   if(emptyCount>0){
     h+='<div class="slot-cat">➕ 빈 슬롯 ('+emptyCount+')</div>';
-    var showSlots=Math.min(emptyCount,12); /* 최대 12개만 표시 */
-    for(var s=0;s<showSlots;s++){
+    for(var s=0;s<emptyCount;s++){
       h+='<div class="slot-empty" onclick="enterDeckSearch()">';
       h+='<div class="splus">+</div>';
-      h+='</div>';
-    }
-    if(emptyCount>showSlots){
-      h+='<div class="slot-empty" onclick="enterDeckSearch()" style="grid-column:1/-1;aspect-ratio:auto;padding:12px;font-size:.75rem;color:var(--text3);flex-direction:column;gap:4px">';
-      h+='<div class="splus" style="width:28px;height:28px;font-size:1rem">+</div>';
-      h+='나머지 '+(emptyCount-showSlots)+'장 추가';
       h+='</div>';
     }
   }
   if(counts.total===0&&emptyCount===0){
     h+='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text3)">덱이 비어있어요</div>';
   }
-  $('slotGrid').innerHTML=h;
+  /* 스크롤 위치 유지 */
+  var sg=$('slotGrid');
+  var prevScroll=sg.scrollTop;
+  sg.innerHTML=h;
+  sg.scrollTop=prevScroll;
 }
 
 function slotRemoveOne(bs_code){
