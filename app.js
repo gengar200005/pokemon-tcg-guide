@@ -2614,7 +2614,9 @@ function renderDeckSlotView(){
     var arr=groups[key];
     if(!arr.length)continue;
     var sub=0;for(var x=0;x<arr.length;x++)sub+=arr[x].qty;
+    h+='<div class="slot-section">';
     h+='<div class="slot-cat '+catClassMap[key]+'">'+labels[key]+' ('+sub+')</div>';
+    h+='<div class="slot-section-grid">';
     for(var y=0;y<arr.length;y++){
       var item=arr[y];
       var c2=item.card;
@@ -2626,19 +2628,23 @@ function renderDeckSlotView(){
       h+='<div class="slot-name">'+esc(c2.name_kr||'')+'</div>';
       h+='</div>';
     }
+    h+='</div></div>';
   }
   /* 빈 슬롯 표시 — 목표 장수까지 전부 슬롯으로 */
   var emptyCount=Math.max(0,target-counts.total);
   if(emptyCount>0){
+    h+='<div class="slot-section">';
     h+='<div class="slot-cat cat-empty">➕ 빈 슬롯 ('+emptyCount+')</div>';
+    h+='<div class="slot-section-grid">';
     for(var s=0;s<emptyCount;s++){
       h+='<div class="slot-empty" onclick="enterDeckSearch()">';
       h+='<div class="splus">+</div>';
       h+='</div>';
     }
+    h+='</div></div>';
   }
   if(counts.total===0&&emptyCount===0){
-    h+='<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text3)">덱이 비어있어요</div>';
+    h+='<div style="text-align:center;padding:30px;color:var(--text3)">덱이 비어있어요</div>';
   }
   /* 스크롤 위치 유지 */
   var sg=$('slotGrid');
