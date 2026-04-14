@@ -88,7 +88,7 @@ function switchTab(id,btn){
   var tabs=$('tabbar').getElementsByTagName('button');
   for(var i=0;i<tabs.length;i++)tabs[i].className='tab';
   btn.className='tab on';
-  var ids=['rules','dex','coll','scan','deck'];
+  var ids=['rules','dex','coll','scan','deck','quiz'];
   for(var j=0;j<ids.length;j++){
     var el=$('p-'+ids[j]);
     if(el)el.className=(ids[j]===id)?'pnl on':'pnl';
@@ -96,6 +96,7 @@ function switchTab(id,btn){
   if(id==='dex')renderDex();
   if(id==='coll')renderColl();
   if(id==='deck')renderDeckTab();
+  if(id==='quiz')renderQuizTab();
 }
 function togAcc(el){
   el.classList.toggle('open');
@@ -4295,13 +4296,156 @@ function bdmSendToDeck(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   🧠 Quiz (포켓몬 퀴즈)
+   ═══════════════════════════════════════════════════════════════ */
+var _qz={mode:'type',score:0,total:0,streak:0,card:null,choices:[],answered:false};
+
+function _qzPool(){
+  return cardsDB.filter(function(c){
+    return c.card_class==='pokemon'&&c.image_url&&c.pokemon_type;
+  });
+}
+
+function _qzShuffle(arr){
+  var a=arr.slice();
+  for(var i=a.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    var tmp=a[i];a[i]=a[j];a[j]=tmp;
+  }
+  return a;
+}
+
+function _qzMakeChoices(mode,card,pool){
+  var correct='',wrongs=[];
+  if(mode==='type'){
+    correct=card.pokemon_type;
+    var others=POKEMON_TYPES.filter(function(t){return t!==correct;});
+    wrongs=_qzShuffle(others).slice(0,3);
+  }else if(mode==='name'){
+    correct=card.name_kr;
+    var seen={};seen[correct]=1;
+    var shuffled=_qzShuffle(pool);
+    for(var i=0;i<shuffled.length&&wrongs.length<3;i++){
+      var n=shuffled[i].name_kr;
+      if(!seen[n]){seen[n]=1;wrongs.push(n);}
+    }
+  }else{/* weakness */
+    correct=card.weakness_type||'없음';
+    var others2=POKEMON_TYPES.filter(function(t){return t!==correct;});
+    wrongs=_qzShuffle(others2).slice(0,3);
+  }
+  return _qzShuffle([correct].concat(wrongs));
+}
+
+function renderQuizTab(){
+  var el=$('quiz-r');
+  if(!el)return;
+  var pool=_qzPool();
+  if(!pool.length){
+    el.innerHTML='<div class="qz-no-data"><div class="ei">⏳</div><p>카드 DB를 불러오는 중입니다...</p></div>';
+    return;
+  }
+  if(!_qz.card){
+    _qz.card=pool[Math.floor(Math.random()*pool.length)];
+    _qz.choices=_qzMakeChoices(_qz.mode,_qz.card,pool);
+    _qz.answered=false;
+  }
+  _qzRender(pool);
+}
+
+function _qzRender(pool){
+  var el=$('quiz-r');
+  if(!el)return;
+  var c=_qz.card;
+  /* 모드 선택 알약 */
+  var modes=[['type','🎨 타입 맞추기'],['name','📛 이름 맞추기'],['weakness','⚡ 약점 맞추기']];
+  var mh='<div class="qz-modes">';
+  for(var i=0;i<modes.length;i++){
+    var m=modes[i];
+    mh+='<button class="qz-mode-btn'+(_qz.mode===m[0]?' on':'')+'" onclick="qzSetMode(\''+m[0]+'\')">'+m[1]+'</button>';
+  }
+  mh+='</div>';
+  /* 점수 */
+  var sh='<div class="qz-score"><div class="qz-score-left">✅ <b>'+_qz.score+'</b> / '+_qz.total+'</div><div class="qz-streak">연속 <b>'+_qz.streak+'</b> 🔥</div></div>';
+  /* 카드 이미지 */
+  var ph=placeholderImg(c.name_kr);
+  var ih='<div class="qz-card-wrap"><img class="qz-img" src="'+esc(c.image_url)+'" onerror="this.src=\''+ph+'\'" loading="lazy" alt="퀴즈 카드"></div>';
+  /* 질문 */
+  var qt='';
+  if(_qz.mode==='type')qt='이 포켓몬의 <b>타입</b>은?';
+  else if(_qz.mode==='name')qt='이 카드의 <b>이름</b>은?';
+  else qt=typeIcon(c.pokemon_type)+' <b>'+esc(c.pokemon_type)+'</b> 타입 포켓몬의 <b>약점 타입</b>은?';
+  var qh='<div class="qz-q">'+qt+'</div>';
+  /* 선택지 — 인덱스를 넘겨 원본 문자열 비교 */
+  var ah='<div class="qz-choices" id="qz-choices">';
+  for(var j=0;j<_qz.choices.length;j++){
+    ah+='<button class="qz-choice" onclick="qzAnswer('+j+')">'+esc(_qz.choices[j])+'</button>';
+  }
+  ah+='</div>';
+  el.innerHTML=mh+sh+ih+qh+ah;
+}
+
+function qzSetMode(mode){
+  _qz.mode=mode;
+  _qz.score=0;_qz.total=0;_qz.streak=0;
+  var pool=_qzPool();
+  _qz.card=pool[Math.floor(Math.random()*pool.length)];
+  _qz.choices=_qzMakeChoices(mode,_qz.card,pool);
+  _qz.answered=false;
+  _qzRender(pool);
+}
+
+function qzAnswer(idx){
+  if(_qz.answered)return;
+  _qz.answered=true;
+  var answer=_qz.choices[idx];
+  var c=_qz.card;
+  var correct='';
+  if(_qz.mode==='type')correct=c.pokemon_type;
+  else if(_qz.mode==='name')correct=c.name_kr;
+  else correct=c.weakness_type||'없음';
+  _qz.total++;
+  var isRight=(answer===correct);
+  if(isRight){_qz.score++;_qz.streak++;}
+  else{_qz.streak=0;}
+  /* 버튼 색상 */
+  var choicesDiv=$('qz-choices');
+  if(choicesDiv){
+    var btns=choicesDiv.getElementsByTagName('button');
+    for(var i=0;i<btns.length;i++){
+      btns[i].disabled=true;
+      if(_qz.choices[i]===correct){btns[i].classList.add('qz-correct');}
+      else if(_qz.choices[i]===answer&&!isRight){btns[i].classList.add('qz-wrong');}
+    }
+  }
+  /* 결과 + 다음 버튼 */
+  var el=$('quiz-r');
+  var resDiv=document.createElement('div');
+  resDiv.className='qz-result '+(isRight?'ok':'ng');
+  resDiv.textContent=isRight?'🎉 정답! 잘했어요!':'😅 틀렸어요 — 정답: "'+correct+'"';
+  var nextBtn=document.createElement('button');
+  nextBtn.className='qz-next-btn';
+  nextBtn.textContent='다음 문제 →';
+  nextBtn.onclick=function(){
+    var pool=_qzPool();
+    _qz.card=pool[Math.floor(Math.random()*pool.length)];
+    _qz.choices=_qzMakeChoices(_qz.mode,_qz.card,pool);
+    _qz.answered=false;
+    _qzRender(pool);
+  };
+  el.appendChild(resDiv);
+  el.appendChild(nextBtn);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    🚀 Init
    ═══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded',function(){
   loadDB().then(function(){
-    /* DB 로드 후 현재 활성 탭이 도감/수집이면 다시 렌더 */
+    /* DB 로드 후 현재 활성 탭이 도감/수집/퀴즈이면 다시 렌더 */
     if(_currentTab==='dex')renderDex();
     if(_currentTab==='coll')renderColl();
+    if(_currentTab==='quiz')renderQuizTab();
     /* 세션 14: 자동 빌드 데이터 로딩 (병렬, DB 로드 후 백그라운드) */
     loadEvolutionData();
     loadTrainerCategories();
