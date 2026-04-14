@@ -2608,12 +2608,13 @@ function renderDeckSlotView(){
 
   var h='';
   var order=['pokemon','trainer','energy','stadium'];
+  var catClassMap={pokemon:'',trainer:'cat-trainer',energy:'cat-energy',stadium:'cat-stadium'};
   for(var k=0;k<order.length;k++){
     var key=order[k];
     var arr=groups[key];
     if(!arr.length)continue;
     var sub=0;for(var x=0;x<arr.length;x++)sub+=arr[x].qty;
-    h+='<div class="slot-cat">'+labels[key]+' ('+sub+')</div>';
+    h+='<div class="slot-cat '+catClassMap[key]+'">'+labels[key]+' ('+sub+')</div>';
     for(var y=0;y<arr.length;y++){
       var item=arr[y];
       var c2=item.card;
@@ -2629,7 +2630,7 @@ function renderDeckSlotView(){
   /* 빈 슬롯 표시 — 목표 장수까지 전부 슬롯으로 */
   var emptyCount=Math.max(0,target-counts.total);
   if(emptyCount>0){
-    h+='<div class="slot-cat">➕ 빈 슬롯 ('+emptyCount+')</div>';
+    h+='<div class="slot-cat cat-empty">➕ 빈 슬롯 ('+emptyCount+')</div>';
     for(var s=0;s<emptyCount;s++){
       h+='<div class="slot-empty" onclick="enterDeckSearch()">';
       h+='<div class="splus">+</div>';
@@ -2657,11 +2658,19 @@ function slotRemoveOne(bs_code){
 /* ─── 카드 검색 오버레이 (슬롯 뷰에서 "+" 클릭) ─── */
 var _dsoQuery='';
 var _dsoClassFilter='all';
+var _dsoStageFilter='all';   /* basic|stage1|stage2 */
+var _dsoTypeFilter='all';    /* 포켓몬 타입 */
+var _dsoTrainerFilter='all'; /* supporter|item|tool */
+var _dsoPool='collection';   /* collection|dex */
 function enterDeckSearch(){
   $('dso').className='dbm-search-overlay on';
   $('dsoQuery').value='';
   _dsoQuery='';
   _dsoClassFilter='all';
+  _dsoStageFilter='all';
+  _dsoTypeFilter='all';
+  _dsoTrainerFilter='all';
+  _dsoPool='collection';
   renderDsoFilters();
   renderDsoGrid();
   $('dsoQuery').focus();
@@ -2674,32 +2683,76 @@ function onDsoSearch(){
   _dsoQuery=$('dsoQuery').value.trim();
   renderDsoGrid();
 }
-function setDsoFilter(val){
+function setDsoClassFilter(val){
   _dsoClassFilter=val;
+  /* 클래스 바뀌면 종속 필터 리셋 */
+  if(val!=='pokemon'){_dsoStageFilter='all';_dsoTypeFilter='all';}
+  if(val!=='trainer')_dsoTrainerFilter='all';
   renderDsoFilters();
   renderDsoGrid();
 }
+function setDsoStageFilter(val){_dsoStageFilter=_dsoStageFilter===val?'all':val;renderDsoFilters();renderDsoGrid();}
+function setDsoTypeFilter(val){_dsoTypeFilter=_dsoTypeFilter===val?'all':val;renderDsoFilters();renderDsoGrid();}
+function setDsoTrainerFilter(val){_dsoTrainerFilter=_dsoTrainerFilter===val?'all':val;renderDsoFilters();renderDsoGrid();}
+function setDsoPool(p){_dsoPool=p;renderDsoFilters();renderDsoGrid();}
 function renderDsoFilters(){
   var h='';
-  var filters=[['all','전체'],['pokemon','🐉포켓몬'],['trainer','🛠️트레이너'],['energy','⚡에너지'],['stadium','🏟️스타디움']];
-  for(var i=0;i<filters.length;i++){
-    h+='<button class="fchip'+(_dsoClassFilter===filters[i][0]?' active':'')+'" onclick="setDsoFilter(\''+filters[i][0]+'\')">'+filters[i][1]+'</button>';
+  /* 풀 토글 */
+  h+='<button class="fchip'+(_dsoPool==='collection'?' active':'')+'" onclick="setDsoPool(\'collection\')">🎒컬렉션</button>';
+  h+='<button class="fchip'+(_dsoPool==='dex'?' active':'')+'" onclick="setDsoPool(\'dex\')">📚도감</button>';
+  h+='<span style="width:1px;background:var(--cb);margin:0 2px;align-self:stretch"></span>';
+  /* 카드 클래스 */
+  var classFilters=[['all','전체'],['pokemon','🐉포켓몬'],['trainer','🛠️트레이너'],['energy','⚡에너지'],['stadium','🏟️스타디움']];
+  for(var i=0;i<classFilters.length;i++){
+    h+='<button class="fchip'+(_dsoClassFilter===classFilters[i][0]?' active':'')+'" onclick="setDsoClassFilter(\''+classFilters[i][0]+'\')">'+classFilters[i][1]+'</button>';
+  }
+  /* 포켓몬 선택 시 → 진화 단계 + 타입 */
+  if(_dsoClassFilter==='pokemon'){
+    h+='<span style="width:1px;background:var(--cb);margin:0 2px;align-self:stretch"></span>';
+    var stages=[['basic','기본'],['stage1','1진화'],['stage2','2진화']];
+    for(var s=0;s<stages.length;s++){
+      h+='<button class="fchip'+(_dsoStageFilter===stages[s][0]?' active':'')+'" onclick="setDsoStageFilter(\''+stages[s][0]+'\')">'+stages[s][1]+'</button>';
+    }
+    h+='<span style="width:1px;background:var(--cb);margin:0 2px;align-self:stretch"></span>';
+    for(var ti=0;ti<POKEMON_TYPES.length;ti++){
+      var t=POKEMON_TYPES[ti];
+      h+='<button class="fchip'+(_dsoTypeFilter===t?' active':'')+'" onclick="setDsoTypeFilter(\''+esc(t)+'\')">'+esc(t)+'</button>';
+    }
+  }
+  /* 트레이너 선택 시 → 세부 분류 */
+  if(_dsoClassFilter==='trainer'&&typeof TRAINER_SUBTYPES!=='undefined'){
+    h+='<span style="width:1px;background:var(--cb);margin:0 2px;align-self:stretch"></span>';
+    for(var si=0;si<TRAINER_SUBTYPES.length;si++){
+      var ts=TRAINER_SUBTYPES[si];
+      h+='<button class="fchip'+(_dsoTrainerFilter===ts.key?' active':'')+'" onclick="setDsoTrainerFilter(\''+ts.key+'\')">'+esc(ts.label)+'</button>';
+    }
   }
   $('dsoFilters').innerHTML=h;
 }
 function renderDsoGrid(){
-  /* 내 컬렉션 카드를 기본으로 표시 (보유 카드에서 추가하는 게 자연스러움) */
   var pool=[];
-  for(var bc in D.collected){
-    var c=dbByCode[bc];
-    if(c)pool.push(c);
+  if(_dsoPool==='collection'){
+    for(var bc in D.collected){
+      var c=dbByCode[bc];
+      if(c)pool.push(c);
+    }
+    /* 컬렉션 비어있으면 자동으로 도감 fallback */
+    if(pool.length===0)pool=cardsDB;
+  }else{
+    pool=cardsDB;
   }
-  /* 컬렉션 비어있으면 도감 전체로 fallback */
-  if(pool.length===0)pool=cardsDB;
   var filtered=[];
   for(var i=0;i<pool.length;i++){
     var c=pool[i];
+    if(!c)continue;
     if(_dsoClassFilter!=='all'&&c.card_class!==_dsoClassFilter)continue;
+    if(_dsoClassFilter==='pokemon'){
+      if(_dsoStageFilter!=='all'&&cardStage(c)!==_dsoStageFilter)continue;
+      if(_dsoTypeFilter!=='all'&&c.pokemon_type!==_dsoTypeFilter)continue;
+    }
+    if(_dsoClassFilter==='trainer'){
+      if(_dsoTrainerFilter!=='all'&&trainerGroup(c)!==_dsoTrainerFilter)continue;
+    }
     if(_dsoQuery){
       var nm=c.name_kr||'';
       if(nm.indexOf(_dsoQuery)<0)continue;
