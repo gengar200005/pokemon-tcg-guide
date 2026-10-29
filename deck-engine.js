@@ -71,9 +71,10 @@ function compareReference(options){
 function build(options){
  var db={},ev={},owned=options.owned||{},cards={},notes=[],names={},total=0;
  options.database.forEach(function(c){db[c.bs_code]=c;});(options.evolution||[]).forEach(function(e){ev[e.bs_code]=e;});
- var available=options.database.filter(function(c){return qty(owned[c.bs_code])>0;});
+ var selected=options.pokemonTypes||[];
+ var available=options.database.filter(function(c){return qty(owned[c.bs_code])>0&&(c.card_class!=='pokemon'||!selected.length||selected.indexOf(type(c.pokemon_type))>=0);});
  var start=db[options.basicCode];
- if(!basic(start)||!qty(owned[options.basicCode]))return {cards:{},notes:['보유한 기본 포켓몬을 선택해주세요.'],validation:inspect({},db,owned)};
+ if(!basic(start)||!qty(owned[options.basicCode])||(selected.length&&selected.indexOf(type(start.pokemon_type))<0))return {cards:{},notes:['보유한 기본 포켓몬을 선택해주세요.'],validation:inspect({},db,owned)};
  function add(c,n){var used=cards[c.bs_code]||0,limit=energy(c)?60:4;
  if(/^(빛나는|찬란한) |[♢◇]/.test(c.name_kr)||/ACE SPEC|에이스 스펙/.test(c.effect_text||''))limit=1;
  n=Math.max(0,Math.min(n,qty(owned[c.bs_code])-used,limit-(names[c.name_kr]||0),60-total));
@@ -105,6 +106,7 @@ function build(options){
  var pokemonCount=function(){return Object.keys(cards).reduce(function(s,id){return s+(db[id].card_class==='pokemon'?cards[id]:0);},0);};
  var compatible=available.filter(function(c){return basic(c)&&attacks(c).some(function(s){return s.cost.every(function(t){t=type(t);return t==='무색'||plan.req[t];});});});
  compatible.sort(function(a,b){return qty(owned[b.bs_code])-qty(owned[a.bs_code])||a.bs_code.localeCompare(b.bs_code);});
+ selected.forEach(function(t){if(!Object.keys(cards).some(function(id){return db[id].card_class==='pokemon'&&type(db[id].pokemon_type)===t;})){var c=compatible.find(function(c){return type(c.pokemon_type)===t;});if(c)add(c,2);}});
  compatible.forEach(function(c){if(pokemonCount()<12)add(c,Math.min(4,12-pokemonCount()));});
  var trainers=available.filter(function(c){return role(c);});
  var quotas={draw:10,search:10,switch:3,gust:2,recovery:3,energySearch:2},roleCounts={};
@@ -119,9 +121,24 @@ function build(options){
  available.filter(function(c){return ets.indexOf(energy(c))>=0;}).forEach(function(c){if(total<60)energyAdded+=add(c,Math.min(60-total,18-energyAdded));});
  if((roleCounts.draw||0)<6)notes.push('드로우 카드가 적어 패가 막힐 수 있습니다.');
  if((roleCounts.search||0)<6)notes.push('포켓몬 검색 수단이 부족합니다.');
+ selected.forEach(function(t){if(!Object.keys(cards).some(function(id){return db[id].card_class==='pokemon'&&type(db[id].pokemon_type)===t;}))notes.push('선택한 '+t+' 타입을 포함하지 못했습니다. 보유 카드·진화 연결·기술 에너지를 확인해주세요.');});
  if(total<60)notes.push('역할에 맞는 보유 카드가 부족하여 '+(60-total)+'칸을 비웠습니다.');
  notes.push('기술의 추가 조건·특성·검색 비용은 자동 해석하지 않습니다. 대회 레귤레이션 검증은 별도입니다.');
  return {cards:cards,notes:notes,attacker:attacker.bs_code,attack:plan.attack.name,energyTypes:ets,roles:roleCounts,validation:inspect(cards,db,owned)};
+}
+// Search owned basic starting points under an explicit Pokemon-type constraint.
+function buildByTypes(options){
+ var selected=options.pokemonTypes||[],allowed=TYPES.concat(['드래곤','무색']);
+ if(!selected.length||selected.some(function(t){return allowed.indexOf(t)<0;}))return {cards:{},notes:['포켓몬 타입을 하나 이상 선택해주세요.'],validation:{ok:false,total:0,errors:['유효한 타입 선택 필요']}};
+ var best=null,bestScore=-Infinity;
+ options.database.filter(function(c){return basic(c)&&qty((options.owned||{})[c.bs_code])>0&&selected.indexOf(type(c.pokemon_type))>=0;}).forEach(function(c){
+ var r=build(Object.assign({},options,{basicCode:c.bs_code,targetPath:null}));
+ var present={};options.database.forEach(function(x){if(r.cards[x.bs_code]&&x.card_class==='pokemon')present[type(x.pokemon_type)]=true;});
+ var coverage=selected.filter(function(t){return present[t];}).length;
+ var score=coverage*10000+(r.validation.ok?1000:0)+r.validation.total;
+ if(score>bestScore){best=r;bestScore=score;}
+ });
+ return best||{cards:{},notes:['선택한 타입의 보유 기본 포켓몬이 없습니다.'],validation:{ok:false,total:0,errors:['보유 기본 포켓몬 부족']}};
 }
 // Opening-hand Monte Carlo only: no search/draw effects or opponent. Not win rate.
 function simulate(cards,database,options){
@@ -138,6 +155,6 @@ function simulate(cards,database,options){
  }
  return {available:true,trials:n,seed:options.seed===undefined?20261029:options.seed,openingBasic:hit/n,openingBasicEnergy:energyHit/n,openingDrawSupporter:drawHit/n,attackerInPrizes:options.attacker?prized/n:null,scope:'멀리건 전 최초 7장과 뒤 6장 배치만 측정. 카드 효과·승률·실전 공격률 제외.'};
 }
-var api={build:build,inspect:inspect,simulate:simulate,basic:basic,basicEnergy:energy,role:role,compareReference:compareReference,openingMetrics:openingMetrics};
+var api={build:build,buildByTypes:buildByTypes,inspect:inspect,simulate:simulate,basic:basic,basicEnergy:energy,role:role,compareReference:compareReference,openingMetrics:openingMetrics};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.DeckEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
