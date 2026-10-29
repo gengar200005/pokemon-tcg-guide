@@ -31,3 +31,13 @@ The 60-card auto-build modal now provides a separate multi-select Pokemon type c
 Every Pokemon, including evolution stages, must have a selected type. Energy selection follows attack costs, not the Pokemon's printed type. Compatible basics are used to represent additional selected types; unavailable or incompatible types are explicitly reported. Different-type evolution prerequisites are not exempt from the restriction. Type ratios and arbitrary mixed-energy attack plans are not supported. Insufficient inventory may produce a partial draft; no unowned cards are added. A failed empty proposal preserves the current deck.
 
 Validation after this addition: 23 tests pass. New tests cover mono-type exclusion, mixed-type representation, empty/unknown/unavailable types, inventory immutability, distinct attack energy types, and evolution-stage restrictions. The prior private inventory snapshot was unavailable for this iteration, so this addition was tested with synthetic inventories. Browser end-to-end verification remains outstanding.
+
+## Deck studio update
+
+The full-deck UI now exposes an explicit sufficient-basic-energy option (enabled initially for this user's stated supply), persists it on the deck, and applies the same supply view in validation and baseline comparison. Collection data is never changed. Turn it off to enforce registered basic-energy quantities.
+
+Type generation now scores the attacking plan as well as completion, handles a second type's basic attack energy requirement, rejects missing selected types, and excludes pure multiplier damage from unconditional attack scoring. Complete evolution chains may combine functionally identical alternate prints; stage-two plans include owned Rare Candy. Reviewed support annotations cover X Boot's Psychic/Metal supply and target restriction, Gormandize and Expert Nurturer. These are limited explicit effect support, not a full rules engine or proof of synergy. The generic search is not the manually reviewed conversation list.
+
+The modal and result panel use responsive type chips, an explicit energy checkbox, a primary build action, deck count cards, and readable validation notes. Half-deck generation continues to use the legacy engine. Basic-energy assumptions are saved with each full deck.
+
+Validation: 28 Node tests and JavaScript syntax checks pass, including separate energy supply, mixed-energy types, missing-type failure and multiplier scoring. Personal inventories remain outside GitHub.
