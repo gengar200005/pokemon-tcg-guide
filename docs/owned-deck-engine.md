@@ -1,69 +1,25 @@
-# 보유 카드 60장 구성: 1차 개선 및 검증
+# Owned-card deck drafts and retail baseline comparison
 
-기준 main: 2185d56d39d6cb0a60827a1460e522411a14cb1f
+The full-deck builder produces an unverified draft constrained by owned quantities. It does not prove competitive performance. The former Steven/Metagross-specific fixed recipe has been removed: reproducing a retail product is not a newly discovered strategy.
 
-## 변경
+## Behavior
 
-- full 자동 빌드에서 순수 함수 `DeckEngine.build` 사용. 기존 half 빌드는 별도 유지.
-- 에너지 포함 실제 인쇄본별 보유 수량, 동명이름 합산 4장 제한, 총 60장 상한.
-- DB의 `skills[].cost`에서 불꽃/무색 등 요구 비용 확인. 악타입 리자몽 ex의 불꽃 비용도 처리.
-- 정확한 진화 전 이름이 연결되는 보유 경로만 사용. 중간 단계가 없으면 건너뛰지 않음.
-- 검토한 범용 트레이너 이름 목록으로 역할 배분. 효과가 불명확한 카드는 추측해서 넣지 않음.
-- 기본 에너지 15장 목표, 18장 상한을 둔 입문용 휴리스틱. 부족한 역할을 에너지로 무한 채우지 않음.
-- 60장도 '초안'으로 표시. 현재 덱 시트에서 보유 수량 검증과 시작 패 시뮬레이션 제공.
-- 시뮬레이션은 메모리에서만 실행하며 보유 카드/클라우드에 쓰지 않음.
+- Build only from owned cards, including energy; enforce 60-card size and same-name copy limits. Leave a partial draft with errors when supported cards are insufficient.
+- Follow owned evolution chains without skipping a missing stage. Trainer-owned evolution names remain within the same trainer family.
+- Check printed attack energy costs. Trainer selection uses a limited role allowlist. Ability effects, additional attack conditions, special-energy effects and tactical synergy are not interpreted.
+- From the full-deck sheet, choose a retail baseline explicitly using **시판덱과 비교**. The comparison uses the 11 lists in `starter_deck_presets.json`, not every product in the catalog and not purchase history.
+- Show overlap, added and removed quantities, baseline inventory shortages, and current-deck validation errors. Cosmetic prints with identical stored functional fields count as the same card; same-name cards with different skills remain distinct. Incomplete metadata may under-match equivalent prints.
+- Label identical compositions **기존 시판덱과 동일** and valid changed compositions **시판덱 대비 변경안 · 성능 개선 미검증**. Invalid compositions get a validation label. Identical composition and sufficient ownership are separate checks.
+- Comparison is read-only: it neither registers retail products nor modifies inventory or the deck.
 
-## 실행
+## Measurements and limits
 
-```
-node --test tests/deck-engine.test.js
-node tests/simulate-owned.js
-```
+Comparison shows exact hypergeometric probabilities of at least one basic Pokemon, basic energy, or recognized draw supporter in the first seven cards before mulligans. The draw-supporter category uses the engine's limited allowlist. Inclusion does not establish that an effect is usable, useful or stronger.
 
-12개 테스트 통과. 실제 DB의 리자몽 진화 경로/기술 비용, 다중 인쇄본 이름 제한,
-보유 에너지 부족, 중간 진화 누락, 잘못된 수량, 무색 비용, 미지원 비용,
-100개 가상 재고 변형, 앱 full 진입점 연결 포함.
-시뮬레이션의 기본 포켓몬 포함률은 초기하분포의 이론값과 오차 2%p 이내인지 검증.
+The separate seeded Monte Carlo button samples initial hands. Neither measurement models effects, turns, opponents, win rates or tournament legality. No improvement ranking is inferred from these numbers. Strategy optimization and battle simulation remain future work.
 
-## 재현 결과
+## Verification
 
-공개 카드 DB로 만든 가상 보유 목록이며 실제 사용자의 데이터가 아니다.
-seed=20261029, 10,000회, 생성 덱 60장:
+`node --test tests/deck-engine.test.js` — 19 tests, including inventory constraints, evolution names, alternate-print handling, invalid inputs, deterministic sampling, exact baseline probabilities and read-only UI comparison.
 
-| 최초 7장 지표 | 결과 |
-|---|---:|
-| 기본 포켓몬 포함 | 80.78% |
-| 기본 에너지 포함 | 88.09% |
-| 지원하는 드로우 서포트 포함 | 73.40% |
-
-멀리건 전 최초 패 표본이다. 승률이나 2턴 공격 성공률이 아니다.
-
-## 명확한 한계와 후속 작업
-
-- 사용자 인증/보유 카드 목록 미확보. 실제 재고 검증과 배포 전 UI 검증 필요.
-- 현재 브라우저 세션은 Google 로그인이 필요함. ChatGPT 계정과 앱 인증 세션은 별개.
-- 대회 레귤레이션/카드 예외 룰 전부를 검증하지 않는다.
-- 특수 에너지, 이상한사탕 생략 경로, 특성 가속, 조건부 공격/데미지, 검색 비용/조건은 실행하지 않는다.
-- 트레이너 이름 allowlist는 작은 시작점. 같은 이름의 재수록 효과 차이, 지원하지 않는 유용한 카드가 있을 수 있다.
-- 경로 평가는 공격 기본 숫자와 비용의 휴리스틱이며 효과에 의존하는 전략을 과소평가할 수 있다.
-- 고정 에너지 상한은 입문용 정책이며 에너지 다량 사용 전략에 부적합하다.
-- 일부 카드가 있어도 지원 범위 밖이면 부분 덱을 반환한다. 구매 필요라고 단정하지 않는다.
-- 여러 이름의 빛나는 포켓몬 등 예외 충돌은 마지막 검증에서 오류로 표시할 수 있다.
-- 상호작용을 포함하는 골드피싱은 효과별 명시적 실행기를 구축한 뒤 구현해야 한다.
-- 사용자 보유 목록/계정 정보는 공개 저장소에 커밋하지 않는다.
-
-## 추가 개선: 소유자 이름 진화와 명시적 전략 템플릿
-
-- evolution_lines의 base_kr는 `성호의 메탕`도 `메탕`으로 정규화한다.
-  동일한 `…의 ` 소유자 접두어일 때만 정규화된 부모 이름을 연결하여,
-  일반 메탕과 성호의 메탕구가 잘못 연결되는 것을 차단한다.
-- 성호의 메타그로스 ex / 엑스 부트 기반 공개 전략 템플릿을 추가했다.
-  주력 진화 라인, 이상한사탕, 범용 트레이너, 초/강철 에너지 쌍을 명시적으로 구성한다.
-  템플릿 전부를 보유 수량 내에서 확보한 경우에만 사용하고, 아니면 일반 경로로 돌아간다.
-- UI에서 넘기는 정규화된 targetPath `메타그로스`도 처리한다.
-- 한국어 이름 `호브`, `찬란한` 판정을 수정했다.
-- 테스트 15개 통과. 모든 테스트는 공개 DB 기반 합성 재고이며 개인 재고를 포함하지 않는다.
-
-전략 템플릿의 최초 7장 시뮬레이션은 특성/트레이너 실행을 포함하지 않는다.
-기본 포켓몬 9장일 때 멀리건 위험이 상당하므로 '최적 덱'이라고 표시하지 않는다.
-초기 패만 최적화하면 진화 공격수 숫자와 중후반 지속력이 나빠질 수 있다.
+`node --check app.js` and `node --check deck-engine.js` check syntax. Tests use synthetic inventories and public card data; private collection data is not committed.
