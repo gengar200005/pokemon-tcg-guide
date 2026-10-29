@@ -875,6 +875,18 @@ function confirmAndRunAutoBuild(basicCard,targetPath){
    입력: basicCard (선택한 Basic 카드), targetPath (최종 진화 base_kr 이름 or null)
 */
 function runAutoBuild(basicCard,targetPath){
+  if(_deckBuilder.format==='full'){
+    var proposal=DeckEngine.build({database:cardsDB,evolution:evolutionLines,owned:D.collected,basicCode:basicCard.bs_code,targetPath:targetPath});
+    _deckBuilder.cards=proposal.cards;
+    _deckBuilder.buildNotes=proposal.notes;
+    _deckBuilder.buildAttacker=proposal.attacker||null;
+    _lastAutoBuild={basicBsCode:basicCard.bs_code,targetPath:targetPath};
+    delete _deckBuilder.lastAutoBuild;
+    refreshDeckBuilder();
+    openDeckSheet();
+    toast(proposal.validation.ok?'60장 초안을 구성했어요. 점검 결과를 확인해주세요.':'보유 카드로 부분 구성했어요. 부족한 내용을 확인해주세요.','#2980b9');
+    return;
+  }
   var isHalf=_deckBuilder.format==='half';
   var targetTotal=isHalf?30:60;
   var strict=isHalf&&(_deckBuilder.strict!==false);
@@ -2022,6 +2034,8 @@ function validateDeck(deck){
     }
   }
 
+  if(!Object.keys(cards).some(function(id){return DeckEngine.basic(dbByCode[id]);}))errors.push({lvl:'bad',msg:'기본 포켓몬이 최소 1장 필요합니다'});
+
   /* 3) 진화 라인 약식 검증 */
   var stageCount={basic:0,stage1:0,stage2:0};
   for(var bc2 in cards){
@@ -2245,6 +2259,8 @@ function editDeck(id){
     isNew:false,
     createdAt:found.createdAt||Date.now(),
     updatedAt:found.updatedAt||Date.now(),
+    buildNotes:found.buildNotes||[],
+    buildAttacker:found.buildAttacker||null,
     lastAutoBuild:found.lastAutoBuild||null  /* 세션 17e: 저장된 레시피 복원 */
   };
   /* 세션 17e: 저장된 자동 빌드 레시피가 있으면 복원, 없으면 초기화 */
@@ -2921,6 +2937,13 @@ function renderDeckSheet(){
     h+='</div>';
   }
 
+  if(_deckBuilder.format==='full'){
+    h+='<div style="padding:12px"><b>보유 카드 기반 60장 초안</b><p>대회 적합성과 기술의 추가 조건은 별도 확인이 필요합니다.</p>';
+    var report=DeckEngine.inspect(normalizeDeckCards(_deckBuilder),dbByCode,D.collected);
+    (report.errors||[]).concat(_deckBuilder.buildNotes||[]).forEach(function(n){h+='<p>'+esc(n)+'</p>';});
+    h+='<button class="btn btn-b" onclick="showDeckSimulation()">시작 패 10,000회 시뮬레이션</button><div id="deck-simulation" aria-live="polite"></div></div>';
+  }
+
   if(counts.total===0){
     h+='<div class="dbm-empty" style="grid-column:none">덱이 비어있어요</div>';
   }else{
@@ -3001,6 +3024,8 @@ function saveCurrentDeck(){
     cards:cardsArr,
     createdAt:_deckBuilder.createdAt,
     updatedAt:_deckBuilder.updatedAt,
+    buildNotes:_deckBuilder.buildNotes||[],
+    buildAttacker:_deckBuilder.buildAttacker||null,
     lastAutoBuild:_deckBuilder.lastAutoBuild||null  /* 세션 17e: 레시피도 함께 저장 */
   };
   if(!Array.isArray(D.customDecksV1))D.customDecksV1=[];
@@ -4307,3 +4332,12 @@ document.addEventListener('DOMContentLoaded',function(){
     loadTrainerCategories();
   });
 });
+
+/* Read-only: never saves or alters the collection/deck. */
+function showDeckSimulation(){
+  if(!_deckBuilder)return;
+  var result=DeckEngine.simulate(normalizeDeckCards(_deckBuilder),cardsDB,{trials:10000,seed:20261029});
+  var el=$('deck-simulation');if(!el)return;
+  if(!result.available){el.textContent=result.reason;return;}
+  el.textContent='최초 7장에 기본 포켓몬: '+(100*result.openingBasic).toFixed(1)+'% / 기본 에너지: '+(100*result.openingBasicEnergy).toFixed(1)+'% / 지원하는 드로우 서포트: '+(100*result.openingDrawSupporter).toFixed(1)+'%. '+result.scope;
+}
