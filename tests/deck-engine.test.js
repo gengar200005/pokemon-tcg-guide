@@ -67,3 +67,23 @@ test('comparison UI reads selected baseline and does not mutate deck or inventor
  const before=JSON.stringify([ctx.D,ctx._deckBuilder]);vm.createContext(ctx);vm.runInContext(snippet,ctx);ctx.compareCurrentReference();
  assert(output.innerHTML.includes('기존 시판덱과 동일'));assert.equal(JSON.stringify([ctx.D,ctx._deckBuilder]),before);
 });
+test('type-constrained builder excludes all other Pokemon without changing inventory',()=>{
+ const extra={...starter,bs_code:'water',name_kr:'물 보조',pokemon_type:'물'};const data=[...fixture,extra],inv={...owned,water:{qty:4}},before=JSON.stringify(inv);
+ const r=E.buildByTypes({database:data,evolution:[],owned:inv,pokemonTypes:['악']});assert(r.validation.ok);
+ for(const id of Object.keys(r.cards)){const c=data.find(c=>c.bs_code===id);if(c.card_class==='pokemon')assert.equal(c.pokemon_type,'악');}
+ assert.equal(JSON.stringify(inv),before);assert(r.cards.e>0); // Pokemon type is not the attack's energy type.
+});
+test('multiple selected types are represented when compatible owned basics exist',()=>{
+ const extra={...starter,bs_code:'water',name_kr:'물 보조',pokemon_type:'물'};const data=[...fixture,extra];
+ const r=E.buildByTypes({database:data,evolution:[],owned:{...owned,water:{qty:4}},pokemonTypes:['악','물']});assert(r.validation.ok);assert(r.cards.water>0);
+ assert(Object.keys(r.cards).some(id=>data.find(c=>c.bs_code===id).pokemon_type==='악'));
+});
+test('missing selected types are reported and empty or unknown selections rejected',()=>{
+ const opts={database:fixture,evolution:[],owned};
+ for(const ts of [[],['없음'],['물']])assert.equal(E.buildByTypes({...opts,pokemonTypes:ts}).validation.total,0);
+ const r=E.buildByTypes({...opts,pokemonTypes:['악','물']});assert(r.notes.some(n=>n.includes('물 타입을 포함하지 못')));
+});
+test('type constraints apply to evolution stages too',()=>{
+ const final={...starter,bs_code:'evolved',name_kr:'물 진화',pokemon_type:'물',card_type:'1진화 포켓몬',skills:[{name:'강타',cost:['불꽃'],damage:'300'}]};
+ const r=E.buildByTypes({database:[...fixture,final],evolution:[{bs_code:'evolved',evolvesFrom_kr:starter.name_kr}],owned:{...owned,evolved:{qty:4}},pokemonTypes:['악']});assert(!r.cards.evolved);
+});
