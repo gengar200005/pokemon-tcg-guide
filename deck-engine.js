@@ -33,37 +33,42 @@ function inspect(cards,db,owned){
  Object.keys(prism).forEach(function(n){if(prism[n]>1)errors.push('프리즘스타 1장 초과: '+n);});
  return {errors:errors,total:total,basics:b,ok:!errors.length};
 }
-// Reviewed casual strategy template, not inferred from type alone. Includes the
-// Psychic + Metal pair used by X Boot, and Rare Candy alongside normal evolution.
-var STEVEN_TEMPLATE=[
- ['성호의 메탕',4],['성호의 메탕구',2],['성호의 메타그로스 ex',3],
- ['성호의 오뚝군',2],['성호의 점토도리',1],['성호의 멜리시',2],['성호의 무장조',1],
- ['이상한사탕',4],['네스트볼',4],['하이퍼볼',4],['박사의 연구',4],['모야모',3],
- ['릴리에의 결심',4],['보스의 지령',2],['포켓몬 교체',2],['대단한낚싯대',1],['밤의 들것',1],
- ['기본 초 에너지',8],['기본 강철 에너지',8]
-];
-function stevenProfile(options){
- var db={},out={},missing=[];options.database.forEach(function(c){db[c.bs_code]=c;});
- var start=db[options.basicCode];
- if(!start||start.name_kr!=='성호의 메탕'||(options.targetPath&&options.targetPath!=='성호의 메타그로스 ex'&&options.targetPath!=='성호의 메타그로스'&&options.targetPath!=='메타그로스'))return null;
- var attacker=options.database.find(function(c){return c.name_kr==='성호의 메타그로스 ex'&&qty(options.owned[c.bs_code])&&(c.skills||[]).some(function(s){return s.name==='엑스 부트';});});
- if(!attacker)return null;
- STEVEN_TEMPLATE.forEach(function(row){var remaining=row[1];
- var candidates=options.database.filter(function(c){return c.name_kr===row[0]&&qty(options.owned[c.bs_code])>0;});
- // Prefer the selected print, then deterministic ID order; all copies count by name.
- candidates.sort(function(a,b){return (b.bs_code===options.basicCode?1:0)-(a.bs_code===options.basicCode?1:0)||a.bs_code.localeCompare(b.bs_code);});
- candidates.forEach(function(c){if(c.name_kr==='성호의 메타그로스 ex'&&!(c.skills||[]).some(function(s){return s.name==='엑스 부트';}))return;
- var n=Math.min(remaining,qty(options.owned[c.bs_code]));if(n){out[c.bs_code]=n;remaining-=n;}});
- if(remaining)missing.push(row[0]+' '+remaining+'장');
+// Compare against an explicitly selected retail deck. Cosmetic reprints may be
+// equivalent; identical names with different gameplay text must remain distinct.
+function identity(c){
+ return JSON.stringify(['name_kr','card_class','card_type','hp','pokemon_type','skills','effect_text','trainer_subtype','retreat','weakness_type','weakness_mult','resist_type','resist_value'].map(function(k){return c[k]===undefined?null:c[k];}));
+}
+function openingChance(count){var miss=1;for(var i=0;i<7;i++)miss*=Math.max(0,60-count-i)/(60-i);return 1-miss;}
+function openingMetrics(cards,db){
+ var v=inspect(cards,db);if(!v.ok)return null;
+ var counts={basic:0,basicEnergy:0,drawSupporter:0};
+ Object.keys(cards).forEach(function(id){var c=db[id],n=cards[id];if(basic(c))counts.basic+=n;if(energy(c))counts.basicEnergy+=n;if(role(c)==='draw')counts.drawSupporter+=n;});
+ return {counts:counts,basic:openingChance(counts.basic),basicEnergy:openingChance(counts.basicEnergy),drawSupporter:openingChance(counts.drawSupporter)};
+}
+function compareReference(options){
+ var db={};options.database.forEach(function(c){db[c.bs_code]=c;});
+ var baseline={},preset=options.preset,candidate=options.cards||{};
+ (preset.cards||[]).forEach(function(c){baseline[c.bs_code]=(baseline[c.bs_code]||0)+c.qty;});
+ var baseValidation=inspect(baseline,db),candidateValidation=inspect(candidate,db,options.owned);
+ if(!baseValidation.ok)return {available:false,reason:'기준덱 데이터 확인 필요: '+baseValidation.errors.join(' / ')};
+ function group(cards){var out={};Object.keys(cards).forEach(function(id){var c=db[id];if(!c)return;var key=identity(c);if(!out[key])out[key]={id:id,name:c.name_kr,qty:0};out[key].qty+=cards[id];});return out;}
+ var b=group(baseline),d=group(candidate),stock={};
+ Object.keys(options.owned||{}).forEach(function(id){if(db[id]){var key=identity(db[id]);stock[key]=(stock[key]||0)+qty(options.owned[id]);}});
+ var additions=[],removals=[],missing=[],overlap=0;
+ Object.keys(b).forEach(function(k){var n=d[k]?d[k].qty:0;overlap+=Math.min(b[k].qty,n);
+ if(b[k].qty>n)removals.push({id:b[k].id,name:b[k].name,qty:b[k].qty-n});
+ if(b[k].qty>(stock[k]||0))missing.push({id:b[k].id,name:b[k].name,qty:b[k].qty-(stock[k]||0)});
  });
- // An incomplete curated profile must not displace a potentially useful generic proposal.
- if(missing.length)return null;
- return {cards:out,profile:'steven-metagross-casual',attacker:attacker.bs_code,attack:'메탈스탬프',energyTypes:['초','강철'],
- notes:['성호의 메타그로스 ex의 엑스 부트에 맞춘 초·강철 에너지 구성입니다.','이상한사탕 경로와 메탕구를 통한 일반 진화를 함께 사용합니다.','60장 전략 초안입니다. 실제 전개·특성 효과·대회 레귤레이션은 시뮬레이션하지 않습니다.'],validation:inspect(out,db,options.owned)};
+ Object.keys(d).forEach(function(k){var n=b[k]?b[k].qty:0;if(d[k].qty>n)additions.push({id:d[k].id,name:d[k].name,qty:d[k].qty-n});});
+ var same=!additions.length&&!removals.length&&inspect(candidate,db).ok;
+ return {available:true,referenceId:preset.id,referenceName:preset.name_kr,classification:same?'unchanged':candidateValidation.ok?'unverified_changes':'invalid_candidate',
+ label:same?'기존 시판덱과 동일':candidateValidation.ok?'시판덱 대비 변경안 · 성능 개선 미검증':'현재 덱 구성 확인 필요',overlap:overlap,additions:additions,removals:removals,
+ referenceMissing:missing,referenceOwned:missing.length===0,candidateValidation:candidateValidation,
+ baselineMetrics:openingMetrics(baseline,db),candidateMetrics:openingMetrics(candidate,db),
+ limits:'최초 7장 포함 확률만 비교합니다. 카드 효과·전개 속도·승률·대회 사용 가능성은 판단하지 않습니다.'};
 }
 
 function build(options){
- if(!options.disableProfiles){var reviewed=stevenProfile(options);if(reviewed)return reviewed;}
  var db={},ev={},owned=options.owned||{},cards={},notes=[],names={},total=0;
  options.database.forEach(function(c){db[c.bs_code]=c;});(options.evolution||[]).forEach(function(e){ev[e.bs_code]=e;});
  var available=options.database.filter(function(c){return qty(owned[c.bs_code])>0;});
@@ -133,6 +138,6 @@ function simulate(cards,database,options){
  }
  return {available:true,trials:n,seed:options.seed===undefined?20261029:options.seed,openingBasic:hit/n,openingBasicEnergy:energyHit/n,openingDrawSupporter:drawHit/n,attackerInPrizes:options.attacker?prized/n:null,scope:'멀리건 전 최초 7장과 뒤 6장 배치만 측정. 카드 효과·승률·실전 공격률 제외.'};
 }
-var api={build:build,inspect:inspect,simulate:simulate,basic:basic,basicEnergy:energy,role:role,templates:{steven:STEVEN_TEMPLATE}};
+var api={build:build,inspect:inspect,simulate:simulate,basic:basic,basicEnergy:energy,role:role,compareReference:compareReference,openingMetrics:openingMetrics};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.DeckEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
