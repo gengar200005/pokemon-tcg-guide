@@ -576,7 +576,7 @@ function openAutoBuildModal(){
   }
   /* 컬렉션에 Basic 포켓몬이 있는지 확인 */
   var basics=getCollectionBasics();
-  if(!basics.length){
+  if(!basics.length&&_deckBuilder.format!=='full'){
     toast('⚠️ 컬렉션에 기본 포켓몬이 없어요. 먼저 카드를 등록하세요','#f39c12');
     return;
   }
@@ -667,7 +667,7 @@ function renderBasicPokemonList(){
   /* 렌더 */
   var grid=$('abGrid');
   if(!filtered.length){
-    grid.innerHTML='<div class="ab-empty"><div class="ei">🔍</div><p>조건에 맞는 기본 포켓몬이<br>없어요.</p></div>';
+    grid.innerHTML='<div class="ab-empty"><div class="ei">🔍</div><p>조건에 맞는 보유 기본 포켓몬이 없어요.<br>로그인 상태와 수집함 등록을 확인해주세요.</p></div>';
     return;
   }
 
@@ -2595,7 +2595,7 @@ function applyDeckViewMode(){
   /* 하단 버튼 변경 */
   var bot=$('dbmBot');
   if(isSlot){
-    bot.innerHTML='<button class="bbtn" onclick="switchToCatalogView()">📚 카드 추가</button>'
+    bot.innerHTML=(_deckBuilder.format==='full'?'<button class="bbtn" onclick="openAutoBuildModal()">🪄 타입으로 구성</button>':'')+'<button class="bbtn" onclick="switchToCatalogView()">📚 카드 추가</button>'
       +'<button class="bbtn" onclick="openValidationModal()">✅ 검증</button>'
       +'<button class="bbtn bad" onclick="confirmClearDeck()">🗑️ 비우기</button>';
   }else{
