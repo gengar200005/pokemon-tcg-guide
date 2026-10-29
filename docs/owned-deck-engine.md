@@ -23,3 +23,11 @@ The separate seeded Monte Carlo button samples initial hands. Neither measuremen
 `node --test tests/deck-engine.test.js` — 19 tests, including inventory constraints, evolution names, alternate-print handling, invalid inputs, deterministic sampling, exact baseline probabilities and read-only UI comparison.
 
 `node --check app.js` and `node --check deck-engine.js` check syntax. Tests use synthetic inventories and public card data; private collection data is not committed.
+
+## Pokemon type selection
+
+The 60-card auto-build modal now provides a separate multi-select Pokemon type control and a **선택한 타입으로 60장 구성** button. The existing basic-card browsing filter remains independent. The new action evaluates owned basic starting points, prioritizes representation of selected types, then complete 60-card drafts and filled slots. This ranking is not a performance score.
+
+Every Pokemon, including evolution stages, must have a selected type. Energy selection follows attack costs, not the Pokemon's printed type. Compatible basics are used to represent additional selected types; unavailable or incompatible types are explicitly reported. Different-type evolution prerequisites are not exempt from the restriction. Type ratios and arbitrary mixed-energy attack plans are not supported. Insufficient inventory may produce a partial draft; no unowned cards are added. A failed empty proposal preserves the current deck.
+
+Validation after this addition: 23 tests pass. New tests cover mono-type exclusion, mixed-type representation, empty/unknown/unavailable types, inventory immutability, distinct attack energy types, and evolution-stage restrictions. The prior private inventory snapshot was unavailable for this iteration, so this addition was tested with synthetic inventories. Browser end-to-end verification remains outstanding.
