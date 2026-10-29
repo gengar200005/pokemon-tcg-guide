@@ -558,6 +558,7 @@ function getCollectionBasics(){
 }
 
 /* 🪄 버튼 핸들러 — 자동 빌드 모달 열기 */
+var _abDeckTypes=[];
 function openAutoBuildModal(){
   if(!_deckBuilder){toast('빌더가 열려있지 않아요','#e74c3c');return;}
   /* 데이터 로딩 체크 */
@@ -615,7 +616,29 @@ function renderAutoBuildFilters(){
     }
     h+='<button class="fchip'+active+'" onclick="setAutoBuildType(\''+t+'\')">'+label+'</button>';
   }
+  if(_deckBuilder&&_deckBuilder.format==='full'){
+    h+='<div style="width:100%;padding-top:12px"><b>덱에 넣을 포켓몬 타입 · 복수 선택</b><p>선택한 타입만 포함합니다. 필요한 에너지는 기술에 따라 결정되며, 타입별 장수 비율은 지정하지 않습니다.</p>';
+    types.slice(1).forEach(function(t){h+='<button class="fchip'+(_abDeckTypes.indexOf(t)>=0?' active':'')+'" aria-pressed="'+(_abDeckTypes.indexOf(t)>=0)+'" onclick="toggleAutoDeckType(\''+t+'\')">'+esc(t)+'</button>';});
+    h+='<button class="btn" onclick="runAutoBuildTypes()"'+(_abDeckTypes.length?'':' disabled')+'>선택한 타입으로 60장 구성</button></div>';
+  }
   $('abFilters').innerHTML=h;
+}
+
+function toggleAutoDeckType(t){
+  var i=_abDeckTypes.indexOf(t);if(i<0)_abDeckTypes.push(t);else _abDeckTypes.splice(i,1);
+  renderAutoBuildFilters();
+}
+function runAutoBuildTypes(){
+  if(!_deckBuilder||_deckBuilder.format!=='full'||!_abDeckTypes.length)return;
+  var proposal=DeckEngine.buildByTypes({database:cardsDB,evolution:evolutionLines,owned:D.collected,pokemonTypes:_abDeckTypes.slice()});
+  if(!proposal.validation.total){toast(proposal.notes.join(' '),'#e74c3c');return;}
+  _deckBuilder.cards=proposal.cards;
+  _deckBuilder.buildNotes=['선택 타입: '+_abDeckTypes.join(' · ')].concat(proposal.notes);
+  _deckBuilder.buildAttacker=proposal.attacker||null;
+  delete _deckBuilder.lastAutoBuild;
+  _lastAutoBuild=null;
+  closeAutoBuildModal();refreshDeckBuilder();openDeckSheet();
+  toast(proposal.validation.ok?'타입 조건에 맞춘 60장 초안입니다. 점검 내용을 확인해주세요.':'조건에 맞는 카드가 부족해 부분 구성했습니다.','#2980b9');
 }
 
 function setAutoBuildType(t){
