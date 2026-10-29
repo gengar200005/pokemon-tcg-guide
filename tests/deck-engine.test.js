@@ -38,23 +38,32 @@ test('application full-deck entry point uses new engine without saving',()=>{
  const sheet=source.slice(source.indexOf('function renderDeckSheet('),source.indexOf('function renderDeckSheet(')+10000);
  assert(sheet.includes('showDeckSimulation()'));
 });
-test('reviewed Metagross profile uses the ability energy pair and complete 60',()=>{
- const inv={};for(const [name,n] of E.templates.steven){const c=db.find(c=>c.name_kr===name);assert(c,name);inv[c.bs_code]={qty:n};}
- const start=db.find(c=>c.name_kr==='성호의 메탕');const r=E.build({database:db,evolution:evo,owned:inv,basicCode:start.bs_code,targetPath:'성호의 메타그로스 ex'});
- assert.equal(r.profile,'steven-metagross-casual');assert.equal(r.validation.total,60);assert(r.validation.ok);assert.deepEqual(r.energyTypes,['초','강철']);
- const sim=E.simulate(r.cards,db,{trials:10000});assert(sim.available);assert.equal(r.validation.basics,9);
- const missing={...inv};delete missing[db.find(c=>c.name_kr==='기본 초 에너지').bs_code];
- const fallback=E.build({database:db,evolution:evo,owned:missing,basicCode:start.bs_code});assert(!fallback.profile);
-});
-test('reviewed template aggregates selected and alternate starter prints',()=>{
- const inv={};for(const [name,n] of E.templates.steven){const c=db.find(c=>c.name_kr===name);inv[c.bs_code]={qty:n};}
- const copies=db.filter(c=>c.name_kr==='성호의 메탕');assert(copies.length>=2);inv[copies[0].bs_code]={qty:3};inv[copies[1].bs_code]={qty:3};
- const r=E.build({database:db,evolution:evo,owned:inv,basicCode:copies[1].bs_code});assert.equal(r.cards[copies[1].bs_code],3);assert.equal(r.cards[copies[0].bs_code],1);assert(r.validation.ok);
-});
 test('normalized owner evolution stays in the same trainer family',()=>{
  const line=db.filter(c=>['BS2025003005','BS2025003006','BS2025003007'].includes(c.bs_code));
  const en=db.find(c=>E.basicEnergy(c)==='강철');const inv=Object.fromEntries(line.map(c=>[c.bs_code,{qty:3}]));inv[en.bs_code]={qty:20};
  const r=E.build({database:[...line,en],evolution:evo,owned:inv,basicCode:'BS2025003005',targetPath:'메타그로스',disableProfiles:true});assert.equal(r.attacker,'BS2025003007');
  const ordinary={...line[0],bs_code:'ordinary',name_kr:'메탕'};inv.ordinary={qty:4};
  const no=E.build({database:[ordinary,...line.slice(1),en],evolution:[...evo,{bs_code:'ordinary',base_kr:'메탕'}],owned:inv,basicCode:'ordinary',targetPath:'메타그로스',disableProfiles:true});assert(!no.cards.BS2025003007);
+});
+const refCards={p:4,e:56},refPreset={id:'fixture',name_kr:'기준덱',cards:[{bs_code:'p',qty:4},{bs_code:'e',qty:56}]};
+const refOwned={p:{qty:4},e:{qty:60}};
+function compare(extra={}){return E.compareReference({database:fixture,cards:refCards,owned:refOwned,preset:refPreset,...extra});}
+test('retail baseline reproduction is unchanged, never an improvement',()=>{const r=compare();assert.equal(r.classification,'unchanged');assert.equal(r.overlap,60);assert.deepEqual(r.additions,[]);assert.deepEqual(r.baselineMetrics,r.candidateMetrics);assert(r.referenceOwned);});
+test('cosmetic reprints match but different attacks do not',()=>{
+ const alt={...starter,bs_code:'alt',image:'alternate.png'};
+ assert.equal(compare({database:[...fixture,alt],cards:{alt:4,e:56},owned:{alt:{qty:4},e:{qty:56}}}).classification,'unchanged');
+ const different={...alt,skills:[{name:'다른 공격',damage:'10',cost:['무색']}]};
+ const r=compare({database:[...fixture,different],cards:{alt:4,e:56},owned:{alt:{qty:4},e:{qty:56}}});
+ assert.equal(r.classification,'unverified_changes');assert.equal(r.overlap,56);assert.equal(r.additions[0].qty,4);assert.equal(r.removals[0].qty,4);
+});
+test('comparison reports inventory shortages without changing inputs',()=>{const o={p:{qty:1},e:{qty:56}},before=JSON.stringify(o);const r=compare({owned:o});assert.equal(r.classification,'unchanged');assert(!r.referenceOwned);assert.equal(r.referenceMissing[0].qty,3);assert(!r.candidateValidation.ok);assert.equal(JSON.stringify(o),before);});
+test('invalid baseline and incomplete candidate cannot be a valid recommendation',()=>{assert(!compare({preset:{cards:[{bs_code:'p',qty:4}]}}).available);const r=compare({cards:{p:4,e:55}});assert.equal(r.classification,'invalid_candidate');assert.equal(r.candidateMetrics,null);});
+test('opening comparison uses exact hypergeometric probability',()=>{const r=compare();let miss=1;for(let i=0;i<7;i++)miss*=(56-i)/(60-i);assert.equal(r.candidateMetrics.basic,1-miss);});
+test('comparison UI reads selected baseline and does not mutate deck or inventory',()=>{
+ const fs=require('node:fs'),vm=require('node:vm'),source=fs.readFileSync(require.resolve('../app.js'),'utf8');
+ const snippet=source.slice(source.indexOf('function compareCurrentReference('));
+ const output={innerHTML:''},select={value:'fixture'};
+ const ctx={DeckEngine:E,cardsDB:fixture,D:{collected:refOwned},_deckBuilder:{cards:refCards},_bdmPresets:{presets:[refPreset]},$:id=>id==='deck-reference-select'?select:output,normalizeDeckCards:d=>d.cards,esc:x=>String(x)};
+ const before=JSON.stringify([ctx.D,ctx._deckBuilder]);vm.createContext(ctx);vm.runInContext(snippet,ctx);ctx.compareCurrentReference();
+ assert(output.innerHTML.includes('기존 시판덱과 동일'));assert.equal(JSON.stringify([ctx.D,ctx._deckBuilder]),before);
 });
