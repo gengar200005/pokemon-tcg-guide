@@ -2938,10 +2938,10 @@ function renderDeckSheet(){
   }
 
   if(_deckBuilder.format==='full'){
-    h+='<div style="padding:12px"><b>보유 카드 기반 60장 초안</b><p>대회 적합성과 기술의 추가 조건은 별도 확인이 필요합니다.</p>';
+    h+='<div style="padding:12px"><b>현재 60장 덱 점검</b><p>자동 구성은 후보 초안입니다. 시판덱보다 성능이 개선되었다는 의미는 아닙니다.</p>';
     var report=DeckEngine.inspect(normalizeDeckCards(_deckBuilder),dbByCode,D.collected);
     (report.errors||[]).concat(_deckBuilder.buildNotes||[]).forEach(function(n){h+='<p>'+esc(n)+'</p>';});
-    h+='<button class="btn btn-b" onclick="showDeckSimulation()">시작 패 10,000회 시뮬레이션</button><div id="deck-simulation" aria-live="polite"></div></div>';
+    h+='<button class="btn btn-b" onclick="showDeckSimulation()">시작 패 10,000회 시뮬레이션</button><div id="deck-simulation" aria-live="polite"></div><button class="btn btn-b" onclick="openReferenceComparison()">시판덱과 비교</button><div id="deck-reference" aria-live="polite"></div></div>';
   }
 
   if(counts.total===0){
@@ -4340,4 +4340,39 @@ function showDeckSimulation(){
   var el=$('deck-simulation');if(!el)return;
   if(!result.available){el.textContent=result.reason;return;}
   el.textContent='최초 7장에 기본 포켓몬: '+(100*result.openingBasic).toFixed(1)+'% / 기본 에너지: '+(100*result.openingBasicEnergy).toFixed(1)+'% / 지원하는 드로우 서포트: '+(100*result.openingDrawSupporter).toFixed(1)+'%. '+result.scope;
+}
+
+/* Retail decks are explicit baselines, never disguised as generated discoveries. */
+function openReferenceComparison(){
+  if(!_deckBuilder)return;
+  var panel=$('deck-reference');if(!panel)return;
+  panel.textContent='비교할 시판덱 목록을 불러오는 중...';
+  function render(){
+    if($('deck-reference')!==panel||!_deckBuilder)return;
+    var presets=(_bdmPresets&&_bdmPresets.presets)||[];
+    var h='<p>직접 비교 기준을 선택하세요. 목록은 구매 이력이나 소유 여부를 뜻하지 않습니다.</p><select id="deck-reference-select" aria-label="비교할 시판덱">';
+    presets.forEach(function(p){h+='<option value="'+esc(p.id)+'">'+esc(p.name_kr)+'</option>';});
+    h+='</select><button class="btn btn-b" onclick="compareCurrentReference()">현재 덱과 비교하기</button><div id="deck-reference-result"></div>';
+    panel.innerHTML=h;
+  }
+  if(_bdmPresets)render();else loadBdmPresets(render);
+}
+function compareCurrentReference(){
+  var select=$('deck-reference-select'),el=$('deck-reference-result');
+  if(!select||!el||!_deckBuilder||!_bdmPresets)return;
+  var preset=_bdmPresets.presets.filter(function(p){return p.id===select.value;})[0];if(!preset)return;
+  var r=DeckEngine.compareReference({database:cardsDB,cards:normalizeDeckCards(_deckBuilder),owned:D.collected,preset:preset});
+  if(!r.available){el.textContent=r.reason;return;}
+  var h='<p><b>'+esc(r.label)+'</b></p><p>기준: '+esc(r.referenceName)+' · 기능이 같은 카드 '+r.overlap+'/60장 일치</p>';
+  function list(title,items){h+='<p>'+title+': '+(items.length?items.map(function(x){return esc(x.name)+' ×'+x.qty;}).join(', '):'없음')+'</p>';}
+  list('기준덱에서 제외',r.removals);list('기준덱에 추가',r.additions);list('기준덱 재현 시 보유 부족',r.referenceMissing);
+  if(r.candidateValidation.errors.length)h+='<p>'+esc(r.candidateValidation.errors.join(' / '))+'</p>';
+  if(r.candidateMetrics){
+    h+='<table><thead><tr><th>최초 7장</th><th>시판덱</th><th>현재 덱</th><th>차이</th></tr></thead><tbody>';
+    [['basic','기본 포켓몬'],['basicEnergy','기본 에너지'],['drawSupporter','지원 드로우 서포트']].forEach(function(row){
+      var b=r.baselineMetrics[row[0]]*100,c=r.candidateMetrics[row[0]]*100,delta=c-b;
+      h+='<tr><td>'+row[1]+'</td><td>'+b.toFixed(1)+'%</td><td>'+c.toFixed(1)+'%</td><td>'+(delta>=0?'+':'')+delta.toFixed(1)+'%p</td></tr>';
+    });h+='</tbody></table>';
+  }
+  h+='<p>'+esc(r.limits)+'</p>';el.innerHTML=h;
 }
