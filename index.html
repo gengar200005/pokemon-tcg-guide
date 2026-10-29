@@ -523,6 +523,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 @media(max-width:480px){
   .bdm-cards-grid{grid-template-columns:repeat(3,1fr);gap:6px;padding:8px}
 }
+
+.ab-box{overflow-y:auto}.ab-srch{flex-shrink:0}.ab-grid{flex:none;min-height:180px;overflow:visible}.ab-filters{flex-wrap:wrap;overflow:visible}.ab-filters .deck-lab{flex:0 0 100%;min-width:0}.ab-filters .deck-lab .fchip{padding:10px 14px;font-size:.82rem}.ab-filters .deck-lab .fchip.active{background:#185b72;border-color:#185b72}
+/* Deck studio: scoped to full-deck controls and results. */
+.deck-lab{width:100%;padding:22px;border:1px solid #b9dce9;border-radius:22px;background:linear-gradient(140deg,#fff 20%,#edf8fc);box-shadow:0 8px 26px #16405d0d;color:#193e51;margin:12px 0;text-align:left}
+.deck-eyebrow{font-size:.7rem;letter-spacing:.12em;color:#34758a;font-weight:700;margin-bottom:8px}
+.deck-lab h3{font-size:1.3rem;margin-bottom:10px}.deck-lab p,.deck-lab small{font-size:.82rem;line-height:1.7;color:#476575;display:block;margin:10px 0}
+.deck-lab .fchip{margin:4px;padding:10px 14px;border-radius:14px;min-height:44px}.deck-lab .fchip.active{background:#185b72;color:#fff;border-color:#185b72}
+.energy-option{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #c9e1e9;border-radius:12px;padding:14px;margin:16px 0;font-size:.85rem}.energy-option input{width:20px;height:20px;accent-color:#185b72}
+.deck-build-cta{width:100%;padding:16px;background:#185b72!important;color:white!important;border-radius:14px;font-weight:700}.deck-build-cta:disabled{opacity:.45;cursor:not-allowed}
+.deck-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.deck-stats>div{padding:14px 8px;background:#fff;border:1px solid #d5e7ee;border-radius:14px;text-align:center}.deck-stats b{display:block;font-size:1.7rem}.deck-stats span{font-size:.72rem;color:#526b78}.deck-note{padding:10px 12px;border-left:3px solid #80bacd;background:#ffffffa8;border-radius:0 8px 8px 0}.deck-result .btn{margin:6px 4px 6px 0}.deck-lab button:focus-visible{outline:3px solid #df9b18;outline-offset:3px}
+@media(max-width:480px){.deck-lab{padding:16px;border-radius:16px}.deck-lab h3{font-size:1.15rem}.deck-lab .fchip{padding:9px 11px}}
 </style>
 </head>
 <body>
@@ -759,7 +770,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
       <h3>🪄 자동 덱 빌드</h3>
       <button class="x" onclick="closeAutoBuildModal()">&times;</button>
     </div>
-    <div class="ab-desc">💡 중심이 될 <b>기본 포켓몬</b>을 고르세요. 진화체·트레이너·에너지가 자동으로 채워집니다.</div>
+    <div class="ab-desc">💡 60장 덱은 <b>원하는 타입</b>으로 구성하거나, 아래에서 <b>기본 포켓몬</b>을 직접 골라 시작할 수 있어요.</div>
     <div class="ab-srch">
       <input type="text" id="abQuery" placeholder="포켓몬 이름 검색..." oninput="onAutoBuildSearch()">
       <div class="ab-filters" id="abFilters"></div>
@@ -860,6 +871,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="app.js?v=s18-slots6"></script>
+<script src="deck-engine.js?v=studio1"></script>
+<script src="app.js?v=studio1"></script>
 </body>
 </html>
