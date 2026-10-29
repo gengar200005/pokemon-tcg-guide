@@ -17,7 +17,7 @@ test('alternate prints share the four-copy limit',()=>{const copy={...starter,bs
 test('no basic and malformed counts fail validation',()=>{const d=Object.fromEntries(fixture.map(c=>[c.bs_code,c]));assert(!E.inspect({e:60},d).ok);assert(!E.inspect({p:1.5,e:58.5},d).ok);});
 test('missing middle evolution is never added',()=>{const final={...starter,bs_code:'z',name_kr:'최종',card_type:'2진화 포켓몬'};const r=build({database:[...fixture,final],owned:{...owned,z:{qty:3}},evolution:[{bs_code:'z',evolvesFrom_kr:'중간',base_kr:'최종'}],targetPath:'최종'});assert(!r.cards.z);assert(r.notes.some(n=>n.includes('연결되지')));});
 test('unknown costs are not silently treated as colorless',()=>{const p={...starter,skills:[{name:'?',cost:['알수없음']}]};const r=build({database:[p,fire],owned});assert.equal(r.validation.total,0);});
-test('colorless attacks choose actual owned basic energy',()=>{const p={...starter,skills:[{name:'무색공격',cost:['무색']}]};const r=build({database:[p,...fixture.slice(1)]});assert.deepEqual(r.energyTypes,['불꽃']);});
+test('colorless attacks choose actual owned basic energy',()=>{const p={...starter,skills:[{name:'무색공격',damage:'50',cost:['무색']}]};const r=build({database:[p,...fixture.slice(1)]});assert.deepEqual(r.energyTypes,['불꽃']);});
 test('deterministic simulation and analytical opening probability',()=>{const r=build(),a=E.simulate(r.cards,fixture,{seed:1,trials:10000});assert.deepEqual(a,E.simulate(r.cards,fixture,{seed:1,trials:10000}));let miss=1;for(let i=0;i<7;i++)miss*=(60-r.validation.basics-i)/(60-i);assert(Math.abs(a.openingBasic-(1-miss))<0.02);assert(!E.simulate({p:1},fixture).available);});
 test('real Korean DB attack costs and owned evolution chain',()=>{
  const basic=db.find(c=>c.name_kr==='파이리'&&E.basic(c));
@@ -87,3 +87,13 @@ test('type constraints apply to evolution stages too',()=>{
  const final={...starter,bs_code:'evolved',name_kr:'물 진화',pokemon_type:'물',card_type:'1진화 포켓몬',skills:[{name:'강타',cost:['불꽃'],damage:'300'}]};
  const r=E.buildByTypes({database:[...fixture,final],evolution:[{bs_code:'evolved',evolvesFrom_kr:starter.name_kr}],owned:{...owned,evolved:{qty:4}},pokemonTypes:['악']});assert(!r.cards.evolved);
 });
+test('unlimited basic energy is explicit and never mutates collection',()=>{
+ const o={...owned,e:{qty:0}},before=JSON.stringify(o);const r=build({owned:o,unlimitedBasicEnergy:true});assert(r.validation.ok);assert(r.cards.e>0);assert.equal(JSON.stringify(o),before);assert(!build({owned:o}).validation.ok);
+});
+test('missing selected types fail validation even at sixty cards',()=>{const r=E.buildByTypes({database:fixture,evolution:[],owned,pokemonTypes:['악','물']});assert(!r.validation.ok);assert(r.validation.errors.some(e=>e.includes('선택 타입 누락')));});
+test('mixed types can require different basic energies',()=>{
+ const water={...starter,bs_code:'water',name_kr:'물 주력',pokemon_type:'물',skills:[{name:'파도',damage:'80',cost:['물']}]},en=card('we','기본 물 에너지','energy');
+ const r=E.buildByTypes({database:[...fixture,water,en],evolution:[],owned:{...owned,water:{qty:4}},pokemonTypes:['악','물'],unlimitedBasicEnergy:true});assert(r.validation.ok);assert(r.cards.water>0);assert(r.cards.we>0);assert(r.cards.e>0);
+});
+test('damage multiplier alone is not assumed unconditional damage',()=>{const p={...starter,skills:[{name:'조건부',damage:'100×',cost:['무색']}]};assert.equal(build({database:[p,...fixture.slice(1)]}).validation.total,0);});
+test('reviewed energy supply survives serialization without changing non-energy limits',()=>{const o=E.supply(fixture,{p:{qty:1}},true);assert.equal(o.p.qty,1);assert.equal(o.e.qty,60);assert.equal(JSON.parse(JSON.stringify({unlimitedBasicEnergy:true})).unlimitedBasicEnergy,true);});
