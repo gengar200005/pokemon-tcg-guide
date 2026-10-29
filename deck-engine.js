@@ -16,7 +16,7 @@ var ROLES={
  '릴리에의 결심':'draw','난천':'draw','마리':'draw','하우':'draw','네스트볼':'search','하이퍼볼':'search','몬스터볼':'search',
  '포켓몬 교체':'switch','포켓몬교체':'switch','보스의 지령':'gust',
  '슈퍼볼':'search','대단한낚싯대':'recovery','대단한 낚싯대':'recovery',
- '에너지 회수':'recovery','에너지회수':'recovery','에너지 전송':'energySearch','에너지전송':'energySearch'
+ '밤의 들것':'recovery','에너지 회수':'recovery','에너지회수':'recovery','에너지 전송':'energySearch','에너지전송':'energySearch'
 };
 function role(c){return c.card_class==='trainer'?ROLES[c.name_kr]||null:null;}
 function inspect(cards,db,owned){
@@ -68,8 +68,19 @@ function compareReference(options){
  limits:'최초 7장 포함 확률만 비교합니다. 카드 효과·전개 속도·승률·대회 사용 가능성은 판단하지 않습니다.'};
 }
 
+// A separate supply view: never add cards to the user's collection.
+function supply(database,owned,unlimited){
+ var out=Object.assign({},owned||{});if(!unlimited)return out;
+ var seen={};database.forEach(function(c){var t=energy(c);if(t&&!seen[t]){out[c.bs_code]={qty:60};seen[t]=true;}});return out;
+}
+function baseDamage(s){return /[×x]/.test(s.damage||'')?0:(parseInt(s.damage,10)||0);}
+function supportValue(c){return (c.skills||[]).reduce(function(n,s){
+ if(s.name==='먹어두기')return n+35;
+ if(s.name==='키우기고수')return n+28;
+ return n;
+},0);}
 function build(options){
- var db={},ev={},owned=options.owned||{},cards={},notes=[],names={},total=0;
+ var db={},ev={},owned=supply(options.database,options.owned,options.unlimitedBasicEnergy),cards={},notes=[],names={},total=0;
  options.database.forEach(function(c){db[c.bs_code]=c;});(options.evolution||[]).forEach(function(e){ev[e.bs_code]=e;});
  var selected=options.pokemonTypes||[];
  var available=options.database.filter(function(c){return qty(owned[c.bs_code])>0&&(c.card_class!=='pokemon'||!selected.length||selected.indexOf(type(c.pokemon_type))>=0);});
@@ -96,18 +107,36 @@ function build(options){
  var supply={};available.forEach(function(e){var t=energy(e);if(t)supply[t]=(supply[t]||0)+qty(owned[e.bs_code]);});
  if(Object.keys(req).some(function(t){return (supply[t]||0)<req[t];}))return;
  if(!Object.keys(req).length){var ts=Object.keys(supply).sort(function(a,b){return supply[b]-supply[a];});if(s.cost.length&&!ts.length)return;if(ts.length)req[ts[0]]=1;}
- var damage=parseInt(s.damage,10)||0;
- plans.push({line:line,attack:s,req:req,score:damage/Math.max(1,s.cost.length)-line.length*8+Math.min(4,qty(owned[c.bs_code]))*5});
+ var damage=baseDamage(s);if(!damage)return;
+ plans.push({line:line,attack:s,req:req,score:damage*0.6+damage/Math.max(1,s.cost.length)-line.length*10+Math.min(4,qty(owned[c.bs_code]))*8});
  });});
  plans.sort(function(a,b){return b.score-a.score;});
  if(!plans.length)return {cards:{},notes:notes.concat('보유 기본 에너지'+'로 사용할 기술을 확인할 수 없습니다.'),validation:inspect({},db,owned)};
  var plan=plans[0],attacker=plan.line[plan.line.length-1];
- plan.line.forEach(function(c,i){add(c,i===0?4:3);});
+ // Only reviewed effect metadata is used; no arbitrary text-to-rules inference.
+ if((attacker.skills||[]).some(function(s){return s.name==='엑스 부트';})&&available.some(function(c){return energy(c)==='초';})){plan.req['초']=1;notes.push('엑스 부트: 강철·초 에너지를 강철 또는 초 포켓몬에게 붙입니다. 무색 포켓몬은 대상이 아닙니다.');}
+ var candy=available.find(function(c){return c.name_kr==='이상한사탕';});
+ plan.line.forEach(function(c,i){var target=i===0?4:(i===1&&plan.line.length===3&&candy?2:3);add(c,target);
+ available.filter(function(x){return x.bs_code!==c.bs_code&&identity(x)===identity(c);}).forEach(function(x){if((names[c.name_kr]||0)<target)add(x,target-(names[c.name_kr]||0));});});
+ if(plan.line.length===3&&candy){available.filter(function(c){return c.name_kr==='이상한사탕';}).forEach(function(c){add(c,4);});notes.push('이상한사탕과 정상 진화를 함께 사용합니다. 진화 가능한 차례인지 확인해주세요.');}
+ // Add an energy plan for a missing selected type, rather than only looking
+ // for incidental colorless attacks in that type.
+ selected.forEach(function(t){
+ if(plan.line.some(function(c){return type(c.pokemon_type)===t;}))return;
+ var candidates=[];
+ available.filter(function(c){return basic(c)&&type(c.pokemon_type)===t;}).forEach(function(c){attacks(c).forEach(function(a){
+ if(baseDamage(a)<1&&supportValue(c)===0)return;
+ var req={};a.cost.forEach(function(x){x=type(x);if(x!=='무색')req[x]=(req[x]||0)+1;});
+ if(Object.keys(req).some(function(x){return available.filter(function(e){return energy(e)===x;}).reduce(function(n,e){return n+qty(owned[e.bs_code]);},0)<req[x];}))return;
+ candidates.push({card:c,req:req,score:baseDamage(a)/Math.max(1,a.cost.length)+supportValue(c)});
+ });});candidates.sort(function(a,b){return b.score-a.score;});
+ if(candidates.length){var best=candidates[0];Object.keys(best.req).forEach(function(x){plan.req[x]=Math.max(plan.req[x]||0,best.req[x]);});add(best.card,2);}
+ });
  var pokemonCount=function(){return Object.keys(cards).reduce(function(s,id){return s+(db[id].card_class==='pokemon'?cards[id]:0);},0);};
- var compatible=available.filter(function(c){return basic(c)&&attacks(c).some(function(s){return s.cost.every(function(t){t=type(t);return t==='무색'||plan.req[t];});});});
- compatible.sort(function(a,b){return qty(owned[b.bs_code])-qty(owned[a.bs_code])||a.bs_code.localeCompare(b.bs_code);});
+ var compatible=available.filter(function(c){return basic(c)&&(supportValue(c)>0||attacks(c).some(function(s){return s.cost.every(function(t){t=type(t);return t==='무색'||plan.req[t];})&&baseDamage(s)>0; }));});
+ compatible.sort(function(a,b){var power=function(c){return Math.max(0,...attacks(c).filter(function(s){return s.cost.every(function(t){return type(t)==='무색'||plan.req[type(t)];});}).map(baseDamage))*0.2+supportValue(c);};return power(b)-power(a)||qty(owned[b.bs_code])-qty(owned[a.bs_code])||a.bs_code.localeCompare(b.bs_code);});
  selected.forEach(function(t){if(!Object.keys(cards).some(function(id){return db[id].card_class==='pokemon'&&type(db[id].pokemon_type)===t;})){var c=compatible.find(function(c){return type(c.pokemon_type)===t;});if(c)add(c,2);}});
- compatible.forEach(function(c){if(pokemonCount()<12)add(c,Math.min(4,12-pokemonCount()));});
+ compatible.forEach(function(c){if(pokemonCount()<14)add(c,Math.min(2,14-pokemonCount()));});
  var trainers=available.filter(function(c){return role(c);});
  var quotas={draw:10,search:10,switch:3,gust:2,recovery:3,energySearch:2},roleCounts={};
  Object.keys(quotas).forEach(function(r){roleCounts[r]=0;trainers.filter(function(c){return role(c)===r;}).forEach(function(c){roleCounts[r]+=add(c,Math.min(4,quotas[r]-roleCounts[r]));});});
@@ -124,7 +153,10 @@ function build(options){
  selected.forEach(function(t){if(!Object.keys(cards).some(function(id){return db[id].card_class==='pokemon'&&type(db[id].pokemon_type)===t;}))notes.push('선택한 '+t+' 타입을 포함하지 못했습니다. 보유 카드·진화 연결·기술 에너지를 확인해주세요.');});
  if(total<60)notes.push('역할에 맞는 보유 카드가 부족하여 '+(60-total)+'칸을 비웠습니다.');
  notes.push('기술의 추가 조건·특성·검색 비용은 자동 해석하지 않습니다. 대회 레귤레이션 검증은 별도입니다.');
- return {cards:cards,notes:notes,attacker:attacker.bs_code,attack:plan.attack.name,energyTypes:ets,roles:roleCounts,validation:inspect(cards,db,owned)};
+ var validation=inspect(cards,db,owned);selected.forEach(function(t){if(!Object.keys(cards).some(function(id){return db[id].card_class==='pokemon'&&type(db[id].pokemon_type)===t;}))validation.errors.push('선택 타입 누락: '+t);});validation.ok=!validation.errors.length;
+ if(options.unlimitedBasicEnergy)notes.unshift('기본 에너지는 충분히 보유한 것으로 계산했습니다. 수집함 수량은 변경하지 않습니다.');
+ notes.push('주력: '+attacker.name_kr+' · '+plan.attack.name+' (표기 기본 데미지 '+baseDamage(plan.attack)+')');
+ return {cards:cards,notes:notes,planScore:plan.score,attacker:attacker.bs_code,attack:plan.attack.name,energyTypes:ets,roles:roleCounts,validation:validation};
 }
 // Search owned basic starting points under an explicit Pokemon-type constraint.
 function buildByTypes(options){
@@ -135,7 +167,7 @@ function buildByTypes(options){
  var r=build(Object.assign({},options,{basicCode:c.bs_code,targetPath:null}));
  var present={};options.database.forEach(function(x){if(r.cards[x.bs_code]&&x.card_class==='pokemon')present[type(x.pokemon_type)]=true;});
  var coverage=selected.filter(function(t){return present[t];}).length;
- var score=coverage*10000+(r.validation.ok?1000:0)+r.validation.total;
+ var score=coverage*10000+(r.validation.ok?1000:0)+r.validation.total+(r.planScore||0);
  if(score>bestScore){best=r;bestScore=score;}
  });
  return best||{cards:{},notes:['선택한 타입의 보유 기본 포켓몬이 없습니다.'],validation:{ok:false,total:0,errors:['보유 기본 포켓몬 부족']}};
@@ -155,6 +187,6 @@ function simulate(cards,database,options){
  }
  return {available:true,trials:n,seed:options.seed===undefined?20261029:options.seed,openingBasic:hit/n,openingBasicEnergy:energyHit/n,openingDrawSupporter:drawHit/n,attackerInPrizes:options.attacker?prized/n:null,scope:'멀리건 전 최초 7장과 뒤 6장 배치만 측정. 카드 효과·승률·실전 공격률 제외.'};
 }
-var api={build:build,buildByTypes:buildByTypes,inspect:inspect,simulate:simulate,basic:basic,basicEnergy:energy,role:role,compareReference:compareReference,openingMetrics:openingMetrics};
+var api={supply:supply,build:build,buildByTypes:buildByTypes,inspect:inspect,simulate:simulate,basic:basic,basicEnergy:energy,role:role,compareReference:compareReference,openingMetrics:openingMetrics};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.DeckEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
