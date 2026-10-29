@@ -12,8 +12,8 @@ function rng(seed){return function(){seed=(Math.imul(1664525,seed)+1013904223)>>
 function shuffle(a,r){for(var i=a.length-1;i>0;i--){var j=Math.floor(r()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
 // Deliberately small reviewed pool: unknown/conditional effects are not guessed from tags.
 var ROLES={
- '박사의 연구':'draw','모야모':'draw','네모':'draw','홉':'draw','티에르노':'draw','체렌':'draw',
- '하우':'draw','네스트볼':'search','하이퍼볼':'search','몬스터볼':'search',
+ '박사의 연구':'draw','모야모':'draw','네모':'draw','호브':'draw','티에르노':'draw','체렌':'draw',
+ '릴리에의 결심':'draw','난천':'draw','마리':'draw','하우':'draw','네스트볼':'search','하이퍼볼':'search','몬스터볼':'search',
  '포켓몬 교체':'switch','포켓몬교체':'switch','보스의 지령':'gust',
  '슈퍼볼':'search','대단한낚싯대':'recovery','대단한 낚싯대':'recovery',
  '에너지 회수':'recovery','에너지회수':'recovery','에너지 전송':'energySearch','에너지전송':'energySearch'
@@ -25,7 +25,7 @@ function inspect(cards,db,owned){
  if(!c){errors.push('알 수 없는 카드: '+id);return;}if(owned&&n>qty(owned[id]))errors.push('보유 수량 초과: '+c.name_kr);
  if(basic(c))b+=n;if(!energy(c))names[c.name_kr]=(names[c.name_kr]||0)+n;
  if(/ACE SPEC|에이스 스펙/.test((c.effect_text||'')+' '+(c.card_type||'')))ace+=n;
- if(/^빛나는 /.test(c.name_kr))rad+=n;if(/[♢◇]/.test(c.name_kr))prism[c.name_kr]=(prism[c.name_kr]||0)+n;
+ if(/^(빛나는|찬란한) /.test(c.name_kr))rad+=n;if(/[♢◇]/.test(c.name_kr))prism[c.name_kr]=(prism[c.name_kr]||0)+n;
  });
  if(total!==60)errors.push('60장 필요: 현재 '+total+'장');if(!b)errors.push('기본 포켓몬이 필요합니다');
  Object.keys(names).forEach(function(n){if(names[n]>4)errors.push('같은 이름 4장 초과: '+n);});
@@ -33,19 +33,54 @@ function inspect(cards,db,owned){
  Object.keys(prism).forEach(function(n){if(prism[n]>1)errors.push('프리즘스타 1장 초과: '+n);});
  return {errors:errors,total:total,basics:b,ok:!errors.length};
 }
+// Reviewed casual strategy template, not inferred from type alone. Includes the
+// Psychic + Metal pair used by X Boot, and Rare Candy alongside normal evolution.
+var STEVEN_TEMPLATE=[
+ ['성호의 메탕',4],['성호의 메탕구',2],['성호의 메타그로스 ex',3],
+ ['성호의 오뚝군',2],['성호의 점토도리',1],['성호의 멜리시',2],['성호의 무장조',1],
+ ['이상한사탕',4],['네스트볼',4],['하이퍼볼',4],['박사의 연구',4],['모야모',3],
+ ['릴리에의 결심',4],['보스의 지령',2],['포켓몬 교체',2],['대단한낚싯대',1],['밤의 들것',1],
+ ['기본 초 에너지',8],['기본 강철 에너지',8]
+];
+function stevenProfile(options){
+ var db={},out={},missing=[];options.database.forEach(function(c){db[c.bs_code]=c;});
+ var start=db[options.basicCode];
+ if(!start||start.name_kr!=='성호의 메탕'||(options.targetPath&&options.targetPath!=='성호의 메타그로스 ex'&&options.targetPath!=='성호의 메타그로스'&&options.targetPath!=='메타그로스'))return null;
+ var attacker=options.database.find(function(c){return c.name_kr==='성호의 메타그로스 ex'&&qty(options.owned[c.bs_code])&&(c.skills||[]).some(function(s){return s.name==='엑스 부트';});});
+ if(!attacker)return null;
+ STEVEN_TEMPLATE.forEach(function(row){var remaining=row[1];
+ var candidates=options.database.filter(function(c){return c.name_kr===row[0]&&qty(options.owned[c.bs_code])>0;});
+ // Prefer the selected print, then deterministic ID order; all copies count by name.
+ candidates.sort(function(a,b){return (b.bs_code===options.basicCode?1:0)-(a.bs_code===options.basicCode?1:0)||a.bs_code.localeCompare(b.bs_code);});
+ candidates.forEach(function(c){if(c.name_kr==='성호의 메타그로스 ex'&&!(c.skills||[]).some(function(s){return s.name==='엑스 부트';}))return;
+ var n=Math.min(remaining,qty(options.owned[c.bs_code]));if(n){out[c.bs_code]=n;remaining-=n;}});
+ if(remaining)missing.push(row[0]+' '+remaining+'장');
+ });
+ // An incomplete curated profile must not displace a potentially useful generic proposal.
+ if(missing.length)return null;
+ return {cards:out,profile:'steven-metagross-casual',attacker:attacker.bs_code,attack:'메탈스탬프',energyTypes:['초','강철'],
+ notes:['성호의 메타그로스 ex의 엑스 부트에 맞춘 초·강철 에너지 구성입니다.','이상한사탕 경로와 메탕구를 통한 일반 진화를 함께 사용합니다.','60장 전략 초안입니다. 실제 전개·특성 효과·대회 레귤레이션은 시뮬레이션하지 않습니다.'],validation:inspect(out,db,options.owned)};
+}
+
 function build(options){
+ if(!options.disableProfiles){var reviewed=stevenProfile(options);if(reviewed)return reviewed;}
  var db={},ev={},owned=options.owned||{},cards={},notes=[],names={},total=0;
  options.database.forEach(function(c){db[c.bs_code]=c;});(options.evolution||[]).forEach(function(e){ev[e.bs_code]=e;});
  var available=options.database.filter(function(c){return qty(owned[c.bs_code])>0;});
  var start=db[options.basicCode];
  if(!basic(start)||!qty(owned[options.basicCode]))return {cards:{},notes:['보유한 기본 포켓몬을 선택해주세요.'],validation:inspect({},db,owned)};
  function add(c,n){var used=cards[c.bs_code]||0,limit=energy(c)?60:4;
- if(/^빛나는 |[♢◇]/.test(c.name_kr)||/ACE SPEC|에이스 스펙/.test(c.effect_text||''))limit=1;
+ if(/^(빛나는|찬란한) |[♢◇]/.test(c.name_kr)||/ACE SPEC|에이스 스펙/.test(c.effect_text||''))limit=1;
  n=Math.max(0,Math.min(n,qty(owned[c.bs_code])-used,limit-(names[c.name_kr]||0),60-total));
  if(n){cards[c.bs_code]=used+n;names[c.name_kr]=(names[c.name_kr]||0)+n;total+=n;}return n;}
  // Only complete, exact printed-name evolution chains. Never skip missing middle stages.
  function paths(c,seen){var out=[[c]],name=c.name_kr;if(seen.indexOf(name)>=0||seen.length>3)return out;
- available.filter(function(x){return ev[x.bs_code]&&ev[x.bs_code].evolvesFrom_kr===name;}).forEach(function(child){
+ available.filter(function(x){
+ var child=ev[x.bs_code],parent=ev[c.bs_code];
+ var owner=(name.match(/^(.*의 )/)||[])[1]||'',childOwner=(x.name_kr.match(/^(.*의 )/)||[])[1]||'';
+ if(!child||owner!==childOwner)return false;
+ return child.evolvesFrom_kr===name||!!(owner&&parent&&child.evolvesFrom_kr===parent.base_kr);
+ }).forEach(function(child){
  paths(child,seen.concat(name)).forEach(function(p){out.push([c].concat(p));});});return out;}
  var lines=paths(start,[]).filter(function(p){var c=p[p.length-1];return !options.targetPath||c.name_kr===options.targetPath||(ev[c.bs_code]||{}).base_kr===options.targetPath;});
  if(!lines.length){notes.push('선택한 진화 경로의 보유 카드가 연결되지 않아 기본 포켓몬으로 구성했습니다.');lines=[[start]];}
@@ -98,6 +133,6 @@ function simulate(cards,database,options){
  }
  return {available:true,trials:n,seed:options.seed===undefined?20261029:options.seed,openingBasic:hit/n,openingBasicEnergy:energyHit/n,openingDrawSupporter:drawHit/n,attackerInPrizes:options.attacker?prized/n:null,scope:'멀리건 전 최초 7장과 뒤 6장 배치만 측정. 카드 효과·승률·실전 공격률 제외.'};
 }
-var api={build:build,inspect:inspect,simulate:simulate,basic:basic,basicEnergy:energy,role:role};
+var api={build:build,inspect:inspect,simulate:simulate,basic:basic,basicEnergy:energy,role:role,templates:{steven:STEVEN_TEMPLATE}};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.DeckEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
