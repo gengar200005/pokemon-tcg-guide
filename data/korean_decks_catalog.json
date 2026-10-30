@@ -1,8 +1,26 @@
 {
   "source": "https://pokemoncard.co.kr/card/category/info2",
   "scraped_at": "2026-04-08",
-  "count": 79,
+  "count": 82,
   "decks": [
+    {
+      "name": "MEGA 스타터 세트 ex 「나오하&마스카나 ex」",
+      "image": "https://data1.pokemonkorea.co.kr/2026/09/2026-09-23_17-14-46-38678-1790151286.png",
+      "buy_url": null,
+      "series": "MEGA"
+    },
+    {
+      "name": "MEGA 스타터 세트 ex 「조로아&조로아크 ex」",
+      "image": "https://data1.pokemonkorea.co.kr/2026/09/2026-09-23_17-13-26-97653-1790151206.png",
+      "buy_url": null,
+      "series": "MEGA"
+    },
+    {
+      "name": "MEGA 스타터 세트 ex 「이브이 ex」",
+      "image": "https://data1.pokemonkorea.co.kr/2026/09/2026-09-23_17-09-20-50627-1790150960.png",
+      "buy_url": null,
+      "series": "MEGA"
+    },
     {
       "name": "MEGA 「스타트 덱 100 배틀컬렉션」",
       "image": "https://data1.pokemonkorea.co.kr/2026/01/2026-01-08_14-44-54-26761-1767851094.png",
@@ -477,5 +495,6 @@
       "buy_url": "",
       "series": "BW"
     }
-  ]
+  ],
+  "updated_at": "2026-10-30"
 }

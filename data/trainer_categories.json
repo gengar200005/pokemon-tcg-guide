@@ -32642,5 +32642,920 @@
     "card_class": "trainer",
     "subtype": "item",
     "tags": []
+  },
+  {
+    "bs_code": "BS2026002101",
+    "name_kr": "성스러운분말",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026002102",
+    "name_kr": "에너지 리사이클",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026002103",
+    "name_kr": "원더패치",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "BS2026002104",
+    "name_kr": "포켓패드",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026002105",
+    "name_kr": "명희의 격려",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "BS2026002106",
+    "name_kr": "유카리",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "healing"
+    ]
+  },
+  {
+    "bs_code": "BS2026002107",
+    "name_kr": "이노",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026002108",
+    "name_kr": "타라곤",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "recovery"
+    ]
+  },
+  {
+    "bs_code": "BS2026002109",
+    "name_kr": "미르시티",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026002110",
+    "name_kr": "활력의 숲",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026002115",
+    "name_kr": "명희의 격려",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "BS2026002116",
+    "name_kr": "유카리",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "healing"
+    ]
+  },
+  {
+    "bs_code": "BS2026003072",
+    "name_kr": "변화의 서",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026003073",
+    "name_kr": "스페셜 레드카드",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "draw_support",
+      "hand_disrupt"
+    ]
+  },
+  {
+    "bs_code": "BS2026003074",
+    "name_kr": "월척네트",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "recovery"
+    ]
+  },
+  {
+    "bs_code": "BS2026003075",
+    "name_kr": "AZ의 평온",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "switch",
+      "healing"
+    ]
+  },
+  {
+    "bs_code": "BS2026003076",
+    "name_kr": "마티에르",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support",
+      "hand_disrupt"
+    ]
+  },
+  {
+    "bs_code": "BS2026003077",
+    "name_kr": "보미카의 연주",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026003078",
+    "name_kr": "지프",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "BS2026003079",
+    "name_kr": "앙쥬 플라엣테",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026003080",
+    "name_kr": "프리즘타워",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026003104",
+    "name_kr": "스페셜 레드카드",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "draw_support",
+      "hand_disrupt"
+    ]
+  },
+  {
+    "bs_code": "BS2026003105",
+    "name_kr": "에너지 회수",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "recovery"
+    ]
+  },
+  {
+    "bs_code": "BS2026003106",
+    "name_kr": "점보 아이스",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "healing"
+    ]
+  },
+  {
+    "bs_code": "BS2026003107",
+    "name_kr": "툴스크래퍼",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026003108",
+    "name_kr": "AZ의 평온",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "switch",
+      "healing"
+    ]
+  },
+  {
+    "bs_code": "BS2026003109",
+    "name_kr": "마티에르",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support",
+      "hand_disrupt"
+    ]
+  },
+  {
+    "bs_code": "BS2026003110",
+    "name_kr": "보미카의 연주",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026003111",
+    "name_kr": "지프",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "BS2026003112",
+    "name_kr": "파도타기 비치",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026003113",
+    "name_kr": "프리즘타워",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026003118",
+    "name_kr": "AZ의 평온",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "switch",
+      "healing"
+    ]
+  },
+  {
+    "bs_code": "BS2026003119",
+    "name_kr": "보미카의 연주",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004070",
+    "name_kr": "다크벨",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004071",
+    "name_kr": "오래된 두개의화석",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004072",
+    "name_kr": "오래된 방패의화석",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "tool_defensive"
+    ]
+  },
+  {
+    "bs_code": "BS2026004073",
+    "name_kr": "리트라이 배지",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004074",
+    "name_kr": "호쾌봄",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004075",
+    "name_kr": "글라디오의 결전",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004076",
+    "name_kr": "녹청파의 조무래기",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004077",
+    "name_kr": "무쿠",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026004078",
+    "name_kr": "이슬의 기력",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "BS2026004079",
+    "name_kr": "화석 채굴장",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004102",
+    "name_kr": "다크벨",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004103",
+    "name_kr": "아이언 디펜드업",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "tool_defensive"
+    ]
+  },
+  {
+    "bs_code": "BS2026004104",
+    "name_kr": "에너지 갈아 달기",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "BS2026004105",
+    "name_kr": "크래시 해머",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004106",
+    "name_kr": "브레이브뱅글",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004107",
+    "name_kr": "호쾌봄",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004108",
+    "name_kr": "글라디오의 결전",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004109",
+    "name_kr": "녹청파의 조무래기",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004110",
+    "name_kr": "무쿠",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026004111",
+    "name_kr": "이슬의 기력",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "BS2026004116",
+    "name_kr": "글라디오의 결전",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026004117",
+    "name_kr": "무쿠",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026005063",
+    "name_kr": "맛있는 주먹밥",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": [
+      "healing"
+    ]
+  },
+  {
+    "bs_code": "BS2026005064",
+    "name_kr": "모험 랜턴",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": [
+      "energy_search"
+    ]
+  },
+  {
+    "bs_code": "BS2026005065",
+    "name_kr": "메가레쿠쟈캡",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "BS2026005066",
+    "name_kr": "특별주문조끼",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": [
+      "tool_defensive"
+    ]
+  },
+  {
+    "bs_code": "BS2026005067",
+    "name_kr": "MC의 호응유도",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026005068",
+    "name_kr": "성한",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026005069",
+    "name_kr": "풍&란의 수행",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026005070",
+    "name_kr": "피아나의 신뢰",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration",
+      "switch"
+    ]
+  },
+  {
+    "bs_code": "BS2026005071",
+    "name_kr": "전설의 산정",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026005073",
+    "name_kr": "전설의 용암동굴",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026005075",
+    "name_kr": "전설의 해구",
+    "card_class": "stadium",
+    "subtype": null,
+    "tags": [
+      "healing"
+    ]
+  },
+  {
+    "bs_code": "BS2026005097",
+    "name_kr": "모험 랜턴",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": [
+      "energy_search"
+    ]
+  },
+  {
+    "bs_code": "BS2026005098",
+    "name_kr": "포켓몬 캐처",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": [
+      "gust"
+    ]
+  },
+  {
+    "bs_code": "BS2026005099",
+    "name_kr": "특별주문조끼",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": [
+      "tool_defensive"
+    ]
+  },
+  {
+    "bs_code": "BS2026005100",
+    "name_kr": "MC의 호응유도",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026005101",
+    "name_kr": "성한",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026005102",
+    "name_kr": "풍&란의 수행",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026005103",
+    "name_kr": "피아나의 신뢰",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration",
+      "switch"
+    ]
+  },
+  {
+    "bs_code": "BS2026005111",
+    "name_kr": "성한",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026005112",
+    "name_kr": "피아나의 신뢰",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration",
+      "switch"
+    ]
+  },
+  {
+    "bs_code": "BS2026006101",
+    "name_kr": "포켓몬 교체",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "switch"
+    ]
+  },
+  {
+    "bs_code": "BS2026006102",
+    "name_kr": "포켓패드",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026006103",
+    "name_kr": "하이퍼볼",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "pokemon_search"
+    ]
+  },
+  {
+    "bs_code": "BS2026007011",
+    "name_kr": "이상한사탕",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "evolution_accel"
+    ]
+  },
+  {
+    "bs_code": "BS2026007012",
+    "name_kr": "포켓패드",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026007013",
+    "name_kr": "하이퍼볼",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "pokemon_search"
+    ]
+  },
+  {
+    "bs_code": "BS2026007014",
+    "name_kr": "풍선",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026007015",
+    "name_kr": "가이",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026007016",
+    "name_kr": "릴리에의 결심",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026007017",
+    "name_kr": "보스의 지령",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "gust"
+    ]
+  },
+  {
+    "bs_code": "BS2026007018",
+    "name_kr": "빛나",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "pokemon_search"
+    ]
+  },
+  {
+    "bs_code": "BS2026007019",
+    "name_kr": "저지맨",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support",
+      "hand_disrupt"
+    ]
+  },
+  {
+    "bs_code": "BS2026008011",
+    "name_kr": "크래시 해머",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026008012",
+    "name_kr": "포켓패드",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026008013",
+    "name_kr": "하이퍼볼",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "pokemon_search"
+    ]
+  },
+  {
+    "bs_code": "BS2026008014",
+    "name_kr": "풍선",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026008015",
+    "name_kr": "가이",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026008016",
+    "name_kr": "릴리에의 결심",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026008017",
+    "name_kr": "보스의 지령",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "gust"
+    ]
+  },
+  {
+    "bs_code": "BS2026008018",
+    "name_kr": "아이리스의 투지",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026008019",
+    "name_kr": "저지맨",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support",
+      "hand_disrupt"
+    ]
+  },
+  {
+    "bs_code": "BS2026009010",
+    "name_kr": "이상한사탕",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "evolution_accel"
+    ]
+  },
+  {
+    "bs_code": "BS2026009011",
+    "name_kr": "포켓패드",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026009012",
+    "name_kr": "하이퍼볼",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "pokemon_search"
+    ]
+  },
+  {
+    "bs_code": "BS2026009013",
+    "name_kr": "풍선",
+    "card_class": "trainer",
+    "subtype": null,
+    "tags": []
+  },
+  {
+    "bs_code": "BS2026009014",
+    "name_kr": "가이",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026009015",
+    "name_kr": "릴리에의 결심",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "draw_support"
+    ]
+  },
+  {
+    "bs_code": "BS2026009016",
+    "name_kr": "보스의 지령",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "gust"
+    ]
+  },
+  {
+    "bs_code": "BS2026009017",
+    "name_kr": "빛나",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "pokemon_search"
+    ]
+  },
+  {
+    "bs_code": "MP000000055",
+    "name_kr": "포켓패드",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": []
+  },
+  {
+    "bs_code": "MP000000056",
+    "name_kr": "그리",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "healing"
+    ]
+  },
+  {
+    "bs_code": "MP000000057",
+    "name_kr": "빛나",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "pokemon_search"
+    ]
+  },
+  {
+    "bs_code": "MP000000067",
+    "name_kr": "스페셜 레드카드",
+    "card_class": "trainer",
+    "subtype": "item",
+    "tags": [
+      "draw_support",
+      "hand_disrupt"
+    ]
+  },
+  {
+    "bs_code": "MP000000068",
+    "name_kr": "루디",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "energy_acceleration"
+    ]
+  },
+  {
+    "bs_code": "MP000000069",
+    "name_kr": "보스의 지령",
+    "card_class": "trainer",
+    "subtype": "supporter",
+    "tags": [
+      "gust"
+    ]
   }
 ]

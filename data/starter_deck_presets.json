@@ -1075,6 +1075,274 @@
         }
       ],
       "note": "에너지 3장 보정 (총량 맞춤, 상자 뒷면으로 검증 필요)"
+    },
+    {
+      "id": "mega_eevee_ex",
+      "name_kr": "MEGA 스타터 세트 ex 이브이 ex",
+      "series": "MEGA",
+      "set_prefix": "BS2026007",
+      "cards": [
+        {
+          "bs_code": "BS2026007001",
+          "qty": 3
+        },
+        {
+          "bs_code": "BS2026007002",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026007003",
+          "qty": 3
+        },
+        {
+          "bs_code": "BS2026007004",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026007005",
+          "qty": 3
+        },
+        {
+          "bs_code": "BS2026007006",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026007007",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026007008",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026007009",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026007010",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026007011",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026007012",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026007013",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026007014",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026007015",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026007016",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026007017",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026007018",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026007019",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026007020",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026007021",
+          "qty": 16
+        }
+      ]
+    },
+    {
+      "id": "mega_zoroark_ex",
+      "name_kr": "MEGA 스타터 세트 ex 조로아&조로아크 ex",
+      "series": "MEGA",
+      "set_prefix": "BS2026008",
+      "cards": [
+        {
+          "bs_code": "BS2026008001",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008002",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008003",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008004",
+          "qty": 3
+        },
+        {
+          "bs_code": "BS2026008005",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008006",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008007",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008008",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026008009",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026008010",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026008011",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008012",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026008013",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026008014",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008015",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026008016",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026008017",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008018",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026008019",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026008020",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026008021",
+          "qty": 16
+        }
+      ]
+    },
+    {
+      "id": "mega_meowscarada_ex",
+      "name_kr": "MEGA 스타터 세트 ex 나오하&마스카나 ex",
+      "series": "MEGA",
+      "set_prefix": "BS2026009",
+      "cards": [
+        {
+          "bs_code": "BS2026009001",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026009002",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026009003",
+          "qty": 3
+        },
+        {
+          "bs_code": "BS2026009004",
+          "qty": 3
+        },
+        {
+          "bs_code": "BS2026009005",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026009006",
+          "qty": 3
+        },
+        {
+          "bs_code": "BS2026009007",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026009008",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026009009",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026009010",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026009011",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026009012",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026009013",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026009014",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026009015",
+          "qty": 4
+        },
+        {
+          "bs_code": "BS2026009016",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026009017",
+          "qty": 2
+        },
+        {
+          "bs_code": "BS2026009018",
+          "qty": 1
+        },
+        {
+          "bs_code": "BS2026009019",
+          "qty": 16
+        }
+      ]
     }
   ]
 }

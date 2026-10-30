@@ -102229,5 +102229,4343 @@
     "stage": "basic",
     "evolvesFrom_kr": null,
     "source": "agreed-basic"
+  },
+  {
+    "bs_code": "BS2026002081",
+    "name_kr": "분떠도리",
+    "base_kr": "분떠도리",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "분이벌레",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002082",
+    "name_kr": "나몰빼미",
+    "base_kr": "나몰빼미",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002083",
+    "name_kr": "파이어로",
+    "base_kr": "파이어로",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "불화살빈",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002084",
+    "name_kr": "아마루르가",
+    "base_kr": "아마루르가",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "아마루스",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002085",
+    "name_kr": "데덴네",
+    "base_kr": "데덴네",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002086",
+    "name_kr": "삐삐",
+    "base_kr": "삐삐",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002087",
+    "name_kr": "냐스퍼",
+    "base_kr": "냐스퍼",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002088",
+    "name_kr": "대코파스",
+    "base_kr": "대코파스",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "코코파스",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002089",
+    "name_kr": "티고라스",
+    "base_kr": "티고라스",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002090",
+    "name_kr": "드래피온",
+    "base_kr": "드래피온",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "스콜피",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002091",
+    "name_kr": "쌍검킬",
+    "base_kr": "쌍검킬",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "단칼빙",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002092",
+    "name_kr": "레트라",
+    "base_kr": "레트라",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "꼬렛",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002093",
+    "name_kr": "모크나이퍼 ex",
+    "base_kr": "모크나이퍼",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "빼미스로우",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002094",
+    "name_kr": "염뉴트 ex",
+    "base_kr": "염뉴트",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "야도뇽",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002095",
+    "name_kr": "메가아쿠스타 ex",
+    "base_kr": "아쿠스타",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "별가사리",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002096",
+    "name_kr": "메가픽시 ex",
+    "base_kr": "픽시",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "삐삐",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002097",
+    "name_kr": "메가지가르데 ex",
+    "base_kr": "지가르데",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002098",
+    "name_kr": "이벨타르 ex",
+    "base_kr": "이벨타르",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002099",
+    "name_kr": "메가무장조 ex",
+    "base_kr": "무장조",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002100",
+    "name_kr": "나옹 ex",
+    "base_kr": "나옹",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002111",
+    "name_kr": "메가아쿠스타 ex",
+    "base_kr": "아쿠스타",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "별가사리",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002112",
+    "name_kr": "메가픽시 ex",
+    "base_kr": "픽시",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "삐삐",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002113",
+    "name_kr": "메가지가르데 ex",
+    "base_kr": "지가르데",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026002114",
+    "name_kr": "나옹 ex",
+    "base_kr": "나옹",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003001",
+    "name_kr": "뿔충이",
+    "base_kr": "뿔충이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003002",
+    "name_kr": "딱충이",
+    "base_kr": "딱충이",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "뿔충이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003003",
+    "name_kr": "독침붕 ex",
+    "base_kr": "독침붕",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "딱충이",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003004",
+    "name_kr": "무스틈니",
+    "base_kr": "무스틈니",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003005",
+    "name_kr": "도치마론",
+    "base_kr": "도치마론",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003006",
+    "name_kr": "도치보구",
+    "base_kr": "도치보구",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "도치마론",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003007",
+    "name_kr": "브리가론",
+    "base_kr": "브리가론",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "도치보구",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003008",
+    "name_kr": "식스테일",
+    "base_kr": "식스테일",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003009",
+    "name_kr": "나인테일",
+    "base_kr": "나인테일",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "식스테일",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003010",
+    "name_kr": "칠색조",
+    "base_kr": "칠색조",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003011",
+    "name_kr": "푸호꼬",
+    "base_kr": "푸호꼬",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003012",
+    "name_kr": "테르나",
+    "base_kr": "테르나",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "푸호꼬",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003013",
+    "name_kr": "마폭시",
+    "base_kr": "마폭시",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "테르나",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003014",
+    "name_kr": "레오꼬",
+    "base_kr": "레오꼬",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003015",
+    "name_kr": "메가화염레오 ex",
+    "base_kr": "화염레오",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "레오꼬",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003016",
+    "name_kr": "총어",
+    "base_kr": "총어",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003017",
+    "name_kr": "대포무노",
+    "base_kr": "대포무노",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "총어",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003018",
+    "name_kr": "딜리버드",
+    "base_kr": "딜리버드",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003019",
+    "name_kr": "케르디오",
+    "base_kr": "케르디오",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003020",
+    "name_kr": "개구마르",
+    "base_kr": "개구마르",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003021",
+    "name_kr": "개굴반장",
+    "base_kr": "개굴반장",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "개구마르",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003022",
+    "name_kr": "메가개굴닌자 ex",
+    "base_kr": "개굴닌자",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "개굴반장",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003023",
+    "name_kr": "꽁어름",
+    "base_kr": "꽁어름",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003024",
+    "name_kr": "크레베이스",
+    "base_kr": "크레베이스",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "꽁어름",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003025",
+    "name_kr": "꼬시레",
+    "base_kr": "꼬시레",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003026",
+    "name_kr": "갑주무사",
+    "base_kr": "갑주무사",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "꼬시레",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003027",
+    "name_kr": "메리프",
+    "base_kr": "메리프",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003028",
+    "name_kr": "보송송",
+    "base_kr": "보송송",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "메리프",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003029",
+    "name_kr": "전룡",
+    "base_kr": "전룡",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "보송송",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003030",
+    "name_kr": "에몽가",
+    "base_kr": "에몽가",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003031",
+    "name_kr": "테오키스",
+    "base_kr": "테오키스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003032",
+    "name_kr": "테오키스",
+    "base_kr": "테오키스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003033",
+    "name_kr": "테오키스",
+    "base_kr": "테오키스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003034",
+    "name_kr": "테오키스",
+    "base_kr": "테오키스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003035",
+    "name_kr": "메가플라엣테 ex",
+    "base_kr": "플라엣테",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026003036",
+    "name_kr": "냐스퍼",
+    "base_kr": "냐스퍼",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003037",
+    "name_kr": "냐오닉스",
+    "base_kr": "냐오닉스",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "냐스퍼",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003038",
+    "name_kr": "나목령",
+    "base_kr": "나목령",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003039",
+    "name_kr": "대로트",
+    "base_kr": "대로트",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "나목령",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003040",
+    "name_kr": "호바귀",
+    "base_kr": "호바귀",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003041",
+    "name_kr": "펌킨인 ex",
+    "base_kr": "펌킨인",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "호바귀",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003042",
+    "name_kr": "제르네아스",
+    "base_kr": "제르네아스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003043",
+    "name_kr": "꼬지모",
+    "base_kr": "꼬지모",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003044",
+    "name_kr": "코코리",
+    "base_kr": "코코리",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003045",
+    "name_kr": "코리갑",
+    "base_kr": "코리갑",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "코코리",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003046",
+    "name_kr": "오뚝군",
+    "base_kr": "오뚝군",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003047",
+    "name_kr": "점토도리",
+    "base_kr": "점토도리",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "오뚝군",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003048",
+    "name_kr": "주뱃",
+    "base_kr": "주뱃",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003049",
+    "name_kr": "골뱃",
+    "base_kr": "골뱃",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "주뱃",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003050",
+    "name_kr": "크로뱃",
+    "base_kr": "크로뱃",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "골뱃",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003051",
+    "name_kr": "침바루",
+    "base_kr": "침바루",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003052",
+    "name_kr": "스컹뿡",
+    "base_kr": "스컹뿡",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003053",
+    "name_kr": "스컹탱크",
+    "base_kr": "스컹탱크",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "스컹뿡",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003054",
+    "name_kr": "깨봉이",
+    "base_kr": "깨봉이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003055",
+    "name_kr": "더스트나",
+    "base_kr": "더스트나",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "깨봉이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003056",
+    "name_kr": "수레기",
+    "base_kr": "수레기",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003057",
+    "name_kr": "메탕",
+    "base_kr": "메탕",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003058",
+    "name_kr": "메탕구",
+    "base_kr": "메탕구",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "메탕",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003059",
+    "name_kr": "메타그로스",
+    "base_kr": "메타그로스",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "메탕구",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003060",
+    "name_kr": "철시드",
+    "base_kr": "철시드",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003061",
+    "name_kr": "너트령",
+    "base_kr": "너트령",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "철시드",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003062",
+    "name_kr": "코바르온 ex",
+    "base_kr": "코바르온",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026003063",
+    "name_kr": "메가드래캄 ex",
+    "base_kr": "드래캄",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "수레기",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003064",
+    "name_kr": "미끄메라",
+    "base_kr": "미끄메라",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003065",
+    "name_kr": "미끄네일",
+    "base_kr": "미끄네일",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "미끄메라",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003066",
+    "name_kr": "미끄래곤",
+    "base_kr": "미끄래곤",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "미끄네일",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003067",
+    "name_kr": "켄타로스",
+    "base_kr": "켄타로스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003068",
+    "name_kr": "보르쥐",
+    "base_kr": "보르쥐",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003069",
+    "name_kr": "보르그",
+    "base_kr": "보르그",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "보르쥐",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003070",
+    "name_kr": "치라미",
+    "base_kr": "치라미",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003071",
+    "name_kr": "치라치노 ex",
+    "base_kr": "치라치노",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "치라미",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003084",
+    "name_kr": "도치마론",
+    "base_kr": "도치마론",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003085",
+    "name_kr": "푸호꼬",
+    "base_kr": "푸호꼬",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003086",
+    "name_kr": "개구마르",
+    "base_kr": "개구마르",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003087",
+    "name_kr": "개굴반장",
+    "base_kr": "개굴반장",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "개구마르",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003088",
+    "name_kr": "전룡",
+    "base_kr": "전룡",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "보송송",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003089",
+    "name_kr": "제르네아스",
+    "base_kr": "제르네아스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003090",
+    "name_kr": "점토도리",
+    "base_kr": "점토도리",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "오뚝군",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003091",
+    "name_kr": "크로뱃",
+    "base_kr": "크로뱃",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "골뱃",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003092",
+    "name_kr": "메탕구",
+    "base_kr": "메탕구",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "메탕",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003093",
+    "name_kr": "미끄네일",
+    "base_kr": "미끄네일",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "미끄메라",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003094",
+    "name_kr": "켄타로스",
+    "base_kr": "켄타로스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003095",
+    "name_kr": "보르그",
+    "base_kr": "보르그",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "보르쥐",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026003096",
+    "name_kr": "독침붕 ex",
+    "base_kr": "독침붕",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "딱충이",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003097",
+    "name_kr": "메가화염레오 ex",
+    "base_kr": "화염레오",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "레오꼬",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003098",
+    "name_kr": "메가개굴닌자 ex",
+    "base_kr": "개굴닌자",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "개굴반장",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003099",
+    "name_kr": "메가플라엣테 ex",
+    "base_kr": "플라엣테",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026003100",
+    "name_kr": "펌킨인 ex",
+    "base_kr": "펌킨인",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "호바귀",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003101",
+    "name_kr": "코바르온 ex",
+    "base_kr": "코바르온",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026003102",
+    "name_kr": "메가드래캄 ex",
+    "base_kr": "드래캄",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "수레기",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003103",
+    "name_kr": "치라치노 ex",
+    "base_kr": "치라치노",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "치라미",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003114",
+    "name_kr": "메가개굴닌자 ex",
+    "base_kr": "개굴닌자",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "개굴반장",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003115",
+    "name_kr": "메가플라엣테 ex",
+    "base_kr": "플라엣테",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026003116",
+    "name_kr": "메가드래캄 ex",
+    "base_kr": "드래캄",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "수레기",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003117",
+    "name_kr": "치라치노 ex",
+    "base_kr": "치라치노",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "치라미",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026003120",
+    "name_kr": "메가개굴닌자 ex",
+    "base_kr": "개굴닌자",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "개굴반장",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004001",
+    "name_kr": "트로피우스",
+    "base_kr": "트로피우스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004002",
+    "name_kr": "턱지충이",
+    "base_kr": "턱지충이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004003",
+    "name_kr": "짜랑랑",
+    "base_kr": "짜랑랑",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004004",
+    "name_kr": "라란티스 ex",
+    "base_kr": "라란티스",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "짜랑랑",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004005",
+    "name_kr": "차데스",
+    "base_kr": "차데스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004006",
+    "name_kr": "그우린차",
+    "base_kr": "그우린차",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "차데스",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004007",
+    "name_kr": "히드런",
+    "base_kr": "히드런",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004008",
+    "name_kr": "태우지네",
+    "base_kr": "태우지네",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004009",
+    "name_kr": "다태우지네",
+    "base_kr": "다태우지네",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "태우지네",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004010",
+    "name_kr": "카르본",
+    "base_kr": "카르본",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004011",
+    "name_kr": "카디나르마",
+    "base_kr": "카디나르마",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "카르본",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004012",
+    "name_kr": "콘치",
+    "base_kr": "콘치",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004013",
+    "name_kr": "왕콘치",
+    "base_kr": "왕콘치",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "콘치",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004014",
+    "name_kr": "고래왕자",
+    "base_kr": "고래왕자",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004015",
+    "name_kr": "고래왕 ex",
+    "base_kr": "고래왕",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "고래왕자",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004016",
+    "name_kr": "시라칸",
+    "base_kr": "시라칸",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004017",
+    "name_kr": "누리공",
+    "base_kr": "누리공",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004018",
+    "name_kr": "키요공",
+    "base_kr": "키요공",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "누리공",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004019",
+    "name_kr": "누리레느",
+    "base_kr": "누리레느",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "키요공",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004020",
+    "name_kr": "맨돌핀",
+    "base_kr": "맨돌핀",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004021",
+    "name_kr": "돌핀맨",
+    "base_kr": "돌핀맨",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "맨돌핀",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004022",
+    "name_kr": "썬더라이",
+    "base_kr": "썬더라이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004023",
+    "name_kr": "썬더볼트",
+    "base_kr": "썬더볼트",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "썬더라이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004024",
+    "name_kr": "전지충이",
+    "base_kr": "전지충이",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "턱지충이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004025",
+    "name_kr": "투구뿌논",
+    "base_kr": "투구뿌논",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "전지충이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004026",
+    "name_kr": "메가제라오라 ex",
+    "base_kr": "제라오라",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026004027",
+    "name_kr": "미라이돈",
+    "base_kr": "미라이돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004028",
+    "name_kr": "야돈",
+    "base_kr": "야돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004029",
+    "name_kr": "야도란",
+    "base_kr": "야도란",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "야돈",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004030",
+    "name_kr": "루주라",
+    "base_kr": "루주라",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004031",
+    "name_kr": "어둠대신",
+    "base_kr": "어둠대신",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004032",
+    "name_kr": "다크펫",
+    "base_kr": "다크펫",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "어둠대신",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004033",
+    "name_kr": "화강돌",
+    "base_kr": "화강돌",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004034",
+    "name_kr": "불켜미",
+    "base_kr": "불켜미",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004035",
+    "name_kr": "램프라",
+    "base_kr": "램프라",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "불켜미",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004036",
+    "name_kr": "메가샹델라 ex",
+    "base_kr": "샹델라",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "램프라",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004037",
+    "name_kr": "타타륜",
+    "base_kr": "타타륜",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004038",
+    "name_kr": "마샤도",
+    "base_kr": "마샤도",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004039",
+    "name_kr": "저승갓숭",
+    "base_kr": "저승갓숭",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "성원숭",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004040",
+    "name_kr": "망키",
+    "base_kr": "망키",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004041",
+    "name_kr": "성원숭",
+    "base_kr": "성원숭",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "망키",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004042",
+    "name_kr": "두개도스",
+    "base_kr": "두개도스",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004043",
+    "name_kr": "램펄드 ex",
+    "base_kr": "램펄드",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "두개도스",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004044",
+    "name_kr": "두더류",
+    "base_kr": "두더류",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004045",
+    "name_kr": "코라이돈",
+    "base_kr": "코라이돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004046",
+    "name_kr": "메가다크라이 ex",
+    "base_kr": "다크라이",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026004047",
+    "name_kr": "벌차이",
+    "base_kr": "벌차이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004048",
+    "name_kr": "버랜지나",
+    "base_kr": "버랜지나",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "벌차이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004049",
+    "name_kr": "오케이징",
+    "base_kr": "오케이징",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004050",
+    "name_kr": "칼라마네로",
+    "base_kr": "칼라마네로",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "오케이징",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004051",
+    "name_kr": "훔처우",
+    "base_kr": "훔처우",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004052",
+    "name_kr": "폭슬라이",
+    "base_kr": "폭슬라이",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "훔처우",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004053",
+    "name_kr": "모르페코 ex",
+    "base_kr": "모르페코",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026004054",
+    "name_kr": "자루도",
+    "base_kr": "자루도",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004055",
+    "name_kr": "오라티프",
+    "base_kr": "오라티프",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004056",
+    "name_kr": "마피티프",
+    "base_kr": "마피티프",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "오라티프",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004057",
+    "name_kr": "위유이",
+    "base_kr": "위유이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004058",
+    "name_kr": "무장조",
+    "base_kr": "무장조",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004059",
+    "name_kr": "방패톱스",
+    "base_kr": "방패톱스",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004060",
+    "name_kr": "바리톱스",
+    "base_kr": "바리톱스",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "방패톱스",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004061",
+    "name_kr": "동미러",
+    "base_kr": "동미러",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004062",
+    "name_kr": "동탁군",
+    "base_kr": "동탁군",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "동미러",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004063",
+    "name_kr": "메가몰드류 ex",
+    "base_kr": "몰드류",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "두더류",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004064",
+    "name_kr": "콕코구리",
+    "base_kr": "콕코구리",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004065",
+    "name_kr": "크라파",
+    "base_kr": "크라파",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "콕코구리",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004066",
+    "name_kr": "왕큰부리",
+    "base_kr": "왕큰부리",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "크라파",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004067",
+    "name_kr": "타입:널",
+    "base_kr": "타입:널",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004068",
+    "name_kr": "실버디",
+    "base_kr": "실버디",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "타입:널",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004069",
+    "name_kr": "떨구새",
+    "base_kr": "떨구새",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004082",
+    "name_kr": "짜랑랑",
+    "base_kr": "짜랑랑",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004083",
+    "name_kr": "카디나르마",
+    "base_kr": "카디나르마",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "카르본",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004084",
+    "name_kr": "콘치",
+    "base_kr": "콘치",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004085",
+    "name_kr": "누리레느",
+    "base_kr": "누리레느",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "키요공",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004086",
+    "name_kr": "썬더볼트",
+    "base_kr": "썬더볼트",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "썬더라이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004087",
+    "name_kr": "야도란",
+    "base_kr": "야도란",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "야돈",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004088",
+    "name_kr": "타타륜",
+    "base_kr": "타타륜",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004089",
+    "name_kr": "폭슬라이",
+    "base_kr": "폭슬라이",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "훔처우",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004090",
+    "name_kr": "자루도",
+    "base_kr": "자루도",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004091",
+    "name_kr": "바리톱스",
+    "base_kr": "바리톱스",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "방패톱스",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004092",
+    "name_kr": "왕큰부리",
+    "base_kr": "왕큰부리",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "크라파",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004093",
+    "name_kr": "실버디",
+    "base_kr": "실버디",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "타입:널",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026004094",
+    "name_kr": "라란티스 ex",
+    "base_kr": "라란티스",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "짜랑랑",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004095",
+    "name_kr": "고래왕 ex",
+    "base_kr": "고래왕",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "고래왕자",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004096",
+    "name_kr": "메가제라오라 ex",
+    "base_kr": "제라오라",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026004097",
+    "name_kr": "메가샹델라 ex",
+    "base_kr": "샹델라",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "램프라",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004098",
+    "name_kr": "램펄드 ex",
+    "base_kr": "램펄드",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "두개도스",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004099",
+    "name_kr": "메가다크라이 ex",
+    "base_kr": "다크라이",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026004100",
+    "name_kr": "모르페코 ex",
+    "base_kr": "모르페코",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026004101",
+    "name_kr": "메가몰드류 ex",
+    "base_kr": "몰드류",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "두더류",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004112",
+    "name_kr": "메가제라오라 ex",
+    "base_kr": "제라오라",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026004113",
+    "name_kr": "메가샹델라 ex",
+    "base_kr": "샹델라",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "램프라",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026004114",
+    "name_kr": "메가다크라이 ex",
+    "base_kr": "다크라이",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026004115",
+    "name_kr": "모르페코 ex",
+    "base_kr": "모르페코",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026004118",
+    "name_kr": "메가다크라이 ex",
+    "base_kr": "다크라이",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005001",
+    "name_kr": "헤라크로스",
+    "base_kr": "헤라크로스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005002",
+    "name_kr": "비구술",
+    "base_kr": "비구술",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005003",
+    "name_kr": "비나방",
+    "base_kr": "비나방",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "비구술",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005004",
+    "name_kr": "선인왕",
+    "base_kr": "선인왕",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005005",
+    "name_kr": "밤선인",
+    "base_kr": "밤선인",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "선인왕",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005006",
+    "name_kr": "세꿀버리",
+    "base_kr": "세꿀버리",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005007",
+    "name_kr": "비퀸",
+    "base_kr": "비퀸",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "세꿀버리",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005008",
+    "name_kr": "꼬시레",
+    "base_kr": "꼬시레",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005009",
+    "name_kr": "메가갑주무사 ex",
+    "base_kr": "갑주무사",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "꼬시레",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005010",
+    "name_kr": "가디",
+    "base_kr": "가디",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005011",
+    "name_kr": "윈디",
+    "base_kr": "윈디",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "가디",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005012",
+    "name_kr": "마그마",
+    "base_kr": "마그마",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005013",
+    "name_kr": "마그마번",
+    "base_kr": "마그마번",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "마그마",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005014",
+    "name_kr": "코터스",
+    "base_kr": "코터스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005015",
+    "name_kr": "히트로토무 ex",
+    "base_kr": "히트로토무",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005016",
+    "name_kr": "앤티골",
+    "base_kr": "앤티골",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005017",
+    "name_kr": "만타인",
+    "base_kr": "만타인",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005018",
+    "name_kr": "가이오가",
+    "base_kr": "가이오가",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005019",
+    "name_kr": "탱그릴",
+    "base_kr": "탱그릴",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005020",
+    "name_kr": "탱탱겔",
+    "base_kr": "탱탱겔",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "탱그릴",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005021",
+    "name_kr": "약어리 ex",
+    "base_kr": "약어리",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005022",
+    "name_kr": "에레브",
+    "base_kr": "에레브",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005023",
+    "name_kr": "에레키블",
+    "base_kr": "에레키블",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "에레브",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005024",
+    "name_kr": "라이코 ex",
+    "base_kr": "라이코",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005025",
+    "name_kr": "볼트로스",
+    "base_kr": "볼트로스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005026",
+    "name_kr": "찌르성게",
+    "base_kr": "찌르성게",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005027",
+    "name_kr": "찌리비",
+    "base_kr": "찌리비",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005028",
+    "name_kr": "찌리비크",
+    "base_kr": "찌리비크",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "찌리비",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005029",
+    "name_kr": "슬리프",
+    "base_kr": "슬리프",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005030",
+    "name_kr": "슬리퍼",
+    "base_kr": "슬리퍼",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "슬리프",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005031",
+    "name_kr": "기라티나",
+    "base_kr": "기라티나",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005032",
+    "name_kr": "골비람",
+    "base_kr": "골비람",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005033",
+    "name_kr": "메가골루그 ex",
+    "base_kr": "골루그",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "골비람",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005034",
+    "name_kr": "러브로스",
+    "base_kr": "러브로스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005035",
+    "name_kr": "모래두지",
+    "base_kr": "모래두지",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005036",
+    "name_kr": "고지",
+    "base_kr": "고지",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "모래두지",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005037",
+    "name_kr": "롱스톤",
+    "base_kr": "롱스톤",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005038",
+    "name_kr": "강철톤",
+    "base_kr": "강철톤",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "롱스톤",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005039",
+    "name_kr": "그란돈",
+    "base_kr": "그란돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005040",
+    "name_kr": "랜드로스",
+    "base_kr": "랜드로스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005041",
+    "name_kr": "니드런♀",
+    "base_kr": "니드런♀",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005042",
+    "name_kr": "니드리나",
+    "base_kr": "니드리나",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "니드런♀",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005043",
+    "name_kr": "니드퀸",
+    "base_kr": "니드퀸",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "니드리나",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005044",
+    "name_kr": "페이검",
+    "base_kr": "페이검",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005045",
+    "name_kr": "아리아도스",
+    "base_kr": "아리아도스",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "페이검",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005046",
+    "name_kr": "깜까미",
+    "base_kr": "깜까미",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005047",
+    "name_kr": "오케이징",
+    "base_kr": "오케이징",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005048",
+    "name_kr": "메가칼라마네로 ex",
+    "base_kr": "칼라마네로",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "오케이징",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005049",
+    "name_kr": "크리만",
+    "base_kr": "크리만",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005050",
+    "name_kr": "짜랑꼬",
+    "base_kr": "짜랑꼬",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005051",
+    "name_kr": "짜랑고우",
+    "base_kr": "짜랑고우",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "짜랑꼬",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005052",
+    "name_kr": "짜랑고우거",
+    "base_kr": "짜랑고우거",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "짜랑고우",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005053",
+    "name_kr": "모토마",
+    "base_kr": "모토마",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005054",
+    "name_kr": "루리리",
+    "base_kr": "루리리",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005055",
+    "name_kr": "파비코",
+    "base_kr": "파비코",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005056",
+    "name_kr": "파비코리",
+    "base_kr": "파비코리",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "파비코",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005057",
+    "name_kr": "켈리몬",
+    "base_kr": "켈리몬",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005058",
+    "name_kr": "메가레쿠쟈 ex",
+    "base_kr": "레쿠쟈",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005059",
+    "name_kr": "토네로스",
+    "base_kr": "토네로스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005060",
+    "name_kr": "화살꼬빈",
+    "base_kr": "화살꼬빈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005061",
+    "name_kr": "불화살빈",
+    "base_kr": "불화살빈",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "화살꼬빈",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005062",
+    "name_kr": "파이어로 ex",
+    "base_kr": "파이어로",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "불화살빈",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005077",
+    "name_kr": "비나방",
+    "base_kr": "비나방",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "비구술",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005078",
+    "name_kr": "가디",
+    "base_kr": "가디",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005079",
+    "name_kr": "마그마번",
+    "base_kr": "마그마번",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "마그마",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005080",
+    "name_kr": "가이오가",
+    "base_kr": "가이오가",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005081",
+    "name_kr": "에레키블",
+    "base_kr": "에레키블",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "에레브",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005082",
+    "name_kr": "찌르성게",
+    "base_kr": "찌르성게",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005083",
+    "name_kr": "러브로스",
+    "base_kr": "러브로스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005084",
+    "name_kr": "그란돈",
+    "base_kr": "그란돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005085",
+    "name_kr": "오케이징",
+    "base_kr": "오케이징",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005086",
+    "name_kr": "루리리",
+    "base_kr": "루리리",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005087",
+    "name_kr": "파비코리",
+    "base_kr": "파비코리",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "파비코",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005088",
+    "name_kr": "켈리몬",
+    "base_kr": "켈리몬",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026005089",
+    "name_kr": "메가갑주무사 ex",
+    "base_kr": "갑주무사",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "꼬시레",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005090",
+    "name_kr": "히트로토무 ex",
+    "base_kr": "히트로토무",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005091",
+    "name_kr": "약어리 ex",
+    "base_kr": "약어리",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005092",
+    "name_kr": "라이코 ex",
+    "base_kr": "라이코",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005093",
+    "name_kr": "메가골루그 ex",
+    "base_kr": "골루그",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "골비람",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005094",
+    "name_kr": "메가칼라마네로 ex",
+    "base_kr": "칼라마네로",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "오케이징",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005095",
+    "name_kr": "메가레쿠쟈 ex",
+    "base_kr": "레쿠쟈",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005096",
+    "name_kr": "파이어로 ex",
+    "base_kr": "파이어로",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "불화살빈",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005107",
+    "name_kr": "메가갑주무사 ex",
+    "base_kr": "갑주무사",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "꼬시레",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005108",
+    "name_kr": "라이코 ex",
+    "base_kr": "라이코",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005109",
+    "name_kr": "메가골루그 ex",
+    "base_kr": "골루그",
+    "card_type": "1진화 포켓몬 |  메가진화 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "골비람",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026005110",
+    "name_kr": "메가레쿠쟈 ex",
+    "base_kr": "레쿠쟈",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026005113",
+    "name_kr": "메가레쿠쟈 ex",
+    "base_kr": "레쿠쟈",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026006001",
+    "name_kr": "아라리",
+    "base_kr": "아라리",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006002",
+    "name_kr": "알로라 나시",
+    "base_kr": "나시",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "아라리",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026006003",
+    "name_kr": "볼비트",
+    "base_kr": "볼비트",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006004",
+    "name_kr": "네오비트",
+    "base_kr": "네오비트",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006005",
+    "name_kr": "비비용",
+    "base_kr": "비비용",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "분떠도리",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006006",
+    "name_kr": "파이어",
+    "base_kr": "파이어",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006007",
+    "name_kr": "칠색조",
+    "base_kr": "칠색조",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006008",
+    "name_kr": "레시라무",
+    "base_kr": "레시라무",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006009",
+    "name_kr": "뜨아거 ex",
+    "base_kr": "뜨아거",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026006010",
+    "name_kr": "야돈",
+    "base_kr": "야돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006011",
+    "name_kr": "라프라스",
+    "base_kr": "라프라스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006012",
+    "name_kr": "프리져",
+    "base_kr": "프리져",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006013",
+    "name_kr": "가이오가",
+    "base_kr": "가이오가",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006014",
+    "name_kr": "펄기아",
+    "base_kr": "펄기아",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006015",
+    "name_kr": "개굴닌자 ex",
+    "base_kr": "개굴닌자",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "개굴반장",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006016",
+    "name_kr": "약어리",
+    "base_kr": "약어리",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006017",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006018",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006019",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006020",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006021",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006022",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006023",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006024",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006025",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006026",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006027",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006028",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006029",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006030",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006031",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006032",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006033",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006034",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006035",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006036",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006037",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006038",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006039",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006040",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006041",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006042",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006043",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006044",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006045",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006046",
+    "name_kr": "피카츄",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006047",
+    "name_kr": "피카츄 ex",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006048",
+    "name_kr": "피카츄 ex",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006049",
+    "name_kr": "썬더",
+    "base_kr": "썬더",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006050",
+    "name_kr": "제크로무",
+    "base_kr": "제크로무",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006051",
+    "name_kr": "스트린더",
+    "base_kr": "스트린더",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "일레즌",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006052",
+    "name_kr": "모르페코",
+    "base_kr": "모르페코",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006053",
+    "name_kr": "미라이돈",
+    "base_kr": "미라이돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006054",
+    "name_kr": "뮤츠",
+    "base_kr": "뮤츠",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006055",
+    "name_kr": "뮤츠 ex",
+    "base_kr": "뮤츠",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006056",
+    "name_kr": "뮤",
+    "base_kr": "뮤",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006057",
+    "name_kr": "뮤 ex",
+    "base_kr": "뮤",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006058",
+    "name_kr": "에브이",
+    "base_kr": "에브이",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "이브이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006059",
+    "name_kr": "님피아 ex",
+    "base_kr": "님피아",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "이브이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006060",
+    "name_kr": "안농",
+    "base_kr": "안농",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006061",
+    "name_kr": "흔들풍손",
+    "base_kr": "흔들풍손",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006062",
+    "name_kr": "샹델라",
+    "base_kr": "샹델라",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "램프라",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006063",
+    "name_kr": "제르네아스",
+    "base_kr": "제르네아스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006064",
+    "name_kr": "코스모그",
+    "base_kr": "코스모그",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006065",
+    "name_kr": "코스모움",
+    "base_kr": "코스모움",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "코스모그",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006066",
+    "name_kr": "루나아라",
+    "base_kr": "루나아라",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "코스모움",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006067",
+    "name_kr": "모으령",
+    "base_kr": "모으령",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006068",
+    "name_kr": "그란돈",
+    "base_kr": "그란돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006069",
+    "name_kr": "루카리오",
+    "base_kr": "루카리오",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "리오르",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006070",
+    "name_kr": "두빅굴",
+    "base_kr": "두빅굴",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "두까비",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006071",
+    "name_kr": "루가루암",
+    "base_kr": "루가루암",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "암멍이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006072",
+    "name_kr": "코라이돈",
+    "base_kr": "코라이돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006073",
+    "name_kr": "니드런♀",
+    "base_kr": "니드런♀",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006074",
+    "name_kr": "니드리나",
+    "base_kr": "니드리나",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "니드런♀",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026006075",
+    "name_kr": "알로라 나옹",
+    "base_kr": "나옹",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026006076",
+    "name_kr": "팬텀 ex",
+    "base_kr": "팬텀",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "고우스트",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006077",
+    "name_kr": "블래키",
+    "base_kr": "블래키",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "이브이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006078",
+    "name_kr": "곤율랭",
+    "base_kr": "곤율랭",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006079",
+    "name_kr": "이벨타르",
+    "base_kr": "이벨타르",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006080",
+    "name_kr": "가라르 나옹",
+    "base_kr": "나옹",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006081",
+    "name_kr": "지라치 ex",
+    "base_kr": "지라치",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026006082",
+    "name_kr": "디아루가",
+    "base_kr": "디아루가",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006083",
+    "name_kr": "너트령",
+    "base_kr": "너트령",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "철시드",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006084",
+    "name_kr": "솔가레오",
+    "base_kr": "솔가레오",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "코스모움",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006085",
+    "name_kr": "자시안",
+    "base_kr": "자시안",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006086",
+    "name_kr": "자마젠타",
+    "base_kr": "자마젠타",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006087",
+    "name_kr": "타부자고",
+    "base_kr": "타부자고",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "모으령",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006088",
+    "name_kr": "보만다 ex",
+    "base_kr": "보만다",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "쉘곤",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006089",
+    "name_kr": "짜랑꼬",
+    "base_kr": "짜랑꼬",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006090",
+    "name_kr": "짜랑고우",
+    "base_kr": "짜랑고우",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "짜랑꼬",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006091",
+    "name_kr": "짜랑고우거",
+    "base_kr": "짜랑고우거",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "짜랑고우",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006092",
+    "name_kr": "나옹",
+    "base_kr": "나옹",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006093",
+    "name_kr": "메타몽",
+    "base_kr": "메타몽",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006094",
+    "name_kr": "이브이",
+    "base_kr": "이브이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006095",
+    "name_kr": "잠만보",
+    "base_kr": "잠만보",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006096",
+    "name_kr": "푸푸린",
+    "base_kr": "푸푸린",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006097",
+    "name_kr": "루기아",
+    "base_kr": "루기아",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006098",
+    "name_kr": "히스이 조로아",
+    "base_kr": "조로아",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006099",
+    "name_kr": "히스이 조로아크",
+    "base_kr": "조로아크",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "조로아",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006100",
+    "name_kr": "파밀리쥐",
+    "base_kr": "파밀리쥐",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "두리쥐",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006104",
+    "name_kr": "알로라 나시",
+    "base_kr": "나시",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "아라리",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026006105",
+    "name_kr": "파이어",
+    "base_kr": "파이어",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006106",
+    "name_kr": "라프라스",
+    "base_kr": "라프라스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006107",
+    "name_kr": "프리져",
+    "base_kr": "프리져",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006108",
+    "name_kr": "썬더",
+    "base_kr": "썬더",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006109",
+    "name_kr": "스트린더",
+    "base_kr": "스트린더",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "일레즌",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006110",
+    "name_kr": "모르페코",
+    "base_kr": "모르페코",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006111",
+    "name_kr": "흔들풍손",
+    "base_kr": "흔들풍손",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006112",
+    "name_kr": "샹델라",
+    "base_kr": "샹델라",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "램프라",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006113",
+    "name_kr": "루가루암",
+    "base_kr": "루가루암",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "암멍이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006114",
+    "name_kr": "니드리나",
+    "base_kr": "니드리나",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "니드런♀",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026006115",
+    "name_kr": "알로라 나옹",
+    "base_kr": "나옹",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026006116",
+    "name_kr": "곤율랭",
+    "base_kr": "곤율랭",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006117",
+    "name_kr": "가라르 나옹",
+    "base_kr": "나옹",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006118",
+    "name_kr": "타부자고",
+    "base_kr": "타부자고",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "모으령",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006120",
+    "name_kr": "나옹",
+    "base_kr": "나옹",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006121",
+    "name_kr": "메타몽",
+    "base_kr": "메타몽",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006122",
+    "name_kr": "히스이 조로아",
+    "base_kr": "조로아",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006123",
+    "name_kr": "파밀리쥐",
+    "base_kr": "파밀리쥐",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "두리쥐",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006124",
+    "name_kr": "뜨아거 ex",
+    "base_kr": "뜨아거",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026006125",
+    "name_kr": "개굴닌자 ex",
+    "base_kr": "개굴닌자",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "개굴반장",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006126",
+    "name_kr": "피카츄 ex",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006127",
+    "name_kr": "피카츄 ex",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006130",
+    "name_kr": "님피아 ex",
+    "base_kr": "님피아",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "이브이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006132",
+    "name_kr": "지라치 ex",
+    "base_kr": "지라치",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "BS2026006133",
+    "name_kr": "보만다 ex",
+    "base_kr": "보만다",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "쉘곤",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006134",
+    "name_kr": "뮤츠 ex",
+    "base_kr": "뮤츠",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026006135",
+    "name_kr": "뮤 ex",
+    "base_kr": "뮤",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007001",
+    "name_kr": "쥬피썬더",
+    "base_kr": "쥬피썬더",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "이브이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007002",
+    "name_kr": "로토무",
+    "base_kr": "로토무",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007003",
+    "name_kr": "빠모",
+    "base_kr": "빠모",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007004",
+    "name_kr": "빠모트",
+    "base_kr": "빠모트",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "빠모",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007005",
+    "name_kr": "빠르모트",
+    "base_kr": "빠르모트",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "빠모트",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007006",
+    "name_kr": "미라이돈",
+    "base_kr": "미라이돈",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007007",
+    "name_kr": "켄타로스",
+    "base_kr": "켄타로스",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007008",
+    "name_kr": "이브이",
+    "base_kr": "이브이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007009",
+    "name_kr": "이브이 ex",
+    "base_kr": "이브이",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007010",
+    "name_kr": "딜리버드",
+    "base_kr": "딜리버드",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026007020",
+    "name_kr": "이브이",
+    "base_kr": "이브이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008001",
+    "name_kr": "샤프니아",
+    "base_kr": "샤프니아",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008002",
+    "name_kr": "샤크니아",
+    "base_kr": "샤크니아",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "샤프니아",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008003",
+    "name_kr": "다크라이",
+    "base_kr": "다크라이",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008004",
+    "name_kr": "쌔비냥",
+    "base_kr": "쌔비냥",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008005",
+    "name_kr": "레파르다스",
+    "base_kr": "레파르다스",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "쌔비냥",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008006",
+    "name_kr": "조로아",
+    "base_kr": "조로아",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008007",
+    "name_kr": "조로아크 ex",
+    "base_kr": "조로아크",
+    "card_type": "1진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage1",
+    "evolvesFrom_kr": "조로아",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "BS2026008008",
+    "name_kr": "모르페코",
+    "base_kr": "모르페코",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008009",
+    "name_kr": "자루도",
+    "base_kr": "자루도",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008010",
+    "name_kr": "딜리버드",
+    "base_kr": "딜리버드",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026008020",
+    "name_kr": "조로아",
+    "base_kr": "조로아",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009001",
+    "name_kr": "쉐이미",
+    "base_kr": "쉐이미",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009002",
+    "name_kr": "비리디온",
+    "base_kr": "비리디온",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009003",
+    "name_kr": "나오하",
+    "base_kr": "나오하",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009004",
+    "name_kr": "나로테",
+    "base_kr": "나로테",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "나오하",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009005",
+    "name_kr": "마스카나 ex",
+    "base_kr": "마스카나",
+    "card_type": "2진화 포켓몬 |  포켓몬 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "나로테",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009006",
+    "name_kr": "미니브",
+    "base_kr": "미니브",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009007",
+    "name_kr": "올리뇨",
+    "base_kr": "올리뇨",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "미니브",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009008",
+    "name_kr": "올리르바",
+    "base_kr": "올리르바",
+    "card_type": "2진화 포켓몬",
+    "stage": "stage2",
+    "evolvesFrom_kr": "올리뇨",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009009",
+    "name_kr": "딜리버드",
+    "base_kr": "딜리버드",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "BS2026009018",
+    "name_kr": "나오하",
+    "base_kr": "나오하",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000040",
+    "name_kr": "잉어킹",
+    "base_kr": "잉어킹",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000041",
+    "name_kr": "치코리타",
+    "base_kr": "치코리타",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000042",
+    "name_kr": "베이리프",
+    "base_kr": "베이리프",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "치코리타",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000043",
+    "name_kr": "메가메가니움 ex",
+    "base_kr": "메가니움",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "베이리프",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000044",
+    "name_kr": "뚜꾸리",
+    "base_kr": "뚜꾸리",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000045",
+    "name_kr": "차오꿀",
+    "base_kr": "차오꿀",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "뚜꾸리",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000046",
+    "name_kr": "메가염무왕 ex",
+    "base_kr": "염무왕",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "차오꿀",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000047",
+    "name_kr": "리아코",
+    "base_kr": "리아코",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000048",
+    "name_kr": "엘리게이",
+    "base_kr": "엘리게이",
+    "card_type": "1진화 포켓몬",
+    "stage": "stage1",
+    "evolvesFrom_kr": "리아코",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000049",
+    "name_kr": "메가장크로다일 ex",
+    "base_kr": "장크로다일",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "엘리게이",
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000050",
+    "name_kr": "로켓단의 뮤츠 ex",
+    "base_kr": "뮤츠",
+    "card_type": "기본 포켓몬 |  포켓몬 ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000051",
+    "name_kr": "쉐이미",
+    "base_kr": "쉐이미",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000052",
+    "name_kr": "메가마폭시 ex",
+    "base_kr": "마폭시",
+    "card_type": "2진화 포켓몬 |  메가진화 ex",
+    "stage": "stage2",
+    "evolvesFrom_kr": "테르나",
+    "source": "derived-species"
+  },
+  {
+    "bs_code": "MP000000053",
+    "name_kr": "쥬쥬",
+    "base_kr": "쥬쥬",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000054",
+    "name_kr": "슈쁘",
+    "base_kr": "슈쁘",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000058",
+    "name_kr": "피카츄 ex",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬 |  ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000059",
+    "name_kr": "피카츄 ex",
+    "base_kr": "피카츄",
+    "card_type": "기본 포켓몬 |  ex",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000063",
+    "name_kr": "꼬시레",
+    "base_kr": "꼬시레",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000064",
+    "name_kr": "메가싸리용 ex",
+    "base_kr": "싸리용",
+    "card_type": "기본 포켓몬 |  메가진화 ex",
+    "stage": "mega",
+    "evolvesFrom_kr": null,
+    "source": "derived-basic"
+  },
+  {
+    "bs_code": "MP000000065",
+    "name_kr": "저리어",
+    "base_kr": "저리어",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
+  },
+  {
+    "bs_code": "MP000000066",
+    "name_kr": "보르쥐",
+    "base_kr": "보르쥐",
+    "card_type": "기본 포켓몬",
+    "stage": "basic",
+    "evolvesFrom_kr": null,
+    "source": "derived-name"
   }
 ]
