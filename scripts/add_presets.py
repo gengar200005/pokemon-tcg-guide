@@ -60,7 +60,7 @@ def main():
         sys.exit(1)
     print(json.dumps({'presets': [p['id'] for p in new_presets], 'catalog': [c['name'] for c in new_catalog]}, ensure_ascii=False))
     if '--write' in sys.argv:
-        presets['presets'].extend(new_presets)
+        presets['presets'].extend(sorted(new_presets, key=lambda p: p['set_prefix']))
         # newest products first, matching the official listing order the catalog was scraped in
         catalog['decks'] = new_catalog + catalog['decks']
         catalog['count'] = len(catalog['decks'])

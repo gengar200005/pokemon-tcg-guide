@@ -3,8 +3,8 @@ const assert=require('node:assert/strict'),test=require('node:test'),fs=require(
 const V=require('../scripts/validate-data'),M=require('../scripts/merge-cards');
 const DATA=path.join(__dirname,'..','data');
 
-/* Baseline before the 2026-10-30 maintenance pass; a merge may only grow these. */
-const BASELINE={cards:15990,evolution:11359,trainerCategories:3910,catalogDecks:79,presets:11};
+/* Counts after the 2026-10-30 update; a merge may only grow these. */
+const BASELINE={cards:16593,evolution:11841,trainerCategories:4020,catalogDecks:82,presets:14};
 
 test('shipped data has no blocking integrity errors',()=>{const r=V.validate(DATA);assert.deepEqual(r.errors,[]);assert(r.ok);});
 test('record counts never shrink below the baseline',()=>{const c=V.validate(DATA).counts;for(const k in BASELINE)assert(c[k]>=BASELINE[k],k+' '+c[k]);});
