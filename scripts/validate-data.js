@@ -10,7 +10,7 @@ var ENERGY_TYPES=['풀','불꽃','물','번개','초','격투','악','강철','�
    The deck engine treats them as unknown, so they are warnings, not errors. */
 var LEGACY_COST_TOKENS=['0코스트','플러스','-'];
 var STAGES=['basic','stage1','stage2','v-evolution','mega','break','other'];
-var EVO_SOURCES=['agreed','agreed-basic','A-only','B-only','unmatched'];
+var EVO_SOURCES=['agreed','agreed-basic','A-only','B-only','unmatched','derived-name','derived-species','derived-basic'];
 var TRAINER_SUBTYPES=['item','supporter','fossil',null];
 var TRAINER_TAGS=['draw_support','pokemon_search','energy_acceleration','recovery','switch','hand_disrupt','energy_search','gust','healing','tool_defensive','evolution_accel'];
 var CARD_CLASSES=['pokemon','trainer','energy','stadium'];
