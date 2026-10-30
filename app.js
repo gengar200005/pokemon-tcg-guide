@@ -5,12 +5,12 @@
 
 /* ═══ Constants ═══ */
 var DB_URL='https://gengar200005.github.io/pokemon-tcg-guide/data/korean_cards_db.json';
-var DB_VERSION='v4-1'; /* 캐시 무효화 키 */
+var DB_VERSION='v4-2'; /* 캐시 무효화 키 */
 /* 세션 14: 자동 빌드용 데이터 */
 var EVOLUTION_URL='https://gengar200005.github.io/pokemon-tcg-guide/data/evolution_lines.json';
 var TRAINER_CAT_URL='https://gengar200005.github.io/pokemon-tcg-guide/data/trainer_categories.json';
-var EVOLUTION_VERSION='s14-1'; /* 세션 14 데이터 버전 */
-var TRAINER_CAT_VERSION='s14-1';
+var EVOLUTION_VERSION='s14-2'; /* 세션 14 데이터 버전 */
+var TRAINER_CAT_VERSION='s14-2';
 var IDB_NAME='ptcg-cards';
 var IDB_STORE='db';
 var SK='ptcg-v4';
