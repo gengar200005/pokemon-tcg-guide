@@ -632,7 +632,7 @@ function toggleAutoDeckType(t){
 }
 function runAutoBuildTypes(){
   if(!_deckBuilder||_deckBuilder.format!=='full'||!_abDeckTypes.length)return;
-  var set=DeckEngine.buildCandidates({database:cardsDB,evolution:evolutionLines,owned:D.collected,pokemonTypes:_abDeckTypes.slice(),unlimitedBasicEnergy:_abUnlimitedEnergy});
+  var set=DeckEngine.buildCandidates({database:cardsDB,evolution:evolutionLines,owned:D.collected,pokemonTypes:_abDeckTypes.slice(),unlimitedBasicEnergy:_abUnlimitedEnergy,evaluate:300});
   var proposal=set.candidates.length?set.candidates[set.recommended].result:set.failure;
   if(!proposal||!proposal.validation.total){toast((proposal?proposal.notes:['선택한 타입의 보유 카드가 부족합니다.']).join(' '),'#e74c3c');return;}
   if(!set.candidates.length){toast('선택한 타입의 보유 포켓몬이 부족해 덱을 만들기 어려워요. '+((proposal.summary&&proposal.summary.weaknesses.slice(-1)[0])||''),'#e74c3c');return;}
@@ -902,7 +902,7 @@ function confirmAndRunAutoBuild(basicCard,targetPath){
 function runAutoBuild(basicCard,targetPath){
   if(_deckBuilder.format==='full'){
     var unlimited=typeof _abUnlimitedEnergy!=='undefined'&&_abUnlimitedEnergy;
-    var set=DeckEngine.buildCandidates({database:cardsDB,evolution:evolutionLines,owned:D.collected,basicCode:basicCard.bs_code,targetPath:targetPath,unlimitedBasicEnergy:unlimited});
+    var set=DeckEngine.buildCandidates({database:cardsDB,evolution:evolutionLines,owned:D.collected,basicCode:basicCard.bs_code,targetPath:targetPath,unlimitedBasicEnergy:unlimited,evaluate:300});
     if(!set.candidates.length){
       /* 덱을 만들 수 없으면 현재 덱을 지우지 않고 이유와 대안을 알려준다 */
       var fail=set.failure||{notes:[]};
@@ -3003,7 +3003,7 @@ function renderDeckSheet(){
     (report.errors||[]).forEach(function(n){h+='<p class="deck-note">'+esc(n)+'</p>';});
     if(_deckBuilder.buildSummary)h+=renderBuildExplanation(_deckBuilder);
     else (_deckBuilder.buildNotes||[]).forEach(function(n){h+='<p class="deck-note">'+esc(n)+'</p>';});
-    h+='<button class="btn btn-b" onclick="showDeckSimulation()">시작 패 10,000회 시뮬레이션</button><div id="deck-simulation" aria-live="polite"></div><button class="btn btn-b" onclick="openReferenceComparison()">시판덱과 비교</button><div id="deck-reference" aria-live="polite"></div></section>';
+    h+='<button class="btn btn-b" onclick="showDeckSimulation()">시작 패 10,000회 시뮬레이션</button><div id="deck-simulation" aria-live="polite"></div><button class="btn btn-b" onclick="openGoldfish()">혼자 돌려보기 (덱 속도 시뮬레이션)</button><div id="deck-goldfish" aria-live="polite"></div><button class="btn btn-b" onclick="openReferenceComparison()">시판덱과 비교</button><div id="deck-reference" aria-live="polite"></div></section>';
   }
 
   if(counts.total===0){
@@ -4427,13 +4427,56 @@ function renderBuildExplanation(deck){
   var list=deck.buildCandidates||[];
   if(list.length>1){
     var pct=function(x){return x==null?'-':Math.round(100*x)+'%';};
-    h+='<p class="deck-note"><b>덱 후보 비교</b> — 카드 장수와 시작 패·초반 확률만 비교해요. 승률이나 강함 점수가 아니에요.</p>';
+    h+='<p class="deck-note"><b>덱 후보 비교</b> — 카드 장수, 시작 패·초반 확률, 혼자 돌려보기 속도만 비교해요. 승률이나 강함 점수가 아니에요.</p>';
     list.forEach(function(o,i){var m=o.metrics,r=o.result,c=r.summary.composition;
       h+='<div class="deck-note"><b>'+esc(o.label)+'</b> · 주력 '+esc(r.summary.attacker)+(i===deck.buildCandidateIndex?' <b>(사용 중)</b>':' <button class="btn btn-b" onclick="selectBuildCandidate('+i+')">이 덱 쓰기</button>')+
+        (m.goldfish?'<br>혼자 돌려보기: 프라이즈 6장을 보통 '+(m.goldfish.medianFinish||'20+')+'번째 차례에 다 가져감 · 12번째 차례까지 '+pct(m.goldfish.finishBy12):'')+
         '<br>시작 패에 기본 포켓몬 '+pct(m.openingBasic)+' · 드로우·검색 카드 '+pct(m.openingDrawSearch)+' · 3번째 차례까지 공격 준비 '+pct(m.lineReady&&m.lineReady[3])+
         '<br>포켓몬 '+c.pokemon+' · 트레이너 '+(c.trainer+(c.stadium||0))+' · 에너지 '+c.energy+(m.valid?'':' · 점검 필요')+'</div>';});
   }
   return h+'</div>';
+}
+
+/* 혼자 돌려보기: 반격하지 않는 고정 상대에게 프라이즈 6장을 가져가는 속도. 승률이 아니다. */
+function openGoldfish(){
+  if(!_deckBuilder)return;
+  var el=$('deck-goldfish');if(!el)return;
+  function render(){
+    var presets=(_bdmPresets&&_bdmPresets.presets)||[];
+    var h='<p class="deck-note">같은 조건으로 비교할 시판덱(선택): <select id="goldfish-ref" aria-label="비교할 시판덱"><option value="">비교 안 함</option>';
+    presets.forEach(function(p){h+='<option value="'+esc(p.id)+'">'+esc(p.name_kr)+'</option>';});
+    h+='</select> <button class="btn btn-b" onclick="runGoldfish()">돌려보기</button></p><div id="goldfish-result"></div>';
+    el.innerHTML=h;
+  }
+  if(_bdmPresets)render();else loadBdmPresets(render);
+}
+function runGoldfish(){
+  var out=$('goldfish-result');if(!out||!_deckBuilder)return;
+  out.innerHTML='<p class="deck-note">1,000판씩 계산하는 중이에요…</p>';
+  setTimeout(function(){
+    var cards=normalizeDeckCards(_deckBuilder),sel=$('goldfish-ref'),preset=null;
+    if(sel&&sel.value&&_bdmPresets)preset=_bdmPresets.presets.filter(function(p){return p.id===sel.value;})[0]||null;
+    var opt={trials:1000,seed:20261031},g=DeckEngine.goldfish(cards,cardsDB,evolutionLines,opt);
+    if(!g.available){out.innerHTML='<p class="deck-note">'+esc(g.reason)+'</p>';return;}
+    var k=DeckEngine.goldfish(cards,cardsDB,evolutionLines,{trials:1000,seed:20261031,knockoutTurn:4});
+    var ref=null;if(preset){var pc={};preset.cards.forEach(function(c){pc[c.bs_code]=(pc[c.bs_code]||0)+c.qty;});ref=DeckEngine.goldfish(pc,cardsDB,evolutionLines,opt);}
+    out.innerHTML=goldfishHtml(g,k,ref,preset);
+  },30);
+}
+function goldfishHtml(g,k,ref,preset){
+  var pct=function(x){return Math.round(100*x)+'%';},turn=function(x){return x==null?'20차례 안에 못 끝냄':x+'번째 차례';};
+  function lines(title,r){return '<div class="deck-note"><b>'+esc(title)+'</b><br>프라이즈 6장을 다 가져가는 때: 보통 <b>'+turn(r.medianFinish)+'</b> · 12번째 차례까지 끝낼 확률 '+pct(r.finishBy[12])+
+    '<br>첫 공격: 보통 '+turn(r.medianFirstAttack)+' · 공격한 차례 '+pct(r.attackRate)+' · 에너지가 모자라 쉰 차례 '+pct(r.stallEnergy)+
+    (r.unfinished?'<br>20번째 차례까지 못 끝낸 판 '+pct(r.unfinished)+(r.deckOut?' (덱이 바닥난 판 '+pct(r.deckOut)+')':''):'')+'</div>';}
+  var h=lines('지금 덱',g);
+  if(k&&k.knockout)h+='<p class="deck-note">4번째 차례에 배틀 포켓몬이 기절하면, 다음 차례에 바로 공격할 수 있는 판 <b>'+pct(k.knockout.nextTurnAttack)+'</b>'+(k.knockout.noBackup?' · 벤치가 비어 진 판 '+pct(k.knockout.noBackup):'')+'</p>';
+  if(ref){h+=lines('시판덱 · '+preset.name_kr,ref);
+    var d=(g.medianFinish||21)-(ref.medianFinish||21);
+    h+='<p class="deck-note">'+(d===0?'시판덱과 비슷한 속도예요.':d<0?'시판덱보다 보통 '+(-d)+'차례 빨라요.':'시판덱보다 보통 '+d+'차례 느려요.')+' (같은 상대·같은 조건 비교)</p>';}
+  if(g.abilitiesModelled.length)h+='<p class="deck-note">계산한 특성: '+esc(g.abilitiesModelled.join(', '))+'</p>';
+  if(g.abilitiesIgnored.length)h+='<p class="deck-note">계산하지 않은 특성: '+esc(g.abilitiesIgnored.join(', '))+'</p>';
+  h+='<p class="deck-note">상대: '+esc(g.opponent)+'. '+esc(g.scope)+'</p>';
+  return h;
 }
 
 /* Retail decks are explicit baselines, never disguised as generated discoveries. */
