@@ -411,7 +411,14 @@ function buildCandidates(options){
   if(seen[key]||same)return;seen[key]=1;out.push({strategy:s,label:STRATEGIES[s].label,result:r,metrics:deckMetrics(r,options.database,db)});
  });
  var failure=out.failure;delete out.failure;
- return {candidates:out,recommended:out.length?Math.max(0,out.findIndex(function(o){return o.metrics.valid;})):-1,failure:out.length?null:failure||{cards:{},notes:['조건에 맞는 덱을 만들 수 없습니다.'],validation:{ok:false,total:0,errors:[]}},
+ var recommended=out.length?Math.max(0,out.findIndex(function(o){return o.metrics.valid;})):-1;
+ // Optional: a short solo simulation per candidate; recommend the fastest valid one.
+ if(options.evaluate&&out.length){out.forEach(function(o){var g=goldfish(o.result.cards,options.database,options.evolution,{trials:options.evaluate,seed:20261031});
+   o.metrics.goldfish=g.available?{medianFinish:g.medianFinish,finishBy12:g.finishBy[12],unfinished:g.unfinished}:null;});
+  var rank=function(o){var g=o.metrics.goldfish;return !o.metrics.valid||!g?Infinity:(g.medianFinish||99)-g.finishBy12*0.5;};
+  var fastest=out.reduce(function(b,o,i){return rank(o)<rank(out[b])?i:b;},recommended);
+  if(fastest!==recommended&&rank(out[fastest])<rank(out[recommended])){out[fastest].result.summary.reasons.unshift('혼자 돌려보기에서 후보 중 가장 빨리 프라이즈를 가져가 추천했어요.');recommended=fastest;}}
+ return {candidates:out,recommended:recommended,failure:out.length?null:failure||{cards:{},notes:['조건에 맞는 덱을 만들 수 없습니다.'],validation:{ok:false,total:0,errors:[]}},
   limits:'비교 지표는 카드 장수와 시작 패·초반 드로우 확률입니다. 실제 대전 승률이나 강함 점수가 아닙니다.'};
 }
 // Early turns of one game, going first (no draw on turn 1). Simplified on purpose:
@@ -468,6 +475,147 @@ function simulate(cards,database,options){
   out.readyScope='선공 기준 단순 모델: 드로우 서포트 1장/차례, 검색 카드로 주력 라인 확보, 에너지 1장/차례 부착, 진화는 다음 차례부터. 상대·특성·패 버림 효과는 반영하지 않으므로 실제 승률이나 공격 성공률이 아닙니다.';}
  return out;
 }
-var api={supply:supply,build:build,buildByTypes:buildByTypes,buildCandidates:buildCandidates,inspect:inspect,simulate:simulate,basic:basic,basicEnergy:energy,role:role,trainerInfo:trainerInfo,compareReference:compareReference,openingMetrics:openingMetrics,strategies:STRATEGIES};
+// Solo ("goldfish") game against a fixed opponent that never attacks or disrupts, unless
+// options.knockoutTurn makes it knock out our active Pokemon once after that turn. Measures how
+// fast and steadily a deck takes 6 prizes. Rules modelled: going first (no draw/attack on turn 1),
+// 5 bench, one evolution per Pokemon per turn from turn 2 on a Pokemon played earlier, Rare Candy,
+// one energy attachment, typed attack costs, one supporter per turn (draw, discard/shuffle hand,
+// Pokemon search), search items with discard costs, retreat/switch, prize cards into hand,
+// energy discarded by attacks, "cannot attack next turn". Abilities, special conditions,
+// weakness/resistance, stadiums, tools and every other effect are not modelled.
+var OPPONENT=[{hp:220,prize:2},{hp:110,prize:1}];
+// Energy abilities in one reviewed wording family: take basic energy from deck/hand/trash and
+// attach it or put it in hand, on evolving from hand, once per turn, any number of times, or once
+// per game (VSTAR). An optional "그 뒤, 자신의 덱을 N장 뽑는다" is included. Anything else is skipped.
+var abilityCache={};
+function energyAbility(s){
+ var key=s.name+'|'+s.text;if(abilityCache[key]!==undefined)return abilityCache[key];
+ var t=s.text||'',m=t.match(/자신의 (덱|패|트래쉬)에서[^.]*?에너지[」]?를\s*(?:각각\s*)?(\d+)장(?:까지)?[^.]*?(붙인다|패로 가져온다)/),out=null;
+ if(m&&!/트래쉬한다면|않으면/.test(t)){
+  out={source:{덱:'deck',패:'hand',트래쉬:'discard'}[m[1]],count:parseInt(m[2],10)*(/각각/.test(t)?(t.match(/「기본 \(/g)||[]).length||1:1),mode:m[3]==='붙인다'?'attach':'hand',
+   types:(t.split(/붙인다|패로 가져온다/)[0].match(/\((풀|불꽃|물|번개|초|격투|악|강철|페어리)\) 에너지/g)||[]).map(function(x){return x.match(/\((.+)\)/)[1];}).filter(function(x,i,a){return a.indexOf(x)===i;}),
+   when:/진화시켰을 때/.test(t)?'evolve':/VSTAR 파워/.test(t)||/^VSTAR/.test(s.name)?'game':/몇 번이라도/.test(t)?'any':'turn',activeOnly:/배틀필드에 있다면/.test(t),
+   draw:parseInt((t.match(/그 뒤, 자신의 덱을\s*(\d+)장 뽑는다/)||[])[1],10)||0};
+ }
+ return abilityCache[key]=out;
+}
+function goldfish(cards,database,evolution,options){
+ options=options||{};var db={},ev={};database.forEach(function(c){db[c.bs_code]=c;});(evolution||[]).forEach(function(e){ev[e.bs_code]=e;});
+ var valid=inspect(cards,db);if(!valid.ok)return {available:false,reason:valid.errors.join(' / ')};
+ var n=options.trials||2000,maxT=options.maxTurns||20,ko=options.knockoutTurn||null;if(!Number.isInteger(n)||n<1||n>20000)throw Error('trials must be 1..20000');
+ var r=rng(options.seed===undefined?20261031:options.seed),base=[];Object.keys(cards).forEach(function(id){for(var k=0;k<cards[id];k++)base.push(id);});
+ var names={};base.forEach(function(id){names[db[id].name_kr]=1;});
+ // Pre-evolution name inside this deck; trainer families keep their owner prefix.
+ var from={};base.forEach(function(id){var c=db[id],e=ev[id];if(!e||!e.evolvesFrom_kr||from[id]!==undefined)return;var o=(c.name_kr.match(/^(.*의 )/)||[])[1]||'';from[id]=o&&names[o+e.evolvesFrom_kr]?o+e.evolvesFrom_kr:e.evolvesFrom_kr;});
+ var bestCache={},best=function(c){return bestCache[c.bs_code]||(bestCache[c.bs_code]=attacks(c).filter(function(a){return baseDamage(a)>0;}).sort(function(a,b){return baseDamage(b)-baseDamage(a);}));};
+ var uniq=Object.keys(cards),potCache={},topDamage=uniq.reduce(function(m,id){var a=best(db[id])[0];return a?Math.max(m,baseDamage(a)):m;},0);
+ // Strongest attack this Pokemon has now or after evolving with cards in this deck; energy goes there.
+ function potential(c){if(potCache[c.bs_code])return potCache[c.bs_code];var top=best(c)[0]||null;
+  uniq.forEach(function(id){if(from[id]===c.name_kr){var p=potential(db[id]);if(p&&(!top||baseDamage(p)>baseDamage(top)))top=p;}});return potCache[c.bs_code]=top;}
+ function payable(m,a){var have={},left=m.energy.length;m.energy.forEach(function(t){have[t]=(have[t]||0)+1;});
+  var need={};a.cost.forEach(function(t){t=type(t);if(t!=='무색')need[t]=(need[t]||0)+1;});
+  return Object.keys(need).every(function(t){return (have[t]||0)>=need[t];})&&left>=a.cost.length;}
+ function attackOf(m){return best(m.card).filter(function(a){return payable(m,a);})[0]||null;}
+ var modelled={},finish=[],first=[],attackTurns=0,activeTurns=0,stallEnergy=0,stallNone=0,deckOut=0,unfinished=0,nextAfterKo=0,koTrials=0,noBackup=0;
+ for(var i=0;i<n;i++){
+  var d=shuffle(base.slice(),r),tries=0;while(!d.slice(0,7).some(function(id){return basic(db[id]);})&&tries<30){d=shuffle(base.slice(),r);tries++;}
+  var hand=d.slice(0,7),prizes=d.slice(7,13),lib=d.slice(13),active=null,bench=[],taken=0,opp=0,oppDmg=0,firstAttack=null,done=null,lost=false,lockUntil=0,attackedAfterKo=null,trash=[],vstarUsed=false;
+  var take=function(pred){for(var k=0;k<lib.length;k++)if(pred(db[lib[k]]))return lib.splice(k,1)[0];return null;};
+  var energyId={};base.forEach(function(id){var e=energy(db[id]);if(e&&!energyId[e])energyId[e]=id;});
+  var toTrash=function(types){types.forEach(function(e){if(energyId[e])trash.push(energyId[e]);});};
+  var inPlay=function(){return (active?[active]:[]).concat(bench);};
+  var discardFrom=function(count,keep){for(var k=hand.length-1;k>=0&&count>0;k--){if(keep.indexOf(hand[k])>=0)continue;var c=db[hand[k]];if(basic(c)&&!inPlay().length)continue;hand.splice(k,1);count--;}return count===0;};
+  // What the deck still needs: next stage of a line in play, else a basic that leads to the best attacker.
+  var wanted=function(){var want=[];inPlay().forEach(function(m){base.forEach(function(id){if(from[id]===m.card.name_kr&&!hand.some(function(h){return db[h].name_kr===db[id].name_kr;}))want.push(db[id].name_kr);});});
+   if(bench.length<5)base.forEach(function(id){var c=db[id];if(basic(c)&&best(c).length&&!hand.some(function(h){return db[h].name_kr===c.name_kr;}))want.push(c.name_kr);});return want;};
+  // Where an energy of type et (or any type) helps most: strongest potential attack still short of energy.
+  function attachTarget(et){var c=inPlay().filter(function(m){var p=potential(m.card);if(!p||m.energy.length>=p.cost.length)return false;
+    var need=p.cost.map(type).filter(function(x){return x!=='무색';});return !et||need.indexOf(et)>=0||need.length<p.cost.length;})
+   .sort(function(a,b){return baseDamage(potential(b.card))-baseDamage(potential(a.card))||(b===active)-(a===active);});return c[0]||null;}
+  function useAbility(m,ab,t){
+   if(ab.activeOnly&&m!==active)return;if(ab.when==='game'){if(vstarUsed)return;vstarUsed=true;}
+   var ok=function(c){var e=energy(c);return e&&(!ab.types.length||ab.types.indexOf(e)>=0);},moved=0;
+   for(var k=0;k<(ab.when==='any'?3:ab.count);k++){var id=null;
+    if(ab.source==='deck')id=take(ok);else if(ab.source==='hand'){var hi=hand.findIndex(function(h){return ok(db[h]);});if(hi>=0)id=hand.splice(hi,1)[0];}else{var ti=trash.findIndex(function(h){return ok(db[h]);});if(ti>=0)id=trash.splice(ti,1)[0];}
+    if(!id)break;if(ab.mode==='hand'){hand.push(id);moved++;continue;}var tg=attachTarget(energy(db[id]));if(!tg){if(ab.source==='hand')hand.push(id);else if(ab.source==='deck')lib.push(id);else trash.push(id);break;}tg.energy.push(energy(db[id]));moved++;}
+   if(lib.length>10&&hand.length<8)for(var q=0;q<ab.draw&&lib.length;q++)hand.push(lib.shift());
+   if((moved||ab.draw)&&!ab.trainer)modelled[m.card.name_kr+'「'+ab.name+'」']=1;}
+  function abilitiesOf(c,when){return (c.skills||[]).filter(function(s){return !('cost' in s)&&s.text;}).map(function(s){var a=energyAbility(s);return a&&a.when===when?Object.assign({name:s.name},a):null;}).filter(Boolean);}
+  function evolveTo(m,id,t){m.card=db[id];m.evolvedAt=t;abilitiesOf(m.card,'evolve').forEach(function(ab){useAbility(m,ab,t);});}
+  function play(t){
+   hand.slice().forEach(function(id){var c=db[id];if(!basic(c)||hand.indexOf(id)<0)return;
+    if(!active){active={card:c,played:t,energy:[],evolvedAt:0};hand.splice(hand.indexOf(id),1);}else if(bench.length<5){bench.push({card:c,played:t,energy:[],evolvedAt:0});hand.splice(hand.indexOf(id),1);}});
+   hand.slice().forEach(function(id){if(hand.indexOf(id)<0)return;var c=db[id],info=trainerInfo(c);if(!info||c.trainer_subtype==='supporter'||!info.role)return;
+    var cost=parseInt(((c.effect_text||'').match(/패를\s*(\d+)장 트래쉬하지 않으면/)||[])[1],10)||0,got=null;
+    if(info.role==='search'){var w=wanted();if(!w.length)return;if(cost&&hand.length-1<cost)return;got=take(function(x){return w.indexOf(x.name_kr)>=0&&(!info.maxHp||x.hp<=info.maxHp);});}
+    else if(info.role==='energySearch')got=take(function(x){return !!energy(x);});
+    else if(info.role==='accel'){ // reviewed wording: energy from deck/trash onto a matching Pokemon
+     var src=/트래쉬에서/.test(c.effect_text||'')?'discard':/덱/.test(c.effect_text||'')?'deck':null;if(!src||cost)return;
+     var before=inPlay().reduce(function(n,m){return n+m.energy.length;},0);useAbility(active||bench[0]||{card:c},{name:c.name_kr,source:src,count:1,mode:'attach',types:info.types,when:'turn',activeOnly:false,draw:0,trainer:true},t);
+     if(inPlay().reduce(function(n,m){return n+m.energy.length;},0)>before)hand.splice(hand.indexOf(id),1);return;}
+    else if(info.role==='candy'){if(t<2)return;var m=inPlay().find(function(m){return stage(m.card)===0&&m.played<t&&m.evolvedAt<t&&hand.some(function(h){var s2=db[h];return stage(s2)===2&&base.some(function(s1){return from[h]===db[s1].name_kr&&from[s1]===m.card.name_kr;});});});
+     if(!m)return;var h2=hand.find(function(h){return stage(db[h])===2&&base.some(function(s1){return from[h]===db[s1].name_kr&&from[s1]===m.card.name_kr;});});hand.splice(hand.indexOf(id),1);hand.splice(hand.indexOf(h2),1);evolveTo(m,h2,t);return;}
+    else return;
+    if(!got)return;hand.splice(hand.indexOf(id),1);if(cost)discardFrom(cost,[got]);hand.push(got);});
+   if(t>=2)inPlay().forEach(function(m){if(m.played>=t||m.evolvedAt>=t)return;var h=hand.find(function(h){return from[h]===m.card.name_kr;});if(h){hand.splice(hand.indexOf(h),1);evolveTo(m,h,t);}});
+  }
+  for(var t=1;t<=maxT&&!done&&!lost;t++){
+   if(t>1){if(!lib.length){deckOut++;lost=true;break;}hand.push(lib.shift());}
+   play(t);
+   var sup=hand.filter(function(id){var c=db[id],info=trainerInfo(c);return c.trainer_subtype==='supporter'&&info&&(info.role==='draw'||info.role==='search');});
+   // Missing pieces: a line in play still has an evolution to find, or nothing can attack yet.
+   // Missing pieces: the deck's strongest attacker is not in play yet, or nothing can attack.
+   var needPieces=!inPlay().some(function(m){var a=best(m.card)[0];return a&&baseDamage(a)>=topDamage;})||!inPlay().some(attackOf),noEnergy=!hand.some(function(id){return energy(db[id]);});
+   // Play a supporter only when it helps: missing pieces, no energy to attach, or a thin hand.
+   var pick=null;if((needPieces||noEnergy||hand.length<=3)&&(lib.length>10||hand.length<=2)){pick=sup.find(function(id){return needPieces&&trainerInfo(db[id]).role==='search';})||
+    sup.filter(function(id){return trainerInfo(db[id]).role==='draw';}).sort(function(a,b){return /패를 모두 트래쉬/.test(db[a].effect_text||'')-/패를 모두 트래쉬/.test(db[b].effect_text||'');})[0]||null;
+    if(pick&&/패를 모두 트래쉬/.test(db[pick].effect_text||'')&&hand.length>4&&!needPieces)pick=null;}
+   if(pick){var pc=db[pick],pi=trainerInfo(pc),txt=pc.effect_text||'';hand.splice(hand.indexOf(pick),1);
+    if(pi.role==='search'){var w=wanted();for(var k=0;k<3;k++){var g=take(function(x){return w.indexOf(x.name_kr)>=0;});if(g){hand.push(g);w.splice(w.indexOf(db[g].name_kr),1);}}}
+    else{var cnt=pi.drawCount||3;if(/패를 모두 트래쉬/.test(txt)){trash=trash.concat(hand);hand=[];}else if(/패를 모두 (덱으로 되돌리고|뒷면으로)/.test(txt)){lib=shuffle(lib.concat(hand),r);hand=[];}
+     if(/패가\s*\d+장이 되도록/.test(txt))cnt=Math.max(0,cnt-hand.length);if(/남은 프라이즈 장수만큼/.test(txt))cnt=6-taken;for(var k2=0;k2<cnt&&lib.length;k2++)hand.push(lib.shift());}
+    play(t);}
+   inPlay().forEach(function(m){abilitiesOf(m.card,'turn').concat(abilitiesOf(m.card,'any'),abilitiesOf(m.card,'game')).forEach(function(ab){useAbility(m,ab,t);});});
+   // Attach one energy where it brings an attack closest: active first, then the strongest benched line.
+   var eIdx=hand.findIndex(function(id){return energy(db[id]);});
+   // If a benched attacker is ready but the active Pokemon cannot pay its retreat, power the retreat.
+   var stuck=active&&!attackOf(active)&&bench.some(attackOf)&&!hand.some(function(id){return role(db[id])==='switch';})&&active.energy.length===(active.card.retreat||0)-1;
+   // Only attach an energy where its type pays part of a cost (or the retreat that unblocks a ready attacker).
+   if(eIdx>=0&&active){var pickE=null,pickT=null;
+    if(stuck){pickE=eIdx;pickT=active;}
+    else hand.forEach(function(id,j){var e=energy(db[id]);if(!e||pickT)return;var tg=attachTarget(e);if(tg){pickE=j;pickT=tg;}});
+    if(pickT){pickT.energy.push(energy(db[hand[pickE]]));hand.splice(pickE,1);}}
+   // Switch to a benched attacker when the active one cannot attack.
+   var now=active&&attackOf(active)?baseDamage(attackOf(active)):0;
+   if(active){var ready=bench.filter(function(m){var a=attackOf(m);return a&&baseDamage(a)>now;}).sort(function(a,b){return baseDamage(attackOf(b))-baseDamage(attackOf(a));})[0];
+    if(ready){var sw=hand.find(function(id){return role(db[id])==='switch';}),cost=active.card.retreat||0;
+     if(sw){hand.splice(hand.indexOf(sw),1);}else if(active.energy.length>=cost){toTrash(active.energy.splice(0,cost));}else ready=null;
+     if(ready){bench.splice(bench.indexOf(ready),1,active);active=ready;}}}
+   if(options.trace&&i===0)options.trace.push('T'+t+' 패:'+hand.map(function(id){return db[id].name_kr;}).join(',')+' | 배틀:'+(active?active.card.name_kr+'('+active.energy.join('')+')':'-')+' 벤치:'+bench.map(function(m){return m.card.name_kr+'('+m.energy.join('')+')';}).join(',')+' | 덱'+lib.length+' 프라이즈'+taken);
+   if(t>=2&&active){activeTurns++;var a=attackOf(active);
+    if(a&&t>=lockUntil){attackTurns++;if(firstAttack===null)firstAttack=t;if(ko&&t===ko+1)attackedAfterKo=true;
+     oppDmg+=baseDamage(a);var foe=OPPONENT[opp%OPPONENT.length];if(oppDmg>=foe.hp){taken+=foe.prize;for(var q=0;q<foe.prize&&prizes.length;q++)hand.push(prizes.pop());opp++;oppDmg=0;}
+     var tx=a.text||'',m1=tx.match(/이 포켓몬에게 붙어 있는 에너지를\s*(\d+)개/);if(/[×x]/.test(a.damage||''))toTrash(active.energy.splice(0,a.cost.length));else if(/이 포켓몬에게 붙어 있는 에너지를 모두 트래쉬/.test(tx))toTrash(active.energy.splice(0));else if(m1)toTrash(active.energy.splice(0,parseInt(m1[1],10)));
+     if(/다음 차례에 이 포켓몬은[^.]*?기술을 사용할 수 없다/.test(tx))lockUntil=t+2;
+     if(taken>=6)done=t;}
+    else if(inPlay().some(function(m){return best(m.card).length;}))stallEnergy++;else stallNone++;
+    if(ko&&t===ko+1&&!attackedAfterKo)attackedAfterKo=false;}
+   // Opponent's turn: optionally knock out our active Pokemon once; promote the best benched Pokemon.
+   if(ko&&t===ko&&active&&!done){koTrials++;toTrash(active.energy);active=null;if(!bench.length){lost=true;noBackup++;break;}
+    bench.sort(function(a,b){return (attackOf(b)?1:0)-(attackOf(a)?1:0)||b.energy.length-a.energy.length;});active=bench.shift();lockUntil=0;}
+  }
+  if(done)finish.push(done);else unfinished++;if(firstAttack!==null)first.push(firstAttack);if(attackedAfterKo)nextAfterKo++;
+ }
+ var med=function(a){if(!a.length)return null;a=a.slice().sort(function(x,y){return x-y;});return a[Math.floor(a.length/2)];},by=function(k){return finish.filter(function(x){return x<=k;}).length/n;};
+ var out={available:true,trials:n,seed:options.seed===undefined?20261031:options.seed,maxTurns:maxT,medianFinish:med(finish),finishBy:{6:by(6),8:by(8),10:by(10),12:by(12)},unfinished:unfinished/n,deckOut:deckOut/n,
+  medianFirstAttack:med(first),attackRate:activeTurns?attackTurns/activeTurns:0,stallEnergy:activeTurns?stallEnergy/activeTurns:0,stallNoAttacker:activeTurns?stallNone/activeTurns:0,
+  opponent:'반격하지 않는 고정 상대: HP 220(프라이즈 2장)과 HP 110(1장)이 번갈아 나옴',
+  abilitiesModelled:Object.keys(modelled),
+  abilitiesIgnored:uniq.map(function(id){return db[id];}).filter(function(c){return c.card_class==='pokemon';}).reduce(function(a,c){abilities(c).forEach(function(s){var k=c.name_kr+'「'+s.name+'」';if(!energyAbility(s)&&a.indexOf(k)<0)a.push(k);});return a;},[]),
+  scope:'혼자 하는 연습 게임 모델입니다(선공, 상대 반격·방해 없음). 에너지를 붙이거나 가져오는 일부 특성만 계산하고, 그 밖의 특성·상태 이상·약점·저항력·스타디움·도구·특수 에너지 효과는 계산하지 않습니다. 덱끼리 속도와 안정성을 비교하는 참고값이며 승률이 아닙니다.'};
+ if(ko){out.knockout={turn:ko,nextTurnAttack:koTrials?nextAfterKo/koTrials:0,noBackup:koTrials?noBackup/koTrials:0};}
+ return out;
+}
+var api={supply:supply,build:build,buildByTypes:buildByTypes,buildCandidates:buildCandidates,inspect:inspect,simulate:simulate,goldfish:goldfish,energyAbility:energyAbility,basic:basic,basicEnergy:energy,role:role,trainerInfo:trainerInfo,compareReference:compareReference,openingMetrics:openingMetrics,strategies:STRATEGIES};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.DeckEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
