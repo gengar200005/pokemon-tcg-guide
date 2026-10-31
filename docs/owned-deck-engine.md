@@ -41,3 +41,7 @@ Type generation now scores the attacking plan as well as completion, handles a s
 The modal and result panel use responsive type chips, an explicit energy checkbox, a primary build action, deck count cards, and readable validation notes. Half-deck generation continues to use the legacy engine. Basic-energy assumptions are saved with each full deck.
 
 Validation: 28 Node tests and JavaScript syntax checks pass, including separate energy supply, mixed-energy types, missing-type failure and multiplier scoring. Personal inventories remain outside GitHub.
+
+## Strategy update (2026-10-31)
+
+See `DECK_ENGINE_REPORT.md`. The full-deck builder now returns up to three strategy candidates (balanced, fast, power) compared only on counts and opening/early-turn probabilities. Trainer roles are read from effect text with deck-fit checks instead of a fixed name list; colorless costs use an energy type the deck already uses; new energy types are added only when selected. Copy limits now cover art variants (「박사의 연구(○○)」), Prism Star "(프리즘스타)" and padded basic-energy names. Four presets were corrected from official deck lists and 44 VMAX/VSTAR pre-evolution names were fixed. Validation: 55 Node tests (28 existing, 20 strategy, 7 data) and a headless browser run with a Firebase stub.

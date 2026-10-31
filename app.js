@@ -9,7 +9,7 @@ var DB_VERSION='v4-2'; /* 캐시 무효화 키 */
 /* 세션 14: 자동 빌드용 데이터 */
 var EVOLUTION_URL='https://gengar200005.github.io/pokemon-tcg-guide/data/evolution_lines.json';
 var TRAINER_CAT_URL='https://gengar200005.github.io/pokemon-tcg-guide/data/trainer_categories.json';
-var EVOLUTION_VERSION='s14-2'; /* 세션 14 데이터 버전 */
+var EVOLUTION_VERSION='s14-3'; /* 세션 14 데이터 버전 */
 var TRAINER_CAT_VERSION='s14-2';
 var IDB_NAME='ptcg-cards';
 var IDB_STORE='db';
@@ -632,13 +632,12 @@ function toggleAutoDeckType(t){
 }
 function runAutoBuildTypes(){
   if(!_deckBuilder||_deckBuilder.format!=='full'||!_abDeckTypes.length)return;
-  var proposal=DeckEngine.buildByTypes({database:cardsDB,evolution:evolutionLines,owned:D.collected,pokemonTypes:_abDeckTypes.slice(),unlimitedBasicEnergy:_abUnlimitedEnergy});
-  if(!proposal.validation.total){toast(proposal.notes.join(' '),'#e74c3c');return;}
-  _deckBuilder.cards=proposal.cards;
-    _deckBuilder.unlimitedBasicEnergy=_abUnlimitedEnergy;
-  _deckBuilder.buildNotes=['선택 타입: '+_abDeckTypes.join(' · ')].concat(proposal.notes);
-  _deckBuilder.buildAttacker=proposal.attacker||null;
-  delete _deckBuilder.lastAutoBuild;
+  var set=DeckEngine.buildCandidates({database:cardsDB,evolution:evolutionLines,owned:D.collected,pokemonTypes:_abDeckTypes.slice(),unlimitedBasicEnergy:_abUnlimitedEnergy});
+  var proposal=set.candidates.length?set.candidates[set.recommended].result:set.failure;
+  if(!proposal||!proposal.validation.total){toast((proposal?proposal.notes:['선택한 타입의 보유 카드가 부족합니다.']).join(' '),'#e74c3c');return;}
+  if(!set.candidates.length){toast('선택한 타입의 보유 포켓몬이 부족해 덱을 만들기 어려워요. '+((proposal.summary&&proposal.summary.weaknesses.slice(-1)[0])||''),'#e74c3c');return;}
+  applyBuildProposal(proposal,set.candidates,_abUnlimitedEnergy,set.recommended);
+  _deckBuilder.buildNotes=['선택 타입: '+_abDeckTypes.join(' · ')].concat(_deckBuilder.buildNotes);
   _lastAutoBuild=null;
   closeAutoBuildModal();refreshDeckBuilder();openDeckSheet();
   toast(proposal.validation.ok?'타입 조건에 맞춘 60장 초안입니다. 점검 내용을 확인해주세요.':'조건에 맞는 카드가 부족해 부분 구성했습니다.','#2980b9');
@@ -902,16 +901,20 @@ function confirmAndRunAutoBuild(basicCard,targetPath){
 */
 function runAutoBuild(basicCard,targetPath){
   if(_deckBuilder.format==='full'){
-    var proposal=DeckEngine.build({database:cardsDB,evolution:evolutionLines,owned:D.collected,basicCode:basicCard.bs_code,targetPath:targetPath,unlimitedBasicEnergy:typeof _abUnlimitedEnergy!=='undefined'&&_abUnlimitedEnergy});
-    _deckBuilder.unlimitedBasicEnergy=typeof _abUnlimitedEnergy!=='undefined'&&_abUnlimitedEnergy;
-    _deckBuilder.cards=proposal.cards;
-    _deckBuilder.buildNotes=proposal.notes;
-    _deckBuilder.buildAttacker=proposal.attacker||null;
+    var unlimited=typeof _abUnlimitedEnergy!=='undefined'&&_abUnlimitedEnergy;
+    var set=DeckEngine.buildCandidates({database:cardsDB,evolution:evolutionLines,owned:D.collected,basicCode:basicCard.bs_code,targetPath:targetPath,unlimitedBasicEnergy:unlimited});
+    if(!set.candidates.length){
+      /* 덱을 만들 수 없으면 현재 덱을 지우지 않고 이유와 대안을 알려준다 */
+      var fail=set.failure||{notes:[]};
+      if(fail.validation&&fail.validation.total){applyBuildProposal(fail,[],unlimited);_lastAutoBuild={basicBsCode:basicCard.bs_code,targetPath:targetPath};refreshDeckBuilder();openDeckSheet();}
+      toast(fail.notes.slice(-2).join(' '),'#e74c3c');
+      return;
+    }
+    applyBuildProposal(set.candidates[set.recommended].result,set.candidates,unlimited,set.recommended);
     _lastAutoBuild={basicBsCode:basicCard.bs_code,targetPath:targetPath};
-    delete _deckBuilder.lastAutoBuild;
     refreshDeckBuilder();
     openDeckSheet();
-    toast(proposal.validation.ok?'60장 초안을 구성했어요. 점검 결과를 확인해주세요.':'보유 카드로 부분 구성했어요. 부족한 내용을 확인해주세요.','#2980b9');
+    toast(set.candidates[set.recommended].result.validation.ok?(set.candidates.length>1?'덱 후보 '+set.candidates.length+'개를 만들었어요. 비교해 보고 골라주세요.':'60장 초안을 구성했어요. 점검 결과를 확인해주세요.'):'보유 카드로 부분 구성했어요. 부족한 내용을 확인해주세요.','#2980b9');
     return;
   }
   var isHalf=_deckBuilder.format==='half';
@@ -1029,6 +1032,35 @@ function runAutoBuild(basicCard,targetPath){
     evolutionStages:lineStats.stages,
     trainerMissing:trainerStats.missing
   });
+}
+
+/* 자동 구성 결과를 덱에 반영. 후보·요약·전개 계획은 이번 세션에서만 쓰고 저장하지 않는다.
+   저장되는 것은 기존 필드(cards, buildNotes, buildAttacker, unlimitedBasicEnergy)뿐이다. */
+function applyBuildProposal(proposal,candidates,unlimited,index){
+  _deckBuilder.unlimitedBasicEnergy=!!unlimited;
+  _deckBuilder.cards=proposal.cards;
+  _deckBuilder.buildAttacker=proposal.attacker||null;
+  _deckBuilder.buildSummary=proposal.summary||null;
+  _deckBuilder.buildPlan=proposal.plan||null;
+  _deckBuilder.buildEngineNotes=proposal.notes||[];
+  _deckBuilder.buildCandidates=candidates||[];
+  _deckBuilder.buildCandidateIndex=index||0;
+  _deckBuilder.buildNotes=summaryNotes(proposal);
+  _deckBuilder.buildSnapshot=deckKey(proposal.cards);
+  delete _deckBuilder.lastAutoBuild;
+}
+function deckKey(cards){return Object.keys(cards||{}).filter(function(id){return cards[id]>0;}).sort().map(function(id){return id+':'+cards[id];}).join(',');}
+/* 저장용 한 줄 메모: 새로고침 후에도 추천 이유와 주의점이 남도록 기존 buildNotes 형식으로 펼친다. */
+function summaryNotes(proposal){
+  var s=proposal.summary;if(!s)return proposal.notes||[];
+  return ['['+s.strategyLabel+'] '+s.strategyDesc].concat(s.reasons,s.weaknesses.map(function(w){return '주의: '+w;}),s.unsupported.map(function(u){return '확인 필요: '+u;}),(proposal.notes||[]).filter(function(n){return n.indexOf('주력: ')!==0;}));
+}
+function selectBuildCandidate(i){
+  var list=_deckBuilder&&_deckBuilder.buildCandidates;if(!list||!list[i])return;
+  applyBuildProposal(list[i].result,list,_deckBuilder.unlimitedBasicEnergy,i);
+  refreshDeckBuilder();
+  if(typeof renderDeckSheet==='function')renderDeckSheet();
+  toast(list[i].label+' 덱으로 바꿨어요','#2980b9');
 }
 
 /* 🎲 세션 17: 다시 뽑기 — 직전 자동 빌드를 동일 입력으로 재실행.
@@ -2968,7 +3000,9 @@ function renderDeckSheet(){
   if(_deckBuilder.format==='full'){
     h+='<section class="deck-lab deck-result"><div class="deck-eyebrow">DECK CHECK</div><h3>내 덱의 구성과 준비 상태</h3><div class="deck-stats"><div><b>'+counts.total+'</b><span>전체 / 60장</span></div><div><b>'+counts.pok+'</b><span>포켓몬</span></div><div><b>'+counts.ene+'</b><span>에너지</span></div></div><p>검토용 초안 · 실전 성능과 대회 사용 가능성은 별도 확인이 필요해요.</p>';
     var report=DeckEngine.inspect(normalizeDeckCards(_deckBuilder),dbByCode,DeckEngine.supply(cardsDB,D.collected,_deckBuilder.unlimitedBasicEnergy));
-    (report.errors||[]).concat(_deckBuilder.buildNotes||[]).forEach(function(n){h+='<p class="deck-note">'+esc(n)+'</p>';});
+    (report.errors||[]).forEach(function(n){h+='<p class="deck-note">'+esc(n)+'</p>';});
+    if(_deckBuilder.buildSummary)h+=renderBuildExplanation(_deckBuilder);
+    else (_deckBuilder.buildNotes||[]).forEach(function(n){h+='<p class="deck-note">'+esc(n)+'</p>';});
     h+='<button class="btn btn-b" onclick="showDeckSimulation()">시작 패 10,000회 시뮬레이션</button><div id="deck-simulation" aria-live="polite"></div><button class="btn btn-b" onclick="openReferenceComparison()">시판덱과 비교</button><div id="deck-reference" aria-live="polite"></div></section>';
   }
 
@@ -4365,10 +4399,41 @@ document.addEventListener('DOMContentLoaded',function(){
 /* Read-only: never saves or alters the collection/deck. */
 function showDeckSimulation(){
   if(!_deckBuilder)return;
-  var result=DeckEngine.simulate(normalizeDeckCards(_deckBuilder),cardsDB,{trials:10000,seed:20261029});
+  var result=DeckEngine.simulate(normalizeDeckCards(_deckBuilder),cardsDB,{trials:10000,seed:20261029,plan:_deckBuilder.buildPlan||null});
   var el=$('deck-simulation');if(!el)return;
   if(!result.available){el.textContent=result.reason;return;}
-  el.textContent='최초 7장에 기본 포켓몬: '+(100*result.openingBasic).toFixed(1)+'% / 기본 에너지: '+(100*result.openingBasicEnergy).toFixed(1)+'% / 지원하는 드로우 서포트: '+(100*result.openingDrawSupporter).toFixed(1)+'%. '+result.scope;
+  var pct=function(x){return (100*x).toFixed(1)+'%';};
+  var text='최초 7장에 기본 포켓몬: '+pct(result.openingBasic)+' / 기본 에너지: '+pct(result.openingBasicEnergy)+' / 드로우 서포트: '+pct(result.openingDrawSupporter)+'. '+result.scope;
+  if(result.mainReadyBy){
+    var p=_deckBuilder.buildPlan;
+    text+='\n주력 '+p.attackerName+' 공격 준비(선공 기준): 2번째 차례까지 '+pct(result.mainReadyBy[2])+' · 3번째 '+pct(result.mainReadyBy[3])+' · 4번째 '+pct(result.mainReadyBy[4])+
+      '\n멀리건 '+pct(result.mulliganRate)+' · 2번째 차례까지 드로우/검색 카드 확보 '+pct(result.helperByTurn2)+'\n'+result.readyScope;
+  }
+  el.textContent=text;el.style.whiteSpace='pre-line';
+}
+
+/* 추천 이유·약점·미지원 효과와 후보 비교. 강함 점수나 승률은 표시하지 않는다. */
+function renderBuildExplanation(deck){
+  var s=deck.buildSummary,h='<div class="deck-explain">';
+  if(deck.buildSnapshot&&deckKey(normalizeDeckCards(deck))!==deck.buildSnapshot)h+='<p class="deck-note">✏️ 자동 구성 뒤에 덱을 직접 바꿨어요. 아래 설명은 처음 만든 덱 기준이라 지금과 다를 수 있어요.</p>';
+  h+='<p class="deck-note"><b>'+esc(s.strategyLabel)+'</b> · '+esc(s.strategyDesc)+'</p>';
+  h+='<p class="deck-note">🌟 주력: <b>'+esc(s.attacker)+'</b>의 「'+esc(s.attack)+'」 '+s.damage+' 데미지 · 에너지 '+s.cost+'장'+(s.second?' · 보조: '+esc(s.second):'')+'</p>';
+  h+='<p class="deck-note">구성: 포켓몬 '+s.composition.pokemon+' · 트레이너 '+(s.composition.trainer+(s.composition.stadium||0))+' · 에너지 '+s.composition.energy+(s.roles.length?' (트레이너 역할: '+s.roles.map(function(r){return esc(r.label)+' '+r.count;}).join(', ')+')':'')+'</p>';
+  function block(title,items){if(!items||!items.length)return;h+='<p class="deck-note"><b>'+title+'</b></p>';items.forEach(function(x){h+='<p class="deck-note">· '+esc(x)+'</p>';});}
+  block('👍 이렇게 만들었어요',s.reasons);
+  block('⚠️ 조심할 점',s.weaknesses);
+  block('🔍 직접 확인해 주세요 (자동 계산하지 않은 효과)',s.unsupported);
+  block('참고',(deck.buildEngineNotes||[]).filter(function(n){return n.indexOf('주력: ')!==0;}));
+  var list=deck.buildCandidates||[];
+  if(list.length>1){
+    var pct=function(x){return x==null?'-':Math.round(100*x)+'%';};
+    h+='<p class="deck-note"><b>덱 후보 비교</b> — 카드 장수와 시작 패·초반 확률만 비교해요. 승률이나 강함 점수가 아니에요.</p>';
+    list.forEach(function(o,i){var m=o.metrics,r=o.result,c=r.summary.composition;
+      h+='<div class="deck-note"><b>'+esc(o.label)+'</b> · 주력 '+esc(r.summary.attacker)+(i===deck.buildCandidateIndex?' <b>(사용 중)</b>':' <button class="btn btn-b" onclick="selectBuildCandidate('+i+')">이 덱 쓰기</button>')+
+        '<br>시작 패에 기본 포켓몬 '+pct(m.openingBasic)+' · 드로우·검색 카드 '+pct(m.openingDrawSearch)+' · 3번째 차례까지 공격 준비 '+pct(m.lineReady&&m.lineReady[3])+
+        '<br>포켓몬 '+c.pokemon+' · 트레이너 '+(c.trainer+(c.stadium||0))+' · 에너지 '+c.energy+(m.valid?'':' · 점검 필요')+'</div>';});
+  }
+  return h+'</div>';
 }
 
 /* Retail decks are explicit baselines, never disguised as generated discoveries. */
