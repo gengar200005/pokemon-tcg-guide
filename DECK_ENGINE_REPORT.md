@@ -316,3 +316,21 @@
 - https://pokemoncard.co.kr/cards/detail/BS2022004019 (찬란한 룰)
 - https://pokemoncard.co.kr/cards/detail/BS2024008101 (ACE SPEC 룰)
 - https://pokemoncard.co.kr/cards/detail/BS2026001715 (선공 첫 차례 예외 문구)
+
+# PR #5 최종 보완 — 수동 편집 규칙 통합 (2026-11-02)
+
+기준: 기존 PR #5 head `87aef229`, `fix/deck-rules-simulation`. PR은 Draft로 유지하며 main 병합·배포하지 않는다.
+
+- 수정 전 실제 실행한 신규 테스트: 7개 중 4개 실패, 3개 통과. 실패 사례는 박사의 연구 3+1 상태에서 추가, 서로 다른 찬란한/ACE SPEC 동시 추가, 동일 프리즘스타의 다른 인쇄본 추가였다. 모두 실제 `addToDeck` 실행 뒤 카드 맵이 변경되는 것을 확인했다.
+- `app.js`: 이름 원문을 비교하던 수동 추가 제한을 제거했다. 변경 예정 카드 맵을 복사해 `DeckEngine.inspect`로 검사하고, 실패 이유를 토스트로 표시한다. 검사 통과 전에 실제 카드 맵은 변경하지 않는다. 하프덱 2진화 정책과 자유 모드, 총 장수 상한은 유지한다.
+- `deck-engine.js`: 공유 검사에 `partial` 옵션만 추가했다. 수동 편집 중에는 부족한 총 장수와 기본 포켓몬 부재를 허용하지만, 상한·동명·특수 카드·수량 오류는 검사한다. 최종 검사 기본 동작은 그대로다. 임시 저장 함수와 저장 필드는 바꾸지 않았다.
+- `tests/manual-edit.test.js`: 신규 9개. 요청한 7개 사례 외 최종 검사와의 일치, 실제 `saveCurrentDeck`/`editDeck` 함수로 미완성 덱 저장·직렬화·재개방 및 수집함 불변을 확인한다. Node VM의 격리된 합성 데이터로 실행하며 Firebase 호출은 테스트 스텁이다.
+
+실행 결과:
+- `node --test tests/*.test.js`: **79 pass / 0 fail**. 기존 70개 파일의 테스트는 수정하지 않았다. 시판덱 14종, 세 타입 조합, 에너지 충분 옵션, 진화·저장 필드·시뮬레이션 회귀 포함.
+- `node tests/simulate-owned.js`: 통과.
+- `node scripts/validate-data.js`: 차단 오류 0 (기존 경고 유지).
+- `node --check app.js`, `node --check deck-engine.js`, `git diff --check`: 통과.
+- 브라우저: Playwright Chromium 실행을 시도했으나 실행 파일이 설치되어 있지 않았다. Chromium 설치도 다운로드 실패로 실제 브라우저 흐름 검증을 완료하지 못했다. Node VM 검사를 브라우저 E2E 또는 실제 Firebase 로그인 검증으로 간주하지 않는다. 사용자 수집함·클라우드 데이터는 변경하지 않았다.
+
+판정: 이번 수동 추가 규칙 불일치는 해결되었으며 자동 회귀 검사 기준 병합 준비가 되었다. 브라우저 UI와 실제 로그인 저장 흐름은 미검증이다. 기존 보고서의 시뮬레이션 및 V-UNION 등 한계는 그대로 남는다. 사용자 승인 전에는 Draft 유지·미병합·미배포한다. 추천 점수/전략/시뮬레이션 범위, 카드 DB, 프리셋, 디자인, 로그인·클라우드 구조는 변경하지 않았다.

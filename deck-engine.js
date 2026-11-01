@@ -100,7 +100,7 @@ function inspect(cards,db,owned,rules){
  if(/ACE SPEC|에이스 스펙/.test((c.effect_text||'')+' '+(c.card_type||'')))ace+=n;
  if(/^(빛나는|찬란한) /.test(c.name_kr))rad+=n;if(prism(c))prisms[c.name_kr]=(prisms[c.name_kr]||0)+n;
  });
- if(total!==size)errors.push(size+'장 필요: 현재 '+total+'장');if(!b)errors.push('기본 포켓몬이 필요합니다');
+ if(rules.partial?total>size:total!==size)errors.push(size+'장 필요: 현재 '+total+'장');if(!b&&!rules.partial)errors.push('기본 포켓몬이 필요합니다');
  Object.keys(names).forEach(function(n){if(names[n]>copyLimit)errors.push('같은 이름 '+copyLimit+'장 초과: '+n);});
  if(ace>1)errors.push('ACE SPEC 1장 초과');if(rad>1)errors.push('빛나는 포켓몬 1장 초과');
  Object.keys(prisms).forEach(function(n){if(prisms[n]>1)errors.push('프리즘스타 1장 초과: '+n);});

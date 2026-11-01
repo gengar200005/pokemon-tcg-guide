@@ -2858,22 +2858,15 @@ function addToDeck(bs_code){
   var isHalf=_deckBuilder.format==='half';
   var strict=!isHalf||_deckBuilder.strict!==false;
   var maxPerName=(isHalf&&strict)?2:4;
-  var basicEne=isBasicEnergy(c);
   /* 하프덱 정식 룰: 2진화 차단 / 자유 모드: 허용 */
   if(isHalf&&strict&&cardStage(c)==='stage2'){
     toast('🔒 정식 룰: 하프덱은 2진화 못 넣어요. 🎈로 전환하면 가능','#f39c12');return;
   }
-  /* 같은 이름 N장 제한 — 기본 에너지는 예외 */
-  if(!basicEne){
-    var sameNameTotal=0;
-    for(var bc in _deckBuilder.cards){
-      var cc=dbByCode[bc];
-      if(cc&&cc.name_kr===c.name_kr)sameNameTotal+=(_deckBuilder.cards[bc]||0);
-    }
-    if(sameNameTotal>=maxPerName){
-      toast('"'+c.name_kr+'"는 '+maxPerName+'장까지만 가능해요','#f39c12');return;
-    }
-  }
+  /* Use the same core rules as final validation; incomplete drafts are allowed. */
+  var proposed=Object.assign({},_deckBuilder.cards);
+  proposed[bs_code]=(proposed[bs_code]||0)+1;
+  var check=DeckEngine.inspect(proposed,dbByCode,null,{size:isHalf?30:60,copyLimit:maxPerName,partial:true});
+  if(!check.ok){toast(check.errors[0],'#f39c12');return;}
   /* 총 매수 차단 — 자유 모드여도 30/60 매수는 유지 */
   var counts=deckCounts(_deckBuilder);
   var target=isHalf?30:60;
