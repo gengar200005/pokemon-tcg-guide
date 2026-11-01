@@ -2076,24 +2076,9 @@ function validateDeck(deck){
     errors.push({lvl:'bad',msg:'카드가 '+(counts.total-target)+'장 초과입니다 ('+counts.total+'/'+target+')'});
   }
 
-  /* 2) 같은 이름 4장(2장) 제한 — 기본 에너지 예외 */
-  var byName={}; /* {name_kr: qty} */
-  var basics=0;
-  for(var bc in cards){
-    var qty=cards[bc];
-    var c=dbByCode[bc];
-    if(!c)continue;
-    if(isBasicEnergy(c)){basics+=qty;continue;}
-    var nm=c.name_kr||bc;
-    byName[nm]=(byName[nm]||0)+qty;
-  }
-  for(var n in byName){
-    if(byName[n]>maxPerName){
-      errors.push({lvl:'bad',msg:'"'+n+'" '+byName[n]+'장 — '+maxPerName+'장 초과'});
-    }
-  }
-
-  if(!Object.keys(cards).some(function(id){return DeckEngine.basic(dbByCode[id]);}))errors.push({lvl:'bad',msg:'기본 포켓몬이 최소 1장 필요합니다'});
+  /* Core rules share the engine validator, including normalized names and special cards. */
+  var core=DeckEngine.inspect(cards,dbByCode,null,{size:target,copyLimit:maxPerName});
+  core.errors.filter(function(e){return e.indexOf('장 필요: 현재')<0;}).forEach(function(e){errors.push({lvl:'bad',msg:e});});
 
   /* 3) 진화 라인 약식 검증 */
   var stageCount={basic:0,stage1:0,stage2:0};
@@ -2118,27 +2103,6 @@ function validateDeck(deck){
     }
   }else if(deck.format==='half'&&!strict&&stageCount.stage2>0){
     warnings.push({lvl:'warn',msg:'🎈 자유 모드: 2진화 '+stageCount.stage2+'장 사용 중 (정식 룰에선 ❌)'});
-  }
-
-  /* 5) 풀덱 전용: ACE SPEC / 프리즘스타 / 빛나는 1장 제한 */
-  if(deck.format==='full'){
-    var aceTotal=0,prismMap={},radTotal=0;
-    for(var bc3 in cards){
-      var qty3=cards[bc3];
-      var c3=dbByCode[bc3];
-      if(!c3)continue;
-      if(isAceSpec(c3))aceTotal+=qty3;
-      if(isPrismStar(c3)){
-        var pn=c3.name_kr;
-        prismMap[pn]=(prismMap[pn]||0)+qty3;
-      }
-      if(isRadiant(c3))radTotal+=qty3;
-    }
-    if(aceTotal>1)errors.push({lvl:'bad',msg:'ACE SPEC 카드는 덱 전체에 1장만 가능해요 ('+aceTotal+'장)'});
-    for(var pn2 in prismMap){
-      if(prismMap[pn2]>1)errors.push({lvl:'bad',msg:'프리즘스타 "'+pn2+'" — 1장만 가능 ('+prismMap[pn2]+'장)'});
-    }
-    if(radTotal>1)errors.push({lvl:'bad',msg:'빛나는 포켓몬은 덱 전체에 1장만 가능해요 ('+radTotal+'장)'});
   }
 
   /* 6) 정보: 카드 종류 분포 */
@@ -4474,6 +4438,7 @@ function goldfishHtml(g,k,ref,preset){
     var d=(g.medianFinish||21)-(ref.medianFinish||21);
     h+='<p class="deck-note">'+(d===0?'시판덱과 비슷한 속도예요.':d<0?'시판덱보다 보통 '+(-d)+'차례 빨라요.':'시판덱보다 보통 '+d+'차례 느려요.')+' (같은 상대·같은 조건 비교)</p>';}
   if(g.abilitiesModelled.length)h+='<p class="deck-note">계산한 특성: '+esc(g.abilitiesModelled.join(', '))+'</p>';
+  if(g.trainersIgnored&&g.trainersIgnored.length)h+='<p class="deck-note">계산하지 않은 트레이너: '+esc(g.trainersIgnored.join(', '))+'</p>';
   if(g.abilitiesIgnored.length)h+='<p class="deck-note">계산하지 않은 특성: '+esc(g.abilitiesIgnored.join(', '))+'</p>';
   h+='<p class="deck-note">상대: '+esc(g.opponent)+'. '+esc(g.scope)+'</p>';
   return h;

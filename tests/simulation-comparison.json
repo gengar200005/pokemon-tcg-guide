@@ -1,0 +1,175 @@
+{
+  "seed": 17,
+  "trials": 100,
+  "scope": "Fixed solo opponent; rule-correction comparison, not win rate or proof of improvement",
+  "rows": [
+    {
+      "id": "steven_metagross",
+      "before": {
+        "id": "steven_metagross",
+        "median": 11,
+        "finish": 0.47
+      },
+      "after": {
+        "median": 12,
+        "finish": 0.44
+      }
+    },
+    {
+      "id": "marnie_grimmsnarl",
+      "before": {
+        "id": "marnie_grimmsnarl",
+        "median": 11,
+        "finish": 0.74
+      },
+      "after": {
+        "median": 11,
+        "finish": 0.71
+      }
+    },
+    {
+      "id": "sprigatito_lucario",
+      "before": {
+        "id": "sprigatito_lucario",
+        "median": 13,
+        "finish": 0.41
+      },
+      "after": {
+        "median": 14,
+        "finish": 0.36
+      }
+    },
+    {
+      "id": "fuecoco_ampharos",
+      "before": {
+        "id": "fuecoco_ampharos",
+        "median": 13,
+        "finish": 0.46
+      },
+      "after": {
+        "median": 14,
+        "finish": 0.35
+      }
+    },
+    {
+      "id": "quaxly_mimikyu",
+      "before": {
+        "id": "quaxly_mimikyu",
+        "median": 13,
+        "finish": 0.43
+      },
+      "after": {
+        "median": 13,
+        "finish": 0.46
+      }
+    },
+    {
+      "id": "pikachu_special",
+      "before": {
+        "id": "pikachu_special",
+        "median": 14,
+        "finish": 0.3
+      },
+      "after": {
+        "median": 15,
+        "finish": 0.2
+      }
+    },
+    {
+      "id": "mewtwo_terastal",
+      "before": {
+        "id": "mewtwo_terastal",
+        "median": 13,
+        "finish": 0.39
+      },
+      "after": {
+        "median": 13,
+        "finish": 0.39
+      }
+    },
+    {
+      "id": "charizard_bm",
+      "before": {
+        "id": "charizard_bm",
+        "median": 10,
+        "finish": 0.6
+      },
+      "after": {
+        "median": 10,
+        "finish": 0.61
+      }
+    },
+    {
+      "id": "chienpao_bm",
+      "before": {
+        "id": "chienpao_bm",
+        "median": 14,
+        "finish": 0.31
+      },
+      "after": {
+        "median": 13,
+        "finish": 0.35
+      }
+    },
+    {
+      "id": "mega_gengar",
+      "before": {
+        "id": "mega_gengar",
+        "median": 13,
+        "finish": 0.39
+      },
+      "after": {
+        "median": 14,
+        "finish": 0.29
+      }
+    },
+    {
+      "id": "mega_diancie",
+      "before": {
+        "id": "mega_diancie",
+        "median": 13,
+        "finish": 0.34
+      },
+      "after": {
+        "median": 16,
+        "finish": 0.09
+      }
+    },
+    {
+      "id": "mega_eevee_ex",
+      "before": {
+        "id": "mega_eevee_ex",
+        "median": 12,
+        "finish": 0.53
+      },
+      "after": {
+        "median": 13,
+        "finish": 0.4
+      }
+    },
+    {
+      "id": "mega_zoroark_ex",
+      "before": {
+        "id": "mega_zoroark_ex",
+        "median": 11,
+        "finish": 0.74
+      },
+      "after": {
+        "median": 13,
+        "finish": 0.34
+      }
+    },
+    {
+      "id": "mega_meowscarada_ex",
+      "before": {
+        "id": "mega_meowscarada_ex",
+        "median": 11,
+        "finish": 0.76
+      },
+      "after": {
+        "median": 12,
+        "finish": 0.54
+      }
+    }
+  ]
+}
