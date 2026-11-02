@@ -535,7 +535,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .deck-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.deck-stats>div{padding:14px 8px;background:#fff;border:1px solid #d5e7ee;border-radius:14px;text-align:center}.deck-stats b{display:block;font-size:1.7rem}.deck-stats span{font-size:.72rem;color:#526b78}.deck-note{padding:10px 12px;border-left:3px solid #80bacd;background:#ffffffa8;border-radius:0 8px 8px 0}.deck-result .btn{margin:6px 4px 6px 0}.deck-lab button:focus-visible{outline:3px solid #df9b18;outline-offset:3px}
 @media(max-width:480px){.deck-lab{padding:16px;border-radius:16px}.deck-lab h3{font-size:1.15rem}.deck-lab .fchip{padding:9px 11px}}
 </style>
-<link rel="stylesheet" href="ui-theme.css?v=family1">
+<link rel="stylesheet" href="ui-theme.css?v=family2">
 </head>
 <body>
 <!-- ═══ 타입 심볼 SVG 스프라이트 (세션 15) ═══ -->
@@ -634,29 +634,59 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     </div>
   </div>
   <div class="db-status" id="db-status">💾 카드 DB 준비 중...</div>
-  <div class="tabs" id="tabbar">
-    <button class="tab" onclick="switchTab('rules',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="">규칙</button>
-    <button class="tab on" onclick="switchTab('dex',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="">도감</button>
-    <button class="tab" onclick="switchTab('coll',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png" alt="">수집</button>
+  <div class="tabs" id="tabbar" aria-label="주요 메뉴">
+    <button class="tab on" data-family-tab="home" onclick="switchTab('home',this)"><span class="family-nav-home" aria-hidden="true">⌂</span>홈</button>
+    <button class="tab" onclick="switchTab('rules',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="">놀이 방법</button>
+    <button class="tab" onclick="switchTab('dex',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="">도감</button>
+    <button class="tab" onclick="switchTab('coll',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png" alt="">내 카드</button>
     <button class="tab" onclick="switchTab('scan',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png" alt="">스캔</button>
-    <button class="tab" onclick="switchTab('deck',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png" alt="">덱</button>
+    <button class="tab" onclick="switchTab('deck',this)"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png" alt="">덱 보관함</button>
   </div>
   <div class="cnt">
 
-<!-- 📖 규칙 탭 (보존) -->
-<div class="pnl" id="p-rules">
-<div class="st">📖 포켓몬 TCG 공식 규칙</div>
-<p style="font-size:.78rem;color:var(--text3);margin-bottom:12px">공식 룰북 기반 · 아이가 이해하기 쉽게!</p>
-<div class="acc"><div class="acc-h" onclick="togAcc(this)">🎯 게임의 목표 <span class="arrow">▼</span></div><div class="acc-b"><ul><li><strong>프라이즈 6장</strong> 먼저 가져오기</li><li><strong>상대 필드</strong>에 포켓몬 없애기</li><li><strong>상대 덱</strong> 카드 소진</li></ul><div class="tip">💡 동시에 이기면 "서든 데스" — 프라이즈 1장으로 재대결!</div></div></div>
-<div class="acc"><div class="acc-h" onclick="togAcc(this)">🃏 카드의 종류 3가지 <span class="arrow">▼</span></div><div class="acc-b"><h4>1️⃣ 포켓몬 카드</h4><ul><li><strong>기본/1진화/2진화</strong> — 진화로 강해져요!</li><li><strong>포켓몬 ex</strong> — 강력하지만 기절 시 프라이즈 2장!</li></ul><h4>2️⃣ 에너지 카드</h4><ul><li>풀🌿 불🔥 물💧 번개⚡ 초🔮 격투👊 악🌙 강철⚙️</li></ul><h4>3️⃣ 트레이너스 카드</h4><p>📦아이템(무제한) · 🔧도구(부착) · 🧑‍🏫서포트(턴1장) · 🏟️스타디움(필드)</p></div></div>
-<div class="acc"><div class="acc-h" onclick="togAcc(this)">🔄 턴 진행 순서 <span class="arrow">▼</span></div><div class="acc-b"><ul><li>1. 카드 1장 뽑기</li><li>2. 자유 행동 (벤치, 진화, 에너지, 트레이너스)</li><li>3. 공격 → 턴 종료!</li></ul><div class="tip">💡 선공 첫 턴: 공격+서포트 불가!</div></div></div>
-<div class="acc"><div class="acc-h" onclick="togAcc(this)">🌀 상태이상 5가지 <span class="arrow">▼</span></div><div class="acc-b"><ul><li>😵혼란 · 🔥화상 · ☠️독 · 😴잠듦 · ⚡마비</li></ul></div></div>
-<div class="acc"><div class="acc-h" onclick="togAcc(this)">🔥 타입 약점/저항력 <span class="arrow">▼</span></div><div class="acc-b"><ul><li>🌿풀→🔥불 · 🔥불→💧물 · 💧물→⚡번개</li><li>⚡번개→👊격투 · 🔮초→🌙악 · 👊격투→🔮초</li></ul><div class="tip">💡 약점=×2, 저항력=−30!</div></div></div>
-<div class="acc"><div class="acc-h" onclick="togAcc(this)">📐 덱 구성 가이드 <span class="arrow">▼</span></div><div class="acc-b"><p>60장 (같은 이름 최대 4장)</p><ul><li>포켓몬 12~20, 트레이너스 25~35, 에너지 10~15</li></ul></div></div>
+<div class="pnl on" id="p-home">
+<section class="family-hero"><div><div class="family-eyebrow">LET’S PLAY TOGETHER</div><h2>오늘은 어떤 덱으로<br>놀아 볼까요?</h2><p>좋아하는 카드를 모으고,<br>우리 카드로 함께할 덱을 준비해요.</p><button class="btn btn-p" onclick="newDeck('full')">60장 덱 만들기 →</button></div><div class="family-cardfan" aria-label="포켓몬 카드"><img src="https://cards.image.pokemonkorea.co.kr/data/wmimages/SV/SV-P/SV-P_163.png" alt="리자몽 ex 카드" loading="lazy"><img src="https://cards.image.pokemonkorea.co.kr/data/wmimages/MEGA/MC/MC_566.png" alt="이브이 ex 카드" loading="lazy"><img src="https://cards.image.pokemonkorea.co.kr/data/wmimages/MEGA/M2a/M2a_245.png" alt="성호의 메타그로스 ex 카드" loading="lazy"></div></section>
+<div class="family-sectionhead"><h3>함께 준비해요</h3></div><div class="family-paths"><button onclick="familyNavigate('coll')"><strong>내 카드 살펴보기 →</strong><span>등록한 카드와 보유 수량을 확인해요.</span></button><button onclick="familyNavigate('rules')"><strong>놀이 방법 알아보기 →</strong><span>60장 게임을 준비부터 끝까지 함께 배워요.</span></button></div>
+<div class="family-sectionhead"><h3>덱 보관함</h3><button class="btn btn-g" onclick="familyNavigate('deck')">전체 보기 →</button></div><div class="family-paths"><button onclick="familyNavigate('deck')"><strong>내가 만든 덱 →</strong><span>저장한 덱을 열고 편집·삭제해요.</span></button><button onclick="openBulkDeck()"><strong>시판덱 확인 →</strong><span>제품 구성표를 보고 수집함에 등록해요.</span></button></div>
+<div class="family-sectionhead"><h3>카드를 더 찾아볼까요?</h3></div><div class="family-paths"><button onclick="familyNavigate('dex')"><strong>전체 카드 도감 →</strong><span>보유 여부와 관계없이 카드 정보를 찾아요.</span></button><button onclick="familyNavigate('scan')"><strong>카드 스캔하기 →</strong><span>카메라로 읽어 수집함에 등록해요.</span></button></div>
+</div>
+
+<div class="pnl" id="p-rules"><section class="play-guide" aria-labelledby="play-title">
+  <header class="play-intro"><div class="family-eyebrow">PLAY TOGETHER · 60장 풀덱</div><h2 id="play-title">한 차례씩, 함께 배워요.</h2><p>아이는 굵은 문장을 읽고, 부모님은 ‘부모와 함께 확인’을 펼쳐 보세요. 처음부터 전부 외울 필요는 없어요.</p><nav class="play-jumps" aria-label="놀이 방법 목차"><a href="#play-prepare">준비하기</a><a href="#play-turn">내 차례</a><a href="#play-attack">공격과 기절</a><a href="#play-status">특수 상태</a><a href="#play-question">막혔을 때</a></nav></header>
+  <aside class="play-callout"><strong>오늘 기억할 숫자: 60 · 7 · 6 · 5</strong><p>한 사람의 덱 60장 · 처음 패 7장 · 프라이즈 6장 · 벤치는 최대 5마리</p><p>이 안내는 60장 게임 기준이에요. 앱의 30장 하프덱·자유 모드는 별도 놀이 설정입니다.</p></aside>
+  <section class="play-section" id="play-prepare"><div class="family-eyebrow">01 · 게임 시작 전</div><h3>자리를 만들고 카드를 준비해요.</h3>
+  <p>각자 60장 덱, 동전, 데미지 카운터, 독·화상 마커를 준비해요. 카운터 한 개가 10데미지인지 확인해 주세요.</p>
+  <div class="play-mat" aria-label="내 자리의 구성"><div>프라이즈<br><b>뒷면 6장</b></div><div class="play-active">배틀필드<br><b>싸우는 포켓몬 1마리</b></div><div>덱 / 트래쉬<br><b>뒷면 / 앞면</b></div><div class="play-bench">벤치 · 다음을 준비하는 친구들 · 최대 5마리</div><div class="play-hand">패 · 손에 들고 사용하는 카드 · 상대에게는 비밀</div></div>
+  <ol class="play-list"><li><strong>가위바위보로 누가 먼저 할지 정해요.</strong> 이긴 사람이 선공 또는 후공을 선택해요.</li><li><strong>덱을 잘 섞고 7장 뽑아요.</strong> 패에서 ‘기본’ 포켓몬을 찾으세요.</li><li><strong>기본 포켓몬 1마리를 배틀필드에 뒷면으로 놓아요.</strong> 나머지 기본 포켓몬은 원하면 벤치에 5마리까지 놓아요.</li><li><strong>덱 위에서 6장을 프라이즈로 놓아요.</strong> 앞면은 보지 말고 뒷면으로 놓아요.</li><li><strong>서로 준비되면 포켓몬을 뒤집고 시작해요.</strong> 선공부터 자기 차례를 진행해요.</li></ol>
+  <details><summary>부모와 함께 확인 · 기본 포켓몬이 없다면?</summary><p>패를 상대에게 보여주고 덱에 모두 되돌려 섞은 뒤 다시 7장을 뽑습니다(멀리건). 상대는 준비를 마친 후, 내가 다시 뽑은 횟수만큼 추가로 뽑을 수 있습니다. 두 사람 모두 다시 뽑았다면 공통 횟수는 빼고 차이만큼입니다. 추가로 뽑은 기본 포켓몬은 시작 전에 벤치로 낼 수 있습니다.</p><p>패·덱·프라이즈는 카드 효과가 허용하지 않으면 들춰보거나 순서를 바꾸지 않습니다. 트래쉬는 서로 내용을 확인할 수 있습니다.</p></details>
+  <details><summary>부모와 함께 확인 · 60장 덱의 구성</summary><p>기본 포켓몬이 최소 1장 필요합니다. 같은 이름은 합계 4장까지, 기본 에너지는 장수 제한의 예외입니다. 박사의 연구는 괄호 속 인물이 달라도 같은 이름으로 셉니다. 찬란한 포켓몬과 ACE SPEC은 종류를 합쳐 각각 덱 전체 1장, 프리즘스타는 같은 이름마다 1장입니다. 특수 에너지는 기본 에너지 예외에 해당하지 않습니다. 특수 카드의 룰 박스와 대회별 사용 가능 카드는 별도로 확인합니다.</p></details></section>
+  <section class="play-section" id="play-turn"><div class="family-eyebrow">02 · 게임 중 계속 보기</div><h3>내 차례는 ‘뽑기 → 준비 → 기술’이에요.</h3>
+  <div class="play-turn-strip"><div><b>1</b><strong>한 장 뽑아요</strong><span>선공 첫 차례에도 뽑아요.</span></div><div><b>2</b><strong>우리 팀을 준비해요</strong><span>아래 행동은 원하는 순서로.</span></div><div><b>3</b><strong>기술을 쓰고 마쳐요</strong><span>공격하지 않고 마쳐도 돼요.</span></div></div>
+  <div class="play-callout"><strong>첫 차례 주의!</strong><p>선공의 첫 차례에는 일반적으로 서포트와 기술을 사용할 수 없어요. 양쪽 모두 자기 첫 차례에는 일반 진화를 할 수 없어요. 후공은 첫 차례에 서포트·기술을 사용할 수 있어요. 카드에 명시된 예외는 그 지시를 따라요.</p></div>
+  <ul class="play-list"><li><strong>벤치에 기본 포켓몬을 내보내요.</strong> 빈자리가 있으면 여러 마리를 낼 수 있어요.</li><li><strong>패의 에너지 1장을 붙여요.</strong> 배틀 포켓몬 또는 벤치 중 누구에게든 붙일 수 있어요. 내 차례 전체에서 보통 한 장이에요.</li><li><strong>트레이너스로 도와줘요.</strong> 아래 카드 종류별 사용법을 확인해요.</li><li><strong>진화와 특성을 사용해요.</strong> 사용할 수 있는 시점과 조건을 카드에서 읽어요.</li><li><strong>필요하면 배틀 포켓몬을 후퇴시켜요.</strong> 벤치의 친구와 바꿔요.</li></ul>
+  <div class="play-table-wrap"><table class="play-table"><caption>트레이너스 사용법</caption><thead><tr><th>카드 종류</th><th>몇 장?</th><th>사용한 뒤</th></tr></thead><tbody><tr><th>아이템</th><td>조건을 지키면 여러 장</td><td>효과를 처리하고 트래쉬</td></tr><tr><th>서포트</th><td>내 차례에 합계 1장</td><td>효과를 처리하고 트래쉬</td></tr><tr><th>포켓몬의 도구</th><td>보통 한 포켓몬에게 1장</td><td>그 포켓몬에게 붙여 둬요</td></tr><tr><th>스타디움</th><td>패에서 내 차례에 1장</td><td>두 사람이 공유하는 자리에 놓아요</td></tr></tbody></table></div>
+  <details><summary>부모와 함께 확인 · 진화·특성·스타디움</summary><p>진화 전 이름이 일치하는 카드 위에 겹칩니다. 이번 차례에 낸 포켓몬, 이번 차례에 이미 진화한 포켓몬은 일반 진화를 할 수 없습니다. 서로 다른 포켓몬은 같은 차례에 각각 진화해도 됩니다. 진화 후에는 맨 위 카드의 기술·특성을 쓰며, 데미지와 에너지·도구는 유지합니다. 특수 상태와 적용 중인 기술 효과는 사라집니다.</p><p>특성은 기술과 다릅니다. 자동으로 작용하거나 정해진 횟수로 사용하며 차례를 끝내지 않습니다. ‘진화했을 때’, 대상 타입, 에너지의 출처, 횟수 제한을 그대로 지켜야 합니다. 추가 에너지 부착 효과는 일반 부착과 별도로 처리합니다.</p><p>스타디움은 필드 전체에 1장입니다. 다른 이름을 내면 이전 것은 소유자의 트래쉬로 보냅니다. 같은 이름이 이미 나와 있다면 낼 수 없습니다. 도구는 스스로 떼거나 바꿔 붙일 수 없습니다. 예외는 카드 효과를 따릅니다.</p></details>
+  <details><summary>부모와 함께 확인 · 후퇴와 교체는 달라요</summary><p>일반 후퇴는 내 차례에 한 번입니다. 카드 아래 후퇴 비용만큼 붙은 에너지를 트래쉬하고 벤치 포켓몬과 바꿉니다. 비용이 0이어도 후퇴 횟수는 사용합니다. 남은 에너지·도구·데미지는 유지하고, 특수 상태와 적용 중인 기술 효과는 사라집니다.</p><p>잠듦·마비 상태에서는 후퇴할 수 없습니다. ‘포켓몬 교체’ 같은 효과로 바꾸는 행동은 일반 후퇴와 달라 비용을 내지 않으며 후퇴 횟수에도 세지 않습니다. 카드 효과로 금지되지 않았다면 잠듦·마비 포켓몬도 교체할 수 있습니다.</p></details>
+  <details><summary>게임 중 체크 · 이번 차례에 했나요?</summary><div class="play-checks"><label><input type="checkbox">맨 위 카드 한 장 뽑기</label><label><input type="checkbox">일반 에너지 부착 사용 여부 확인</label><label><input type="checkbox">서포트 사용 여부 확인</label><label><input type="checkbox">진화·특성·벤치 준비 확인</label><label><input type="checkbox">공격 후 포켓몬 체크하기</label></div><p>체크 표시는 읽기 보조일 뿐, 실제 게임의 행동을 제한하거나 자동 판정하지 않아요. 다음 차례에는 직접 해제해 주세요.</p></details></section>
+  <section class="play-section" id="play-attack"><div class="family-eyebrow">03 · 공격부터 프라이즈까지</div><h3>기술 옆의 에너지 마크를 읽어요.</h3><p><strong>‘불꽃 1개 + 무색 1개’</strong>라면 불꽃 에너지 1개분과 아무 타입 1개분, 합계 2개분이 필요해요. 불꽃 에너지 2장으로도 낼 수 있지만 물 에너지 2장으로는 낼 수 없어요. 무색 마크 전용 기본 에너지는 없어요.</p>
+  <ol class="play-list"><li><strong>배틀 포켓몬의 기술 한 개를 골라요.</strong> 필요한 에너지와 추가 조건을 확인해요. 벤치에서는 보통 공격할 수 없어요.</li><li><strong>기술의 데미지와 설명을 처리해요.</strong> 약점·저항력은 상대 카드에 적힌 타입과 숫자를 확인해요. 애니메이션·게임의 상성표로 판단하지 않아요.</li><li><strong>받은 데미지만큼 카운터를 올려요.</strong> 예: HP 100인 친구가 30데미지를 두 번 받으면 누적 60, 남은 HP는 40이에요.</li><li><strong>누적 데미지가 HP 이상이면 기절이에요.</strong> 기절한 포켓몬의 진화 카드·붙은 카드까지 트래쉬해요.</li><li><strong>기절시킨 사람이 자기 프라이즈를 가져와요.</strong> 보통 1장, 포켓몬 ex는 2장, 메가진화 ex는 3장처럼 해당 카드의 룰을 확인해요. 상대 프라이즈를 가져오는 게 아니에요.</li><li><strong>기절한 쪽은 벤치에서 새 배틀 포켓몬을 내보내요.</strong> 기술을 쓴 차례는 끝나고, 포켓몬 체크 후 상대 차례가 돼요.</li></ol>
+  <div class="play-callout"><strong>에너지는 공격할 때마다 버리지 않아요.</strong><p>기술의 설명에 ‘트래쉬한다’고 적혀 있을 때만 그 지시대로 버려요. 기술을 쓰면 더 이상 에너지나 트레이너스를 사용할 수 없어요.</p></div>
+  <details><summary>부모와 함께 확인 · 계산과 승리 조건</summary><p>예를 들어 기술 데미지 30에 상대 카드의 해당 약점이 ×2라면 60데미지입니다. 저항력이 해당하면 적힌 수를 뺍니다. 카드 효과에 따른 계산 순서는 공식 가이드를 참고하세요. ‘데미지 카운터를 올린다’는 효과와 ‘기술 데미지’는 다르므로 카운터 효과에 약점·저항력을 임의로 적용하지 않습니다. 벤치는 일반적으로 약점·저항력을 계산하지 않습니다.</p><p>자기 프라이즈를 모두 가져오면 승리합니다. 상대 필드에 포켓몬이 하나도 없어져도 승리합니다. 자신의 차례 시작에 필수 드로우를 할 카드가 없으면 패배합니다. 덱이 0장이 된 즉시 지는 것은 아닙니다. 서포트로 더 뽑을 카드가 부족한 경우와 차례 시작 드로우 실패도 구분하세요. 동시 기절·동시 승리 조건은 바로 단정하지 말고 공식 판정을 확인하세요.</p></details></section>
+  <section class="play-section" id="play-status"><div class="family-eyebrow">04 · 서로 차례가 바뀔 때</div><h3>‘포켓몬 체크’를 잊지 마세요.</h3><p>공격하지 않고 차례를 마쳤어도 두 사람의 배틀 포켓몬을 확인해요. 기본 순서는 독 → 화상 → 잠듦 → 마비예요.</p>
+  <div class="play-table-wrap"><table class="play-table"><caption>특수 상태 빠른 확인</caption><thead><tr><th>상태</th><th>어떻게 하나요?</th><th>기술 / 후퇴</th></tr></thead><tbody><tr><th>독</th><td>체크마다 10데미지. 독 마커로 표시</td><td>둘 다 가능</td></tr><tr><th>화상</th><td>체크마다 20데미지 후 동전. 앞면이면 회복</td><td>둘 다 가능</td></tr><tr><th>잠듦</th><td>카드를 가로로. 매 체크 때 동전 앞면이면 회복</td><td>둘 다 불가</td></tr><tr><th>마비</th><td>가로로 표시. 마비된 채 자기 차례를 한 번 보낸 뒤 체크에서 회복</td><td>둘 다 불가</td></tr><tr><th>혼란</th><td>거꾸로 표시. 기술 사용 전 동전: 뒷면이면 실패하고 자신에게 카운터 30데미지</td><td>기술은 동전 / 후퇴 가능</td></tr></tbody></table></div>
+  <details><summary>부모와 함께 확인 · 중복과 회복</summary><p>독·화상은 서로 및 다른 상태와 함께 걸릴 수 있습니다. 잠듦·마비·혼란끼리는 나중에 받은 하나로 바뀝니다. 상태는 배틀 포켓몬에게 적용되며 벤치로 이동하거나 진화하면 회복합니다. 새 마비는 상대 차례 직후 체크에서 바로 풀리지 않습니다. 체크의 데미지로 HP가 다하면 기절·프라이즈·새 배틀 포켓몬 처리를 확인합니다. 카드가 다른 데미지 수치를 지정하면 그 효과를 따릅니다.</p></details></section>
+  <section class="play-section" id="play-question"><div class="family-eyebrow">05 · 막히면 같이 읽어요</div><h3>자주 헷갈리는 카드와 행동</h3>
+  <details><summary>네스트볼로 진화 포켓몬을 가져올 수 있나요?</summary><p>아니요. 기본 포켓몬을 덱에서 찾아 벤치로 직접 내보냅니다. 빈 벤치 자리가 필요하고 패로 가져오는 카드가 아닙니다. 검색 후 덱을 섞으세요.</p></details>
+  <details><summary>하이퍼볼·이상한사탕은 어떻게 쓰나요?</summary><p>하이퍼볼은 사용 카드 외에 패 2장을 트래쉬해야 포켓몬 1장을 찾을 수 있어요. 이상한사탕은 기본 포켓몬에서 해당 2진화로 진화시키는 카드예요. 첫 차례나 이번 차례에 낸 기본 포켓몬에게는 쓸 수 없어요. 정확한 대상과 제한은 카드 설명을 읽으세요.</p></details>
+  <details><summary>에너지를 옮기거나 카드를 그냥 버려도 되나요?</summary><p>마음대로 옮기거나 떼거나 버릴 수는 없어요. 일반 부착·후퇴 비용·카드 효과 등 허용된 행동으로 처리해요. 패가 많다고 버릴 필요도 없어요.</p></details>
+  <details><summary>카드 설명이 이 안내와 다르면요?</summary><p>카드에 명시된 예외와 공식 정정을 먼저 확인해요. 효과의 ‘~라면’, 대상, 비용, 횟수, 패·덱·트래쉬 중 어디에서 가져오는지를 부모와 함께 읽고 처리한 뒤 다음 행동으로 넘어가요.</p></details>
+  <div class="play-callout"><strong>처음 몇 판은 이렇게 연습해요.</strong><p>패를 서로 보여주며 연습하거나 행동을 말로 설명하면 이해하기 쉬워요. 패를 공개하는 연습은 가족끼리 합의한 방식이며, 정식 대전에서는 패를 숨겨요. 기본 규칙은 유지하고 승패보다 차례를 끝까지 진행하는 데 집중해 보세요.</p></div></section>
+  <footer class="play-sources"><strong>부모님용 공식 참고</strong><p>2026-11-02 확인 · 설명을 쉽게 풀어 쓴 학습 안내이며 공식 룰북을 대체하지 않습니다.</p><a href="https://pokemoncard.co.kr/card/play" target="_blank" rel="noopener noreferrer">최신 놀이 방법</a><a href="https://pokemoncard.co.kr/htp/howtoplay/index.html" target="_blank" rel="noopener noreferrer">공식 설명·FAQ</a><a href="https://pokemoncard.co.kr/info/html/sub07.html" target="_blank" rel="noopener noreferrer">포켓몬 체크·특수 상태</a></footer>
+</section>
 </div>
 
 <!-- 📚 도감 탭 -->
-<div class="pnl on" id="p-dex">
+<div class="pnl" id="p-dex">
   <div class="st">📚 카드 도감</div>
   <div class="subtabs" id="dex-subtabs">
     <button class="subtab on" onclick="setDexClass('pokemon',this)">🐾 포켓몬</button>
@@ -699,7 +729,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 
 <!-- 🏗️ 덱 탭 -->
 <div class="pnl" id="p-deck">
-  <div class="st">🏗️ 덱 빌더</div>
+  <div class="st">덱 보관함</div>
   <div id="deck-r"><div class="loading"><div class="spinner"></div><p>준비 중...</p></div></div>
 </div>
 
@@ -714,7 +744,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   </div>
 </div>
 
-<!-- 🏗️ 덱 빌더 풀스크린 모달 -->
+<!-- 덱 보관함 풀스크린 모달 -->
 <div class="dbm" id="dbm">
   <div class="dbm-hdr">
     <div class="row1">
@@ -873,6 +903,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="deck-engine.js?v=rules3"></script>
-<script src="app.js?v=rules3"></script>
+<script src="app.js?v=family2"></script>
 </body>
 </html>
