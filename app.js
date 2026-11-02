@@ -2076,24 +2076,9 @@ function validateDeck(deck){
     errors.push({lvl:'bad',msg:'카드가 '+(counts.total-target)+'장 초과입니다 ('+counts.total+'/'+target+')'});
   }
 
-  /* 2) 같은 이름 4장(2장) 제한 — 기본 에너지 예외 */
-  var byName={}; /* {name_kr: qty} */
-  var basics=0;
-  for(var bc in cards){
-    var qty=cards[bc];
-    var c=dbByCode[bc];
-    if(!c)continue;
-    if(isBasicEnergy(c)){basics+=qty;continue;}
-    var nm=c.name_kr||bc;
-    byName[nm]=(byName[nm]||0)+qty;
-  }
-  for(var n in byName){
-    if(byName[n]>maxPerName){
-      errors.push({lvl:'bad',msg:'"'+n+'" '+byName[n]+'장 — '+maxPerName+'장 초과'});
-    }
-  }
-
-  if(!Object.keys(cards).some(function(id){return DeckEngine.basic(dbByCode[id]);}))errors.push({lvl:'bad',msg:'기본 포켓몬이 최소 1장 필요합니다'});
+  /* Core rules share the engine validator, including normalized names and special cards. */
+  var core=DeckEngine.inspect(cards,dbByCode,null,DeckEngine.deckRules(deck));
+  core.errors.filter(function(e){return e.indexOf('장 필요: 현재')<0;}).forEach(function(e){errors.push({lvl:'bad',msg:e});});
 
   /* 3) 진화 라인 약식 검증 */
   var stageCount={basic:0,stage1:0,stage2:0};
@@ -2120,31 +2105,10 @@ function validateDeck(deck){
     warnings.push({lvl:'warn',msg:'🎈 자유 모드: 2진화 '+stageCount.stage2+'장 사용 중 (정식 룰에선 ❌)'});
   }
 
-  /* 5) 풀덱 전용: ACE SPEC / 프리즘스타 / 빛나는 1장 제한 */
-  if(deck.format==='full'){
-    var aceTotal=0,prismMap={},radTotal=0;
-    for(var bc3 in cards){
-      var qty3=cards[bc3];
-      var c3=dbByCode[bc3];
-      if(!c3)continue;
-      if(isAceSpec(c3))aceTotal+=qty3;
-      if(isPrismStar(c3)){
-        var pn=c3.name_kr;
-        prismMap[pn]=(prismMap[pn]||0)+qty3;
-      }
-      if(isRadiant(c3))radTotal+=qty3;
-    }
-    if(aceTotal>1)errors.push({lvl:'bad',msg:'ACE SPEC 카드는 덱 전체에 1장만 가능해요 ('+aceTotal+'장)'});
-    for(var pn2 in prismMap){
-      if(prismMap[pn2]>1)errors.push({lvl:'bad',msg:'프리즘스타 "'+pn2+'" — 1장만 가능 ('+prismMap[pn2]+'장)'});
-    }
-    if(radTotal>1)errors.push({lvl:'bad',msg:'빛나는 포켓몬은 덱 전체에 1장만 가능해요 ('+radTotal+'장)'});
-  }
-
   /* 6) 정보: 카드 종류 분포 */
   if(counts.total>0){
     if(deck.format==='half'){
-      info.push({lvl:'info',msg:'모드: '+(strict?'🔒 정식 룰':'🎈 자유 모드 (아이용)')});
+      info.push({lvl:'info',msg:'모드: '+(strict?'🔒 정식 룰':'🎈 자유 모드 (아이용 · 공식 규칙 검증 대상 아님)')});
     }
     info.push({lvl:'info',msg:'분포: 포켓몬 '+counts.pok+' · 트레이너 '+counts.trn+' · 에너지 '+counts.ene+(counts.std?' · 스타디움 '+counts.std:'')});
     /* 에너지 비율 권장 (기본 에너지만 카운트하지 않고 전체 에너지) */
@@ -2894,22 +2858,15 @@ function addToDeck(bs_code){
   var isHalf=_deckBuilder.format==='half';
   var strict=!isHalf||_deckBuilder.strict!==false;
   var maxPerName=(isHalf&&strict)?2:4;
-  var basicEne=isBasicEnergy(c);
   /* 하프덱 정식 룰: 2진화 차단 / 자유 모드: 허용 */
   if(isHalf&&strict&&cardStage(c)==='stage2'){
     toast('🔒 정식 룰: 하프덱은 2진화 못 넣어요. 🎈로 전환하면 가능','#f39c12');return;
   }
-  /* 같은 이름 N장 제한 — 기본 에너지는 예외 */
-  if(!basicEne){
-    var sameNameTotal=0;
-    for(var bc in _deckBuilder.cards){
-      var cc=dbByCode[bc];
-      if(cc&&cc.name_kr===c.name_kr)sameNameTotal+=(_deckBuilder.cards[bc]||0);
-    }
-    if(sameNameTotal>=maxPerName){
-      toast('"'+c.name_kr+'"는 '+maxPerName+'장까지만 가능해요','#f39c12');return;
-    }
-  }
+  /* Use the same core rules as final validation; incomplete drafts are allowed. */
+  var proposed=Object.assign({},_deckBuilder.cards);
+  proposed[bs_code]=(proposed[bs_code]||0)+1;
+  var check=DeckEngine.inspect(proposed,dbByCode,null,DeckEngine.deckRules(_deckBuilder,true));
+  if(!check.ok){toast(check.errors[0],'#f39c12');return;}
   /* 총 매수 차단 — 자유 모드여도 30/60 매수는 유지 */
   var counts=deckCounts(_deckBuilder);
   var target=isHalf?30:60;
@@ -4474,6 +4431,7 @@ function goldfishHtml(g,k,ref,preset){
     var d=(g.medianFinish||21)-(ref.medianFinish||21);
     h+='<p class="deck-note">'+(d===0?'시판덱과 비슷한 속도예요.':d<0?'시판덱보다 보통 '+(-d)+'차례 빨라요.':'시판덱보다 보통 '+d+'차례 느려요.')+' (같은 상대·같은 조건 비교)</p>';}
   if(g.abilitiesModelled.length)h+='<p class="deck-note">계산한 특성: '+esc(g.abilitiesModelled.join(', '))+'</p>';
+  if(g.trainersIgnored&&g.trainersIgnored.length)h+='<p class="deck-note">계산하지 않은 트레이너: '+esc(g.trainersIgnored.join(', '))+'</p>';
   if(g.abilitiesIgnored.length)h+='<p class="deck-note">계산하지 않은 특성: '+esc(g.abilitiesIgnored.join(', '))+'</p>';
   h+='<p class="deck-note">상대: '+esc(g.opponent)+'. '+esc(g.scope)+'</p>';
   return h;
