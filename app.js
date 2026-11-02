@@ -82,13 +82,13 @@ function placeholderImg(name){
 }
 
 /* ═══ Tab Switch ═══ */
-var _currentTab='dex';
+var _currentTab='home';
 function switchTab(id,btn){
   _currentTab=id;
   var tabs=$('tabbar').getElementsByTagName('button');
   for(var i=0;i<tabs.length;i++)tabs[i].className='tab';
   btn.className='tab on';
-  var ids=['rules','dex','coll','scan','deck'];
+  var ids=['home','rules','dex','coll','scan','deck'];
   for(var j=0;j<ids.length;j++){
     var el=$('p-'+ids[j]);
     if(el)el.className=(ids[j]===id)?'pnl on':'pnl';
@@ -96,6 +96,11 @@ function switchTab(id,btn){
   if(id==='dex')renderDex();
   if(id==='coll')renderColl();
   if(id==='deck')renderDeckTab();
+}
+// Route home shortcuts through the existing tab system; no data is copied or saved.
+function familyNavigate(id){
+ var buttons=$('tabbar').getElementsByTagName('button');
+ for(var i=0;i<buttons.length;i++)if((buttons[i].getAttribute('onclick')||'').indexOf("switchTab('"+id+"'")>=0){switchTab(id,buttons[i]);return;}
 }
 function togAcc(el){
   el.classList.toggle('open');
