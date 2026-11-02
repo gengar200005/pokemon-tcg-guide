@@ -2077,7 +2077,7 @@ function validateDeck(deck){
   }
 
   /* Core rules share the engine validator, including normalized names and special cards. */
-  var core=DeckEngine.inspect(cards,dbByCode,null,{size:target,copyLimit:maxPerName});
+  var core=DeckEngine.inspect(cards,dbByCode,null,DeckEngine.deckRules(deck));
   core.errors.filter(function(e){return e.indexOf('장 필요: 현재')<0;}).forEach(function(e){errors.push({lvl:'bad',msg:e});});
 
   /* 3) 진화 라인 약식 검증 */
@@ -2108,7 +2108,7 @@ function validateDeck(deck){
   /* 6) 정보: 카드 종류 분포 */
   if(counts.total>0){
     if(deck.format==='half'){
-      info.push({lvl:'info',msg:'모드: '+(strict?'🔒 정식 룰':'🎈 자유 모드 (아이용)')});
+      info.push({lvl:'info',msg:'모드: '+(strict?'🔒 정식 룰':'🎈 자유 모드 (아이용 · 공식 규칙 검증 대상 아님)')});
     }
     info.push({lvl:'info',msg:'분포: 포켓몬 '+counts.pok+' · 트레이너 '+counts.trn+' · 에너지 '+counts.ene+(counts.std?' · 스타디움 '+counts.std:'')});
     /* 에너지 비율 권장 (기본 에너지만 카운트하지 않고 전체 에너지) */
@@ -2865,7 +2865,7 @@ function addToDeck(bs_code){
   /* Use the same core rules as final validation; incomplete drafts are allowed. */
   var proposed=Object.assign({},_deckBuilder.cards);
   proposed[bs_code]=(proposed[bs_code]||0)+1;
-  var check=DeckEngine.inspect(proposed,dbByCode,null,{size:isHalf?30:60,copyLimit:maxPerName,partial:true});
+  var check=DeckEngine.inspect(proposed,dbByCode,null,DeckEngine.deckRules(_deckBuilder,true));
   if(!check.ok){toast(check.errors[0],'#f39c12');return;}
   /* 총 매수 차단 — 자유 모드여도 30/60 매수는 유지 */
   var counts=deckCounts(_deckBuilder);

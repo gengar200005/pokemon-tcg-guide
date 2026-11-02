@@ -28,3 +28,31 @@ test('real save/reopen functions round-trip an incomplete edited deck without ch
  ctx.addToDeck('p');ctx.removeFromDeck('e');const expected=JSON.stringify(ctx._deckBuilder.cards);ctx.saveCurrentDeck();
  assert(Array.isArray(saved.customDecksV1[0].cards));ctx.D=saved;ctx._deckBuilder=null;ctx.editDeck('draft');assert.equal(JSON.stringify(ctx._deckBuilder.cards),expected);assert.equal(JSON.stringify(ctx.D.collected),before);
 });
+// Compatibility regression: free half decks deliberately relax special-card limits.
+function finalValidation(ctx){
+ for(const name of ['normalizeDeckCards','validateDeck']){const a=source.indexOf('function '+name+'('),b=source.indexOf('\nfunction ',a+1);vm.runInContext(source.slice(a,b),ctx);}
+ return ctx.validateDeck(ctx._deckBuilder);
+}
+for(const format of ['full','half'])test(format+' strict blocks each special category before mutation and in final validation',()=>{
+ for(const [cards,id] of [[{r:1},'g'],[{x:1},'y'],[{z:1},'zz']]){
+  const {ctx}=setup({p:1,e:(format==='half'?27:57),...cards},{format,strict:true}),before=JSON.stringify(ctx._deckBuilder.cards);ctx.addToDeck(id);assert.equal(JSON.stringify(ctx._deckBuilder.cards),before);
+  ctx._deckBuilder.cards[id]=1;const v=finalValidation(ctx);assert(!v.ok);assert(v.errors.some(e=>/빛나는|ACE SPEC|프리즘스타/.test(e.msg)));
+ }
+});
+for(const [label,initial,id] of [['radiant',{r:1},'g'],['ACE',{x:1},'y'],['prism prints',{z:1},'zz']])test('free half permits '+label+' in editing and final validation',()=>{
+ const {ctx}=setup({p:1,e:27,...initial},{format:'half',strict:false});ctx.addToDeck(id);assert.equal(ctx._deckBuilder.cards[id],1);assert(finalValidation(ctx).ok);ctx.removeFromDeck(id);assert(!ctx._deckBuilder.cards[id]);
+});
+test('free half with relaxed special cards still has thirty-card cap',()=>{
+ const {ctx}=setup({p:1,e:26,r:1,g:1},{format:'half',strict:false});ctx.addToDeck('x');assert.equal(ctx._deckBuilder.cards.x,1);const before=JSON.stringify(ctx._deckBuilder.cards);ctx.addToDeck('y');assert.equal(JSON.stringify(ctx._deckBuilder.cards),before);assert(finalValidation(ctx).ok);
+});
+test('switching free half to strict and full aligns editing and final validation',()=>{
+ const {ctx}=setup({p:1,e:27,r:1},{format:'half',strict:false});ctx.addToDeck('g');assert(finalValidation(ctx).ok);
+ ctx._deckBuilder.strict=true;assert(!finalValidation(ctx).ok);ctx.removeFromDeck('g');ctx.addToDeck('g');assert(!ctx._deckBuilder.cards.g);
+ ctx._deckBuilder.format='full';ctx._deckBuilder.strict=false;ctx._deckBuilder.cards.e=58;assert(finalValidation(ctx).ok);ctx.addToDeck('g');assert(!ctx._deckBuilder.cards.g);
+});
+test('saved free half specials reopen with same policy and unchanged collection',()=>{
+ const {ctx}=setup({p:1,e:27,r:1},{format:'half',strict:false});ctx.addToDeck('g');let stored;ctx._deckBuilder.id='free';ctx._deckBuilder.createdAt=1;ctx.D={collected:{p:{qty:2}}};const before=JSON.stringify(ctx.D.collected);
+ ctx.$=id=>id==='dbmName'?{value:'자유 덱'}:{dataset:{},className:''};ctx.openDeckBuilder=()=>{};ctx.sv=()=>stored=JSON.parse(JSON.stringify(ctx.D));
+ for(const name of ['normalizeDeckCards','saveCurrentDeck','editDeck']){const a=source.indexOf('function '+name+'('),b=source.indexOf('\nfunction ',a+1);vm.runInContext(source.slice(a,b),ctx);}
+ ctx.saveCurrentDeck();ctx.D=stored;ctx.editDeck('free');assert.equal(ctx._deckBuilder.strict,false);assert.equal(ctx._deckBuilder.cards.g,1);assert(finalValidation(ctx).ok);assert.equal(JSON.stringify(ctx.D.collected),before);
+});

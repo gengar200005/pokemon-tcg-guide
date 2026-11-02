@@ -91,6 +91,11 @@ function applicable(info,deck){
  return true;
 }
 
+// App editing and final validation share mode policy. Default inspect stays official/full.
+function deckRules(deck,partial){
+ var half=deck&&deck.format==='half',strict=!half||deck.strict!==false;
+ return {size:half?30:60,copyLimit:half&&strict?2:4,specialLimits:strict,partial:partial===true};
+}
 function inspect(cards,db,owned,rules){
  rules=rules||{};var size=rules.size||60,copyLimit=rules.copyLimit||4;
  var errors=[],names={},total=0,b=0,ace=0,rad=0,prisms={};
@@ -102,8 +107,10 @@ function inspect(cards,db,owned,rules){
  });
  if(rules.partial?total>size:total!==size)errors.push(size+'장 필요: 현재 '+total+'장');if(!b&&!rules.partial)errors.push('기본 포켓몬이 필요합니다');
  Object.keys(names).forEach(function(n){if(names[n]>copyLimit)errors.push('같은 이름 '+copyLimit+'장 초과: '+n);});
+ if(rules.specialLimits!==false){
  if(ace>1)errors.push('ACE SPEC 1장 초과');if(rad>1)errors.push('빛나는 포켓몬 1장 초과');
  Object.keys(prisms).forEach(function(n){if(prisms[n]>1)errors.push('프리즘스타 1장 초과: '+n);});
+ }
  return {errors:errors,total:total,basics:b,ok:!errors.length};
 }
 // Compare against an explicitly selected retail deck. Cosmetic reprints may be
@@ -626,6 +633,6 @@ function goldfish(cards,database,evolution,options){
  if(ko){out.knockout={turn:ko,nextTurnAttack:koTrials?nextAfterKo/koTrials:0,noBackup:koTrials?noBackup/koTrials:0};}
  return out;
 }
-var api={supply:supply,build:build,buildByTypes:buildByTypes,buildCandidates:buildCandidates,inspect:inspect,simulate:simulate,goldfish:goldfish,energyAbility:energyAbility,basic:basic,basicEnergy:energy,role:role,trainerInfo:trainerInfo,compareReference:compareReference,openingMetrics:openingMetrics,nameKey:nameKey,searchRule:searchRule,supportAllowed:supportAllowed,strategies:STRATEGIES};
+var api={supply:supply,build:build,buildByTypes:buildByTypes,buildCandidates:buildCandidates,inspect:inspect,deckRules:deckRules,simulate:simulate,goldfish:goldfish,energyAbility:energyAbility,basic:basic,basicEnergy:energy,role:role,trainerInfo:trainerInfo,compareReference:compareReference,openingMetrics:openingMetrics,nameKey:nameKey,searchRule:searchRule,supportAllowed:supportAllowed,strategies:STRATEGIES};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.DeckEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
